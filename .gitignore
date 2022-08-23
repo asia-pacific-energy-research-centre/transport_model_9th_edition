@@ -133,6 +133,6 @@ dmypy.json
 
 #except any files in these folders
 !config/*
-!other_outputs/*
+# !other_outputs/*
 !input_data/*
-!output_data/*
+# !output_data/*
