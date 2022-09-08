@@ -1,4 +1,6 @@
 #this file is intended for gathering the most useful data from the 8th edition model and fromatting it so that it can be used in this model. the code is long by nature, but an effort has been made to keep it in parts. so look for stocks, efficiency or wahtever data type you need if you need to make a fix or something. 
+
+#CLEANING IS anything that involves changing the format of the data. The next step is filling in missing values. 
 #%%
 #set working directory as one folder back so that config works
 import os
@@ -10,8 +12,8 @@ execfile("config/config.py")#usae this to load libraries and set variables. Feel
 
 #STOCKS DATA
 #this data is laoded from the original source finn found it. see the NOTES sheet in the file for more details
-stocks_ref = pd.read_excel('input_data/from_8th_output/raw_data/TransportStocks.xlsx', sheet_name='stocks_Reference')
-stocks_cn = pd.read_excel('input_data/from_8th_output/raw_data/TransportStocks.xlsx', sheet_name='stocks_Net-zero')
+stocks_ref = pd.read_excel('input_data/from_8th/raw_data/TransportStocks.xlsx', sheet_name='stocks_Reference')
+stocks_cn = pd.read_excel('input_data/from_8th/raw_data/TransportStocks.xlsx', sheet_name='stocks_Net-zero')
 
 #add scenario column to differentiate the two scenarios when we stakc the data
 stocks_ref['Scenario'] = 'Reference'
@@ -30,20 +32,6 @@ stocks_long['Vehicle Type'] = stocks_long['Vehicle Type'].str.lower()
 stocks_long['Drive'] = stocks_long['Drive'].str.lower()
 
 stocks_long['Medium'] = 'road'
-#rename Stocks col to Value
-stocks_long.rename(columns={'Stocks':'Value'}, inplace=True)
-#%%
-#search fr any NANs, print them out in case they are important, but by default drop them
-print('There are ', sum(stocks_long.isna().sum()), 'NANs in the stocks  dataframe. These are in the following columns:', pd.isnull(stocks_long).sum()[pd.isnull(stocks_long).sum() > 0], ' \n We will delte these by default. Take a look if you think it seems suspect\n\n')
-stocks_long = stocks_long.dropna()
-
-#count and remove duplicates when you consider the Value column
-print('There are ', stocks_long.duplicated().sum(), 'duplicated rows in the stocks_long dataframe. We will delte these by default. Take a look if you think it seems suspect\n\n')
-stocks_long = stocks_long.drop_duplicates()
-
-#sum up duplicated rows when you remove the value column 
-print('There are ', stocks_long.drop(columns=['Value']).duplicated().sum(), 'duplicated rows in the stocks_long dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
-stocks_long = stocks_long.groupby(['Scenario', 'Economy', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium','Year']).sum().reset_index()
 
 #%%
 #save
@@ -63,7 +51,7 @@ stocks_long.to_csv("intermediate_data/cleaned_input_data/road_stocks.csv", index
 
 #load in osemosys data
 spreadsheet_name = 'OSEMOSYS-hughslast'
-output_file_name = "{}/from_8th_output/raw_data/{}.xlsx".format(input_data_path,spreadsheet_name)
+output_file_name = "{}/from_8th/raw_data/{}.xlsx".format(input_data_path,spreadsheet_name)
 # output_file_name = 'output_data/OSEMOSYS_TransoprtReference_06-16-2022-36.xlsx'
 AccumulatedAnnualDemand_df = pd.read_excel(output_file_name, sheet_name = "AccumulatedAnnualDemand", header=0)
 InputActivityRatio_df = pd.read_excel(output_file_name, sheet_name = "InputActivityRatio", header=0)
@@ -144,7 +132,7 @@ InputActivityRatio.loc[InputActivityRatio['Scenario'] == 'Net-zero', 'Scenario']
 InputActivityRatio['Drive'] = InputActivityRatio['Drive'].str.lower()
 InputActivityRatio['Vehicle Type'] = InputActivityRatio['Vehicle Type'].str.lower()
 #make the data in long format
-InputActivityRatio = InputActivityRatio.melt(id_vars=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Fuel'], var_name='Year', value_name='Value')
+InputActivityRatio = InputActivityRatio.melt(id_vars=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Fuel'], var_name='Year', value_name='Input Activity Ratio')
 
 #ADDITIONAL FIXES
 #For accumulated annual demand
@@ -158,7 +146,7 @@ AccumulatedAnnualDemand.loc[AccumulatedAnnualDemand['Transport Type'].isna(), 'T
 AccumulatedAnnualDemand.loc[AccumulatedAnnualDemand['Scenario'] == 'Net-zero', 'Scenario'] = 'Carbon Neutral'
 
 #make the data in long format
-AccumulatedAnnualDemand = AccumulatedAnnualDemand.melt(id_vars=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive'], var_name='Year', value_name='Value')
+AccumulatedAnnualDemand = AccumulatedAnnualDemand.melt(id_vars=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive'], var_name='Year', value_name='Activity')
 
 #%%
 #search fr any NANs, print them out in case they are important, but by default drop them
@@ -174,7 +162,7 @@ print('There are ', InputActivityRatio.duplicated().sum(), 'duplicated rows in t
 InputActivityRatio = InputActivityRatio.drop_duplicates()
 
 #sum up duplicated rows when you remove the value column 
-print('There are ', InputActivityRatio.drop(columns=['Value']).duplicated().sum(), 'duplicated rows in the Input Activity Ratio dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
+print('There are ', InputActivityRatio.drop(columns=['Input Activity Ratio']).duplicated().sum(), 'duplicated rows in the Input Activity Ratio dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
 InputActivityRatio = InputActivityRatio.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Fuel', 'Year']).sum().reset_index()
 
 #count and remove duplicates when you consider the Value column
@@ -182,7 +170,7 @@ print('There are ', AccumulatedAnnualDemand.duplicated().sum(), 'duplicated rows
 AccumulatedAnnualDemand = AccumulatedAnnualDemand.drop_duplicates()
 
 #sum up duplicated rows when you remove the value column
-print('There are ', AccumulatedAnnualDemand.drop(columns=['Value']).duplicated().sum(), 'duplicated rows in the Accumulated Annual Demand dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
+print('There are ', AccumulatedAnnualDemand.drop(columns=['Activity']).duplicated().sum(), 'duplicated rows in the Accumulated Annual Demand dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
 AccumulatedAnnualDemand = AccumulatedAnnualDemand.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year']).sum().reset_index()#note that the 2914 duplicated rows are all nonspecified ones 
 
 
@@ -199,40 +187,46 @@ InputActivityRatio.to_csv('intermediate_data/cleaned_input_data/inputactivityrat
 #calculate this using the activity data and the input activity ratio data which is fromatted above. we will specify the input data, but this can be set to the file saved in the process above.
 
 #want to calcualte data from the eff and activity data from osemosys system
-activity_file_name = '{}/from_8th_output/reformatted/activity_from_{}.csv'.format(input_data_path,spreadsheet_name)
-InputActivityRatio_file_name = "{}/from_8th_output/reformatted/inputactivityratio_from_{}.csv".format(input_data_path,spreadsheet_name)
+activity_file_name = 'intermediate_data/cleaned_input_data/activity_from_{}.csv'.format(spreadsheet_name)
+InputActivityRatio_file_name = "intermediate_data/cleaned_input_data/inputactivityratio_from_{}.csv".format(spreadsheet_name)
 
 activity = pd.read_csv(activity_file_name)
 InputActivityRatio = pd.read_csv(InputActivityRatio_file_name)
 
 #%%
 #FORMAT
-#rename befroe merge the value cols
-activity.rename(columns={'Value': 'Activity'}, inplace=True)
-InputActivityRatio.rename(columns={'Value': 'InputActivityRatio'}, inplace=True)
+# # # #rename befroe merge the value cols
+# # # activity.rename(columns={'Value': 'Activity'}, inplace=True)
+# # # InputActivityRatio.rename(columns={'Value': 'InputActivityRatio'}, inplace=True)
 #merge. this is quite an important operation that probably will be resused in the future. it will keep the fuel column of InputActivityRatio and duplicate rows of the activity df for each fuel in the same drive
 new_df = InputActivityRatio.merge(activity, how='left', on=['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year'])
 
 #%%
 #OPERATION
 #calculate enrgy as eff times act
-new_df['Value'] = new_df['InputActivityRatio'] * new_df['Activity']
+new_df['Energy'] = new_df['Input Activity Ratio'] * new_df['Activity']
 
 #%%
 #FORMAT
 #create a standalone energy dataframe
-energy = new_df[['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year', 'Value', 'Fuel']]
+energy = new_df[['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year', 'Energy', 'Fuel']]
 
-#count and remove duplicates when you consider the Value column
+#create the dataframe with no fuel column
+energy_nofuel = energy.drop(columns=['Fuel'])
+#sum
+energy_nofuel = energy_nofuel.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum().reset_index()
+
+#%%
+#count and remove duplicates when you consider the Energy column
 print('There are ', energy.duplicated().sum(), 'duplicated rows in the energy dataframe. We will delte these by default. Take a look if you think it seems suspect\n\n')
 #sum up duplicated rows when you remove the value column
-print('There are ', energy.drop(columns=['Value']).duplicated().sum(), 'duplicated rows in the energy dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
+print('There are ', energy.drop(columns=['Energy']).duplicated().sum(), 'duplicated rows in the energy dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
 energy = energy.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year', 'Fuel']).sum().reset_index()
 
 #%%
 #SAVE
-energy.to_csv("intermediate_data/cleaned_input_data/energy.csv", index=False)
-
+energy_nofuel.to_csv("intermediate_data/cleaned_input_data/energy.csv", index=False)
+energy.to_csv("intermediate_data/cleaned_input_data/energy_with_fuel.csv", index=False)
 #%%
 ##############################################################################################################
 
@@ -244,11 +238,7 @@ energy.to_csv("intermediate_data/cleaned_input_data/energy.csv", index=False)
 energy = pd.read_csv("intermediate_data/cleaned_input_data/energy.csv")
 activity = pd.read_csv(activity_file_name)   
 #%%
-#rename value to the data type
-activity.rename(columns={'Value': 'Activity'}, inplace=True)
-energy.rename(columns={'Value': 'Energy'}, inplace=True)
-
-#and then group by all but fuel type, then sum
+#group by all but fuel type, then sum
 activity = activity.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum()
 energy = energy.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum()
 
@@ -257,10 +247,10 @@ eff_df = energy.merge(activity, how='left', on=['Economy', 'Scenario', 'Drive', 
 
 #%%
 #calculate eff as energy / activity
-eff_df['Value'] = eff_df['Energy'] / eff_df['Activity']
+eff_df['Efficiency'] = eff_df['Activity'] /  eff_df['Energy']
 
 # in some cases it seems like eff is being set to nan because activity and energy are 0. We will fix those by setting the eff to 0. this would be better solved by setting eff
-eff_df.loc[(eff_df['Activity'] == 0) & (eff_df['Energy'] == 0), 'Value'] = 0
+eff_df.loc[(eff_df['Activity'] == 0) & (eff_df['Energy'] == 0), 'Efficiency'] = 0
 
 #but now it seems there are cases when activity is NAN but energy is >0
 #%%
@@ -270,7 +260,7 @@ efficiency_by_drive = eff_df.drop(columns=['Energy', 'Activity'])
 #count and remove duplicates when you consider the Value column
 print('There are ', efficiency_by_drive.duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will delte these by default. Take a look if you think it seems suspect\n\n')
 #sum up duplicated rows when you remove the value column
-print('There are ', efficiency_by_drive.drop(columns=['Value']).duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
+print('There are ', efficiency_by_drive.drop(columns=['Efficiency']).duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
 efficiency_by_drive = efficiency_by_drive.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year']).sum().reset_index()
 
 

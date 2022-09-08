@@ -25,6 +25,18 @@ END_YEAR = 2050
 Scenario_list = ['Carbon Neutral', 'Reference']
 
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, file_date_id)
+
+EIGHTH_EDITION_DATA = True
+#%%
+#state model concordances
+model_concordances_version = file_date_id#'20220824_1256'
+model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)
+
+#%%
+#ANALYSIS VARIABLES
+SCENARIO_OF_INTEREST = 'Reference'
 ###################################################
 #%%
 #import and create common variables
@@ -66,3 +78,7 @@ NON_SPEC_TRANSPORT_MAX_YEAR = 2051#i have serious concerns about use of 2051 her
 
 ###################################################
 #%%
+import plotly.express as px
+#graphing tools:
+PLOTLY_COLORS_LIST = px.colors.qualitative.Plotly
+# %%

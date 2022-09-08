@@ -125,9 +125,13 @@ dmypy.json
 .pyre/
 
 # excell files 
-
 *.xlsx
 *.csv
+
+#graphs
+*.png
+*.jpg
+*.html
 
 #####################
 
@@ -135,4 +139,5 @@ dmypy.json
 !config/*
 # !other_outputs/*
 !input_data/*
+!documentation/*
 # !output_data/*

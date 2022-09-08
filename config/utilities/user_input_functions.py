@@ -5,43 +5,7 @@ import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
-
 #%%
-#create set of categories of data that will be output by the model. 
-osemosys_concordances = pd.read_csv('config/OSEMOSYS_concordances.csv')
-osemosys_concordances.drop(['FUEL', 'TECHNOLOGY'], axis=1, inplace=True)
-#drop duplicates
-osemosys_concordances.drop_duplicates(inplace=True)
-
-#could create concordances for each year, economy and scenario and then cross that with the osemosys_concordances to get the final concordances
-model_concordances = pd.DataFrame(columns=osemosys_concordances.columns)
-for year in range(BASE_YEAR, END_YEAR+1):
-    for economy in Economy_list:
-        for scenario in Scenario_list:
-            #create concordances for each year, economy and scenario
-            osemosys_concordances_year = osemosys_concordances.copy()
-            osemosys_concordances_year['Year'] = str(year)
-            osemosys_concordances_year['Economy'] = economy
-            osemosys_concordances_year['Scenario'] = scenario
-            #merge with osemosys_concordances
-            model_concordances = pd.concat([model_concordances, osemosys_concordances_year])
-
-#save model_concordances with date
-model_concordances.to_csv('config/model_concordances_{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")), index=False)
-
-#%%
-#create a user input spreadsheet using the model concordances above
-#we want the year column to become wide, so we'll use pivot_table
-model_concordances_wide = model_concordances.copy()
-model_concordances_wide['Value'] = 1
-# model_concordances_wide['Year'] = str(model_concordances_wide['Year'])
-model_concordances_wide = model_concordances_wide.pivot_table(index=['Medium',	'Transport Type',	'Vehicle Type',	'Drive', 'Economy',	'Scenario'
-], columns='Year', values='Value').reset_index()
-
-#save model_concordances_wide with date
-model_concordances_wide.to_csv('config/model_concordances_wide_{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M")), index=False)
-#%%
-
 #create funciton to check a dataset for whether it contains all the rows in our concordances. If it doesn't, add that row.
 def check_for_missing_rows(dataset, concordances, index_cols):
     #set index
@@ -74,7 +38,9 @@ dataset_with_missing_rows, concordances_with_missing_rows = check_for_missing_ro
 
 #%%
 #Note that i used the below to check all user input had the cocordances in them, which was true.
-model_concordances =pd.read_csv('config/model_concordances_{}.csv'.format("20220822_1204"))
+model_concordances_file_name = 'model_concordances_20220824_1256.csv'
+
+model_concordances = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name))
 #test when filtering coocrdances for only medium == road
 # dataset = OccupanceAndLoad_growth.copy()
 dataset = Switching_vehicle_sales_dist.copy()
@@ -92,6 +58,10 @@ print('There are {} missing rows in the dataset'.format(len(missing_rows_in_data
 # dataset_with_missing_rows, concordances_with_missing_rows = check_for_missing_rows(dataset,concordances,index_cols)
 
 #%%
+model_concordances_file_name = 'model_concordances_20220824_1256.csv'
+
+model_concordances = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name))
+
 road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input.csv')
 activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
 dataset = road_model_input.copy()
@@ -132,6 +102,70 @@ index_cols =['Transport Type', 'Vehicle Type',  'Economy', 'Scenario', 'Year']#'
 
 Switching_vehicle_sales_dist_interpolated = interpolate_between_values(Switching_vehicle_sales_dist, model_concordances, index_cols)
 #%%
+#Create a new non raod efficiency growth rate user input file. 
+#usae the model concordances, filter for vehicle type is air, rail or ship and then create a column for the efficiency growth rate. for now set it to 1. 
+
+model_concordances_file_name = 'model_concordances_20220824_1256.csv'
+
+model_concordances = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name))
+
+#filter for non road
+non_road_efficiency_growth = model_concordances[model_concordances['Medium'] != 'road']
+
+#add a column for the efficiency growth rate
+non_road_efficiency_growth['Efficiency_growth_rate'] = 1
+
+#save to csv
+non_road_efficiency_growth.to_csv('intermediate_data/model_inputs/non_road_efficiency_growth_COMPGEN.csv', index=False)
+
+
+#%%
+
+#create new cvvehicle efficiency for road user input file from hughs files called New_vehicle_efficiency_NZS and New_vehicle_efficiency
+#first read in the files. note that the first 3 rows are multindex rows and the first two columns are multiindex cols too
+New_vehicle_efficiency_NZS = pd.read_csv('input_data/from_8th/raw_data/New_vehicle_efficiency_NZS.csv', header=[0,1,2], index_col=[0,1])
+New_vehicle_efficiency = pd.read_csv('input_data/from_8th/raw_data/New_vehicle_efficiency.csv', header=[0,1,2], index_col=[0,1])
+
+New_vehicle_efficiency_NZS_tall = New_vehicle_efficiency_NZS.stack().stack().stack().reset_index()
+New_vehicle_efficiency_NZS_tall = New_vehicle_efficiency_NZS_tall.rename(columns={0:'Value'})
+New_vehicle_efficiency_NZS_tall['Scenario'] = 'Carbon Neutral'
+New_vehicle_efficiency_tall = New_vehicle_efficiency.stack().stack().stack().reset_index()
+New_vehicle_efficiency_tall = New_vehicle_efficiency_tall.rename(columns={0:'Value'})
+New_vehicle_efficiency_tall['Scenario'] = 'Reference'
+
+#merge the two files
+New_vehicle_efficiency_tall = pd.concat([New_vehicle_efficiency_NZS_tall, New_vehicle_efficiency_tall])
+
+#FOR SOM REASON THE EFFICIENCY IS INVERSED, LIKE IT WOULD BE IF IT WAS THE AMOUNT OF ENERGY USED PER KM this is equivalent to input activity ratio, but the data is specified by drive type, so its a bit weigrd. sO THE HIGHER THE EFFICIENCY VALUE, THE LESS EFFICIENT THE VEHICLE. SO WE NEED TO INVERSE THE VALUES. After that, teh growth rates will reflect the growth in efficiency, as in thew amount of km per unit of energy, not the growth in energy use per km.
+New_vehicle_efficiency_tall['Value'] = 1/New_vehicle_efficiency_tall['Value']
+
+#sort by year and everything else in ascending order
+New_vehicle_efficiency_tall = New_vehicle_efficiency_tall.sort_values(by=['Transport Type', 'Vehicle Type', 'Economy', 'Scenario', 'Drive', 'Year'])
+
+#calcualte the efficiency growth rate from the values (since the values are jsut efficiency)
+New_vehicle_efficiency_tall_growth = New_vehicle_efficiency_tall.set_index(['Transport Type', 'Vehicle Type', 'Economy', 'Scenario', 'Drive', 'Year']).pct_change()
+
+#add 1 to all values so that the percentage change is now the growth rate
+New_vehicle_efficiency_tall_growth = New_vehicle_efficiency_tall_growth.add(1)
+
+#replace NAN with 1 so that any efficiency times 1 is still the same
+New_vehicle_efficiency_tall_growth = New_vehicle_efficiency_tall_growth.fillna(1)
+
+#reset index
+New_vehicle_efficiency_tall_growth = New_vehicle_efficiency_tall_growth.reset_index()
+
+#save
+New_vehicle_efficiency_tall_growth.to_csv('input_data/from_8th/reformatted/New_vehicle_efficiency_tall_growth.csv', index=False)
+New_vehicle_efficiency_tall.to_csv('input_data/from_8th/reformatted/New_vehicle_efficiency_tall.csv', index=False)
+#%%
+
+
+#laod
+
+
+
+
+
 
 
 
