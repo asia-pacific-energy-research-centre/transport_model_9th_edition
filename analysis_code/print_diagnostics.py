@@ -102,6 +102,7 @@ model_output_detailed_sales = model_output_detailed_sales.groupby(['Year', 'Driv
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_sales.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share', label=key)
+    
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 plt.show()
@@ -117,6 +118,7 @@ model_output_detailed_sales = model_output_detailed_sales.groupby(['Year', 'Driv
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_sales.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share', label=key)
+
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 plt.show()
