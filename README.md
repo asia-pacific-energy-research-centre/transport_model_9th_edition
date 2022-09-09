@@ -20,7 +20,7 @@ https://h3yfinn.github.io/APERC-graphs/transport-model-9th-edition/Stocks and sa
 https://h3yfinn.github.io/APERC-graphs/transport-model-9th-edition/Vehicle_sales_share by year, transport type, vehicle type, drive and economy.html
 
 
-[[https://github.com/H3yfinn/transport_model_9th_edition/tree/master/plotting_output/diagnostics/Average vehicle sales shares for each drive for passenger LVs.png|alt=graph1]]
+[["https://github.com/H3yfinn/transport_model_9th_edition/tree/master/plotting_output/diagnostics/Average vehicle sales shares for each drive for passenger LVs.png"|alt=graph1]]
 
 [[https://github.com/H3yfinn/transport_model_9th_edition/tree/master/plotting_output/diagnostics/Average vehicle sales shares for each drive for passenger LVs.png|alt=graph1]]
 [[https://github.com/H3yfinn/transport_model_9th_edition/tree/master/plotting_output/diagnostics/Average vehicle sales shares for each drive for passenger LVs.png|alt=graph1]]
