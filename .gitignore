@@ -134,9 +134,10 @@ dmypy.json
 *.html
 
 #anything in archive folders doesnt nee to be tracked
-*/archive/*
+**/archive
 #####################
 
+!plotting_output/diagnostics/*.png
 #except any files in these folders
 !config/*
 # !other_outputs/*

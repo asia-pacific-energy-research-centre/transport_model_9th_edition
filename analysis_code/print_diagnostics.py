@@ -138,18 +138,20 @@ model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_rat
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive[['BEV_ICE_ratio', 'PHEV_ICE_ratio']]
 
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.reset_index()
+title = 'Ratio of BEVs to ICEs for each year, by economy'
 #plot
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_ratio_drive.groupby(['Economy']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='BEV_ICE_ratio', label=key)
-plt.title('Ratio of BEVs to ICEs for each year, by economy')
+plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 plt.show()
 #plot
+title='Ratio of PHEVs to ICEs for each year, by economy'
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_ratio_drive.groupby(['Economy']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='PHEV_ICE_ratio', label=key)
-plt.title('Ratio of PHEVs to ICEs for each year, by economy')
+plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 plt.show()
 ################################################################################################################################################################
