@@ -131,6 +131,7 @@ title = 'Activity and activity growth'
 change_dataframe_aggregation_act = change_dataframe_aggregation.groupby(['Year','Economy'])['Activity'].sum().reset_index()
 change_dataframe_aggregation_ag = change_dataframe_aggregation.groupby(['Year','Economy'])['Activity_growth'].mean().reset_index()
 
+
 #join the dataframes
 change_dataframe_aggregation_act_ag = change_dataframe_aggregation_act.merge(change_dataframe_aggregation_ag, on=['Year','Economy'])
 

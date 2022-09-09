@@ -20,10 +20,6 @@ plt.rcParams['figure.facecolor'] = 'w'
 #load data in
 model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
 
-#%%
-#%%
-#%%
-#%%
 #FILTER FOR SCENARIO OF INTEREST
 model_output_detailed = model_output_detailed[model_output_detailed['Scenario']==SCENARIO_OF_INTEREST]
 #%%

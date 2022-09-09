@@ -5,14 +5,14 @@ together different, often disparate, subsystems so that the data contained in ea
 often requires that companies build a customized architecture or structure of applications to combine new or existing hardware, software and other communications."""
 # this file will manage all the modules in the transport system. This is so that each module can be easily run in sequence, as well as passing common variables to each
 
-print('To do, start running this from a external hardrive to remove issues of onedrive sharing. ')
+
 #%%
 import datetime
 #set global variables
 file_date = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 file_date_id = '_DATE{}'.format(file_date)
 file_date_id = ''
-
+print('Model run for {} starting'.format(file_date))
 #%%
 RUN_CONFIG = False
 if RUN_CONFIG:
@@ -40,7 +40,7 @@ execfile("workflow/9_create_osemosys_output.py")
 
 execfile("analysis_code/print_diagnostics.py")
 
-ANALYSE_OUTPUT = True
+ANALYSE_OUTPUT = False
 if ANALYSE_OUTPUT:
     execfile("analysis_code/compare_8th_to_9th_by_medium.py")
     execfile("analysis_code/compare_8th_to_9th_by_fuel.py")
@@ -48,6 +48,5 @@ if ANALYSE_OUTPUT:
     execfile("analysis_code/plot_input_data.py")
     execfile("analysis_code/analyse_experimental.py")
     execfile("analysis_code/plot_data_for_others.py")
-#%%
-#CONFIG
-#Senareo 
+
+# %%

@@ -133,6 +133,8 @@ dmypy.json
 *.jpg
 *.html
 
+#anything in archive folders doesnt nee to be tracked
+*/archive/*
 #####################
 
 #except any files in these folders
