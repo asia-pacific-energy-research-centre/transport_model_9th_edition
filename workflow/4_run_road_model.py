@@ -199,9 +199,10 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
 
     #CALCUALTE NEW ENERGY CONSUMPTION. 
     #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type.
-    change_dataframe['Energy'] = change_dataframe['Activity'] / change_dataframe['Efficiency'] 
+    change_dataframe['Energy'] = change_dataframe['Travel_km'] / change_dataframe['Efficiency'] 
+
     #if numerator and denominator are 0, then energy ends up as nan, so we will set this to 0
-    change_dataframe.loc[(change_dataframe['Activity'] == 0) & (change_dataframe['Efficiency'] == 0), 'Energy'] = 0
+    change_dataframe.loc[(change_dataframe['Travel_km'] == 0) & (change_dataframe['Efficiency'] == 0), 'Energy'] = 0
 
     #######################################################################
 

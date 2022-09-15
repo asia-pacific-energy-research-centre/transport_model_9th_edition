@@ -11,18 +11,19 @@ import datetime
 #set global variables
 file_date = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 file_date_id = '_DATE{}'.format(file_date)
-file_date_id = ''
+# file_date_id = ''#comment me out if you want the output and archived input data to be saved with a specific date id
 print('Model run for {} starting'.format(file_date))
+print('\n file_date_id is set to {}'.format(file_date_id))
 #%%
-RUN_CONFIG = False
-if RUN_CONFIG:
-    execfile('./config/utilities/create_model_concordances.py')
+execfile('./config/utilities/create_model_concordances.py')#currently tehse are vbased off osemosys_concordances = pd.read_csv('config/concordances/OSEMOSYS_concordances.csv')
+
 #%%
 execfile("workflow/1_clean_8th_edition_data.py")
 execfile("workflow/1_clean_other_input_data.py")
 execfile("workflow/1_clean_user_input.py")
 execfile("workflow/2_fill_missing_input_data.py")
 execfile("workflow/2_calculate_activity_growth.py")
+
 #%%
 execfile("workflow/3a_aggregate_data_for_model.py")
 execfile("workflow/3b_calculate_input_for_model.py")
@@ -38,15 +39,21 @@ execfile("workflow/8_clean_model_output.py")
 execfile("workflow/9_create_osemosys_output.py")
 #%%
 
-execfile("analysis_code/print_diagnostics.py")
+execfile("other_code/analysis_code/print_diagnostics.py")
 
-ANALYSE_OUTPUT = False
+#%%
+ANALYSE_OUTPUT = False#True
 if ANALYSE_OUTPUT:
-    execfile("analysis_code/compare_8th_to_9th_by_medium.py")
-    execfile("analysis_code/compare_8th_to_9th_by_fuel.py")
-    execfile("analysis_code/compare_8th_to_9th_by_drive.py")
-    execfile("analysis_code/plot_input_data.py")
-    execfile("analysis_code/analyse_experimental.py")
-    execfile("analysis_code/plot_data_for_others.py")
+    # execfile("other_code/analysis_code/compare_8th_to_9th_by_medium.py")
+    # execfile("other_code/analysis_code/compare_8th_to_9th_by_fuel.py")
+    # execfile("other_code/analysis_code/compare_8th_to_9th_by_drive.py")
+    execfile("other_code/analysis_code/plot_input_data.py")
+    execfile("other_code/analysis_code/analyse_experimental.py")
+    execfile("other_code/analysis_code/plot_data_for_others.py")
 
-# %%
+#%%
+ARCHIVE_INPUT_DATA = True
+if ARCHIVE_INPUT_DATA:
+    execfile('./config/utilities/archiving_script.py')
+
+#%%   

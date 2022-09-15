@@ -77,7 +77,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     change_dataframe['Efficiency'] = change_dataframe['New_efficiency']
     
     #CALCUALTE NEW ENERGY CONSUMPTION. 
-    #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type.
+    #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type. It is also only for activity per energy unit, not travel km per energy unit.
     change_dataframe['Energy'] = change_dataframe['Activity'] / change_dataframe['Efficiency'] 
 
     #CREATE STOCKS VALUE

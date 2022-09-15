@@ -28,7 +28,7 @@ for year in range(BASE_YEAR, END_YEAR+1):
             model_concordances = pd.concat([model_concordances, osemosys_concordances_year])
 
 #save model_concordances with date
-model_concordances.to_csv('config/concordances/'.format(model_concordances_file_name), index=False)
+model_concordances.to_csv('config/concordances/{}'.format(model_concordances_file_name), index=False)
 
 #%%
 #create model concordances with a fuel column. 
@@ -82,4 +82,4 @@ model_concordances_fuels_NO_BIOFUELS.to_csv('config/concordances/{}'.format(mode
 
 # #save model_concordances_wide with date
 # model_concordances_wide.to_csv('config/concordances/model_concordances_wide_{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d")), index=False)
-# #%%
+#%%

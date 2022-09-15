@@ -24,7 +24,9 @@ road_model_input['Travel_km'] = road_model_input['Activity']/road_model_input['O
 #After much deliberation it was arrived at that travel km per stock should be calculated as the average travel km per stock for each vehicle type. This was to avoid the effect of having weird ratios created by very small numbers. By averaging it also makes it easier to keep track of this variable.
 average_travel_km_per_stock_of_vehicle_type = road_model_input[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Travel_km', 'Stocks']]
 average_travel_km_per_stock_of_vehicle_type = average_travel_km_per_stock_of_vehicle_type.dropna().groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year']).sum().reset_index()
+
 average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock'] = average_travel_km_per_stock_of_vehicle_type['Travel_km']/average_travel_km_per_stock_of_vehicle_type['Stocks']
+
 average_travel_km_per_stock_of_vehicle_type.drop(['Travel_km', 'Stocks'], axis=1, inplace=True)
 
 #'REPLACE STOCKS FOR FREIGHT LIGHT TRUCKS USING TRAVEL KM PER STOCK OF PASSENGER LIGHT TRUCKS'
@@ -47,6 +49,37 @@ if EIGHTH_EDITION_DATA:
 # road_model_input[['Travel_km_per_stock', 'Transport Type', 'Vehicle Type']].groupby(['Transport Type', 'Vehicle Type']).agg([np.mean, np.std, np.var, np.median]).reset_index()
 ################################################################################
 #%%
+#since we dont have a value for efficiency in travel lkm per unit of energy use for the input data based on 8th edition, we calcualte it now. In the future it would be good if this value was somehow cross refeenced and scaled with actual numbers, not numbers calcualted based on the estimates of travle km and energy.
+road_model_input['Efficiency'] = road_model_input['Travel_km']/road_model_input['Energy']
+
+#there is a problem where the efficiency is very large for some vehicle types. This seems to occur for cases where there is very small use of that vehicle type. This is because the efficiency is calculated as travel km/energy use, and if there is very little energy use and the travel km is a little incrorect in absolute terms, then the efficiency will be incorrect by the same magnitude, which can be large proportionally, and since it is a ratio, it will be seem in absolute terms when yuou compare it to otehr ratios
+#FOR NOW, where the efficiency value is obv wrong we will set the efficiency to be the mean of the efficiency for that vehicle type, we will then set the energy use to be the travel km divided by this efficiency. I think it will be okay to do this like this, the only consideraton is where we are presenting input data by fuel type, since that data is already split into fuel type and wont be affected by this, but that seems unliekly.
+#sometime in the future we will have good data and this wont need to happen.
+if EIGHTH_EDITION_DATA:
+    #we will seaprarte the incorrect data and replace it with the mean of the correct data
+    rows_to_fix = road_model_input.loc[road_model_input['Efficiency'] > 10]
+    rows_to_fix.drop(['Efficiency'], axis=1, inplace=True)
+
+    road_model_input = road_model_input.loc[road_model_input['Efficiency'] <= 10]
+    #recalcualte eff for incorrect rows using avgs from correct rows
+    new_values_eff = road_model_input.groupby(['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive']).sum().reset_index()
+    new_values_eff['Efficiency'] = new_values_eff['Travel_km']/new_values_eff['Energy']
+    new_values_eff = new_values_eff[['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive', 'Efficiency']]
+
+    #attach new values to rows to fix
+    rows_to_fix = rows_to_fix.merge(new_values_eff, on=['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive'], how='left')
+
+    #concatenate with correct rows
+    road_model_input = road_model_input.append(rows_to_fix)
+
+    #now recalcualte travel km and activity for these rows:
+    road_model_input['Travel_km'] = road_model_input['Energy'] * road_model_input['Efficiency']
+    road_model_input['Activity'] = road_model_input['Travel_km'] * road_model_input['Occupancy_or_load']
+#%%
+#also calc non road eff here, but this is just a placeholder for now, as it seems it would be better to also calcualte non road eff as efficiency = travel km / energy not activity /energy
+non_road_model_input['Efficiency'] = non_road_model_input['Activity']/non_road_model_input['Energy']
+################################################################################
+#%%
 
 #set surplus stocks to 0 for now
 road_model_input['Surplus_stocks'] = 0
@@ -60,7 +93,7 @@ road_model_input['Surplus_stocks'] = 0
 non_road_model_input.loc[(non_road_model_input['Medium'] != 'Road') & (non_road_model_input['Activity'] > 0), 'Stocks'] = 1
 
 #%%
-road_model_input = road_model_input[['Economy', 'Scenario', 'Transport Type','Vehicle Type', 'Year', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Travel_km_per_stock', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency']]#'Activity_per_stock',
+road_model_input = road_model_input[['Economy', 'Scenario', 'Transport Type','Vehicle Type', 'Year', 'Drive', 'Activity','Energy', 'Stocks', 'Efficiency','Surplus_stocks', 'Travel_km', 'Travel_km_per_stock', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency']]#'Activity_per_stock',
 
 #%%
 #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
@@ -69,23 +102,3 @@ non_road_model_input.to_csv('intermediate_data/model_inputs/non_road_model_input
 
 #%%
 
-
-
-# #CALCUALTE reVERSE NORMALISED SALES SHARE (this is used when activity growth is negative, and we wat to see what vehicle types see the least activity)
-# #to calculate reVERSE vehicle sales dist we want to reVERSE THE nromalised SALES SHARE (calcualte 1 - x where x is the sales share) then normalise the sales share to 1, up to each tranbsport type 
-# #ot do this we will first reverse, then sum by transport type (and year and economy and scenario), then divde one by this sum
-# road_model_input['Vehicle_sales_share_reversed'] = 1 - road_model_input['Vehicle_sales_share']#reversed probably isnt the correct word here, the first intention was to use 'inverse', but inverse has issues with 0 values, so i used reversed instead
-
-# vehicle_sales_share_transport_type_sum = road_model_input[['Economy', 'Scenario', 'Transport Type', 'Year', 'Vehicle_sales_share_reversed']]
-
-# vehicle_sales_share_transport_type_sum = vehicle_sales_share_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Year']).sum()
-
-# vehicle_sales_share_transport_type_sum.rename(columns={"Vehicle_sales_share_reversed": "Vehicle_sales_share_reversed_sum"}, inplace=True)
-
-# road_model_input = road_model_input.merge(vehicle_sales_share_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Year'], how='left')
-
-# road_model_input['Vehicle_sales_share_reversed'] = road_model_input['Vehicle_sales_share_reversed'] * (1 / road_model_input['Vehicle_sales_share_reversed_sum'])
-
-# #drop non useufl data cols
-# road_model_input.drop(['Vehicle_sales_share_reversed_sum', 'Vehicle_sales_share_reversed'], axis=1, inplace=True)
-#'Vehicle_sales_share_reversed',

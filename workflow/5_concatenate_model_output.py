@@ -11,14 +11,14 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 #%%
-# model_output_file_name = 'model_output_years_2017_to_2050_DATE20220824_1043.csv'
+# model_output_file_name = 'model_output_years_2017_to_2050_DATE20220914_1309.csv'
 #load model output
 road_model_output = pd.read_csv('intermediate_data/road_model/{}'.format(model_output_file_name))
 non_road_model_output = pd.read_csv('intermediate_data/non_road_model/{}'.format(model_output_file_name))
 # non_road_model_output = pd.read_csv('intermediate_data/non_road_model/main_dataframe_years_2017_to_2030_DATE20220822_2124.csv')
 
 #%%
-# check if there are any NA's in anay columns in the dataframe. If there are, print them out
+# check if there are any NA's in any columns in the dataframe. If there are, print them out
 if road_model_output.isnull().values.any():
     print(road_model_output[road_model_output.isnull().any(axis=1)].loc[:, road_model_output.isnull().any(axis=0)])
     print('there are NA values in the road model output')

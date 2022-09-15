@@ -27,7 +27,7 @@ activity_by_drive = activity_by_drive.groupby(['Year', 'Economy','Scenario',  'T
 #join activity by drive type df to model output with fuels
 input_activity_ratio = model_output_all_with_fuels.merge(activity_by_drive, on=['Year', 'Economy','Scenario',  'Transport Type', 'Vehicle Type', 'Drive', 'Medium'], how='left')
 
-#calcualte inpyt activity ratio#(INPUTACTIVITYRATIO is the ratio of energy to activity when activity is not broken down into the type of energy used, just what it is used for (eg. activity specifies drive type but not how much activity there is for electricity vs petrol in a PHEVG))
+#calcualte inpyt activity ratio#(INPUTACTIVITYRATIO is the ratio of energy to activity when activity is not broken down into the type of energy used, just what it is used for (eg. activity specifies drive type but not how much activity there is for electricity vs petrol in a PHEVG). also note that its diffrent from efficiency in the road model because that is valavulted as energy / travel km)
 
 input_activity_ratio['Input_Activity_Ratio'] = input_activity_ratio['Energy'] / input_activity_ratio['Activity']
 

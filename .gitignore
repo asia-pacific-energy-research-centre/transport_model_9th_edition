@@ -134,7 +134,9 @@ dmypy.json
 *.html
 
 #anything in archive folders doesnt nee to be tracked
-**/archive
+**/archive/**
+item.sqlite
+exploratory_code/*
 #####################
 
 !plotting_output/diagnostics/*.png

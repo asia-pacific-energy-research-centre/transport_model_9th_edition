@@ -26,7 +26,7 @@ new_vehicle_efficiency = pd.read_csv('intermediate_data/cleaned_input_data/new_v
 
 #load 8th edition data
 activity = pd.read_csv('intermediate_data/cleaned_input_data/activity_from_OSEMOSYS-hughslast.csv')
-efficiency = pd.read_csv('intermediate_data/cleaned_input_data/efficiency_by_drive.csv')
+# efficiency = pd.read_csv('intermediate_data/cleaned_input_data/efficiency_by_drive.csv')
 energy = pd.read_csv('intermediate_data/cleaned_input_data/energy.csv')
 road_stocks = pd.read_csv('intermediate_data/cleaned_input_data/road_stocks.csv')
 
@@ -122,22 +122,22 @@ occupance_load = occupance_load_missing_years.merge(occupance_load_2016, on=['Sc
 
 ########################################################################################
 
-#%%
-#TEMP FIX
-#FILL IN MISSING EFFICIENCY VALUES WITH AVGS OF SIMILAR ROWS
-#theres an issue where we ahve NA and 0 values in the efficency data. Since we can expect that we could estiamte tehse values if we looked online, we will jsut create dummy values that are averages of teh other values for teh same vehicle type. (its also important that we just have a value for eff for all possible combinations of vehicle type and drive)
-#we will do this by creating a new df that has the average values for each vehicle type and then merge this back into the original df
+# #%%
+# #TEMP FIX
+# #FILL IN MISSING EFFICIENCY VALUES WITH AVGS OF SIMILAR ROWS
+# #theres an issue where we ahve NA and 0 values in the efficency data. Since we can expect that we could estiamte tehse values if we looked online, we will jsut create dummy values that are averages of teh other values for teh same vehicle type. (its also important that we just have a value for eff for all possible combinations of vehicle type and drive)
+# #we will do this by creating a new df that has the average values for each vehicle type and then merge this back into the original df
 
-efficiency_vehicle_type_avgs = efficiency.copy()
-#remove 0's and NA's
-efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs.loc[(efficiency_vehicle_type_avgs['Efficiency'] > 0)]
-efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs.dropna(subset=['Efficiency'])
-#group by vehicle type and get the mean
-efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).mean()#will it change much if i remove scenario from grouping?
-efficiency_vehicle_type_avgs.reset_index(inplace=True)
-#rename
-efficiency_vehicle_type_avgs.rename(columns={"Efficiency": "Efficiency_mean"}, inplace=True)
-efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs[['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Year', 'Efficiency_mean']]
+# efficiency_vehicle_type_avgs = efficiency.copy()
+# #remove 0's and NA's
+# efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs.loc[(efficiency_vehicle_type_avgs['Efficiency'] > 0)]
+# efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs.dropna(subset=['Efficiency'])
+# #group by vehicle type and get the mean
+# efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).mean()#will it change much if i remove scenario from grouping?
+# efficiency_vehicle_type_avgs.reset_index(inplace=True)
+# #rename
+# efficiency_vehicle_type_avgs.rename(columns={"Efficiency": "Efficiency_mean"}, inplace=True)
+# efficiency_vehicle_type_avgs = efficiency_vehicle_type_avgs[['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Year', 'Efficiency_mean']]
 
 ########################################################################################
 
@@ -152,7 +152,6 @@ non_road_efficiency_growth.to_csv('intermediate_data/non_aggregated_input_data/n
 #SAVE 8th edition data
 road_stocks.to_csv('intermediate_data/non_aggregated_input_data/road_stocks.csv', index=False)
 activity.to_csv('intermediate_data/non_aggregated_input_data/activity.csv', index=False)
-efficiency.to_csv('intermediate_data/non_aggregated_input_data/efficiency.csv', index=False)
 energy.to_csv('intermediate_data/non_aggregated_input_data/energy.csv', index=False)
 
 #save other data

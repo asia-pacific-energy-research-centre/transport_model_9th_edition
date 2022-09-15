@@ -51,7 +51,7 @@ stocks_long.to_csv("intermediate_data/cleaned_input_data/road_stocks.csv", index
 
 #load in osemosys data
 spreadsheet_name = 'OSEMOSYS-hughslast'
-output_file_name = "{}/from_8th/raw_data/{}.xlsx".format(input_data_path,spreadsheet_name)
+output_file_name = "input_data/from_8th/raw_data/{}.xlsx".format(spreadsheet_name)
 # output_file_name = 'output_data/OSEMOSYS_TransoprtReference_06-16-2022-36.xlsx'
 AccumulatedAnnualDemand_df = pd.read_excel(output_file_name, sheet_name = "AccumulatedAnnualDemand", header=0)
 InputActivityRatio_df = pd.read_excel(output_file_name, sheet_name = "InputActivityRatio", header=0)
@@ -230,43 +230,43 @@ energy.to_csv("intermediate_data/cleaned_input_data/energy_with_fuel.csv", index
 #%%
 ##############################################################################################################
 
-#EFFICIENCY BY DRIVE
-#calcualte efficiency by drive, since we cannot possible estimate activity by fuel type when they are mixed together 
+# #EFFICIENCY BY DRIVE
+# #calcualte efficiency by drive, since we cannot possible estimate activity by fuel type when they are mixed together 
+# #but have to note that this is only efficiency per unit of activity,not unit of travel km, so might not be useful.
+# #%%
+# #load energy and activity data
+# energy = pd.read_csv("intermediate_data/cleaned_input_data/energy.csv")
+# activity = pd.read_csv(activity_file_name)   
+# #%%
+# #group by all but fuel type, then sum
+# activity = activity.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum()
+# energy = energy.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum()
 
-#%%
-#load energy and activity data
-energy = pd.read_csv("intermediate_data/cleaned_input_data/energy.csv")
-activity = pd.read_csv(activity_file_name)   
-#%%
-#group by all but fuel type, then sum
-activity = activity.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum()
-energy = energy.groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).sum()
+# #merge data 
+# eff_df = energy.merge(activity, how='left', on=['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).reset_index()
 
-#merge data 
-eff_df = energy.merge(activity, how='left', on=['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Year']).reset_index()
+# #%%
+# #calculate eff as energy / activity
+# eff_df['Efficiency'] = eff_df['Activity'] /  eff_df['Energy']
 
-#%%
-#calculate eff as energy / activity
-eff_df['Efficiency'] = eff_df['Activity'] /  eff_df['Energy']
+# # in some cases it seems like eff is being set to nan because activity and energy are 0. We will fix those by setting the eff to 0. this would be better solved by setting eff
+# eff_df.loc[(eff_df['Activity'] == 0) & (eff_df['Energy'] == 0), 'Efficiency'] = 0
 
-# in some cases it seems like eff is being set to nan because activity and energy are 0. We will fix those by setting the eff to 0. this would be better solved by setting eff
-eff_df.loc[(eff_df['Activity'] == 0) & (eff_df['Energy'] == 0), 'Efficiency'] = 0
+# #but now it seems there are cases when activity is NAN but energy is >0
+# #%%
+# #remove energy and activity cols
+# efficiency_by_drive = eff_df.drop(columns=['Energy', 'Activity'])
 
-#but now it seems there are cases when activity is NAN but energy is >0
-#%%
-#remove energy and activity cols
-efficiency_by_drive = eff_df.drop(columns=['Energy', 'Activity'])
-
-#count and remove duplicates when you consider the Value column
-print('There are ', efficiency_by_drive.duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will delte these by default. Take a look if you think it seems suspect\n\n')
-#sum up duplicated rows when you remove the value column
-print('There are ', efficiency_by_drive.drop(columns=['Efficiency']).duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
-efficiency_by_drive = efficiency_by_drive.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year']).sum().reset_index()
-
-
-#%%
-#save
-efficiency_by_drive.to_csv("intermediate_data/cleaned_input_data/efficiency_by_drive.csv", index=False)
+# #count and remove duplicates when you consider the Value column
+# print('There are ', efficiency_by_drive.duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will delte these by default. Take a look if you think it seems suspect\n\n')
+# #sum up duplicated rows when you remove the value column
+# print('There are ', efficiency_by_drive.drop(columns=['Efficiency']).duplicated().sum(), 'duplicated rows in the efficiency by drive dataframe. We will sum these by default. Take a look if you think it seems suspect\n\n')
+# efficiency_by_drive = efficiency_by_drive.groupby(['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year']).sum().reset_index()
 
 
-#%%
+# #%%
+# #save
+# efficiency_by_drive.to_csv("intermediate_data/cleaned_input_data/efficiency_by_drive.csv", index=False)
+
+
+# #%%

@@ -17,7 +17,7 @@ non_road_efficiency_growth= pd.read_csv('intermediate_data/non_aggregated_input_
 #load 8th edition data
 road_stocks= pd.read_csv('intermediate_data/non_aggregated_input_data/road_stocks.csv')
 activity= pd.read_csv('intermediate_data/non_aggregated_input_data/activity.csv')
-efficiency= pd.read_csv('intermediate_data/non_aggregated_input_data/efficiency.csv')
+# efficiency= pd.read_csv('intermediate_data/non_aggregated_input_data/efficiency.csv')
 energy= pd.read_csv('intermediate_data/non_aggregated_input_data/energy.csv')
 
 #load other data
@@ -28,14 +28,14 @@ new_vehicle_efficiency = pd.read_csv('intermediate_data/non_aggregated_input_dat
 #%%
 
 #merge data
-activity_efficiency = activity.merge(efficiency, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type','Drive', 'Year'], how='left') 
-activity_efficiency_energy = activity_efficiency.merge(energy, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
-activity_efficiency_energy_road_stocks = activity_efficiency_energy.merge(road_stocks, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
+# activity_efficiency = activity.merge(efficiency, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type','Drive', 'Year'], how='left') 
+activity_energy = activity.merge(energy, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
+activity_energy_road_stocks = activity_energy.merge(road_stocks, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
 
 #%%
 #AGGREGATE ROAD MODEL INPUT
 #create a df for road model. We will filter for base year later
-road_model_input = activity_efficiency_energy_road_stocks.loc[(activity_efficiency_energy_road_stocks['Medium'] == 'road')].drop(['Medium'], axis=1)
+road_model_input = activity_energy_road_stocks.loc[(activity_energy_road_stocks['Medium'] == 'road')].drop(['Medium'], axis=1)
 
 #remove data that isnt in the base year
 road_model_input = road_model_input.loc[(road_model_input['Year'] == BASE_YEAR)]
@@ -48,7 +48,7 @@ road_model_input = road_model_input.merge(new_vehicle_efficiency, on=['Economy',
 
 #%%
 #AGGREGATE NON ROAD MODEL INPUT
-non_road_model_input = activity_efficiency_energy_road_stocks.loc[(activity_efficiency_energy_road_stocks['Medium'] != 'road')]
+non_road_model_input = activity_energy_road_stocks.loc[(activity_energy_road_stocks['Medium'] != 'road')]
 
 #remove data that isnt in the base year
 non_road_model_input = non_road_model_input.loc[(non_road_model_input['Year'] == BASE_YEAR)]
@@ -57,64 +57,5 @@ non_road_model_input = non_road_model_input.loc[(non_road_model_input['Year'] ==
 road_model_input.to_csv('intermediate_data/aggregated_model_inputs/aggregated_road_model_input.csv', index=False)
 non_road_model_input.to_csv('intermediate_data/aggregated_model_inputs/aggregated_non_road_model_input.csv', index=False)
 
-#save activity_efficiency_energy_road_stocks as it can be useful for extra analysis
-activity_efficiency_energy_road_stocks.to_csv('intermediate_data/activity_efficiency_energy_road_stocks.csv', index=False)
-
-
-
-#%%
-
-# missing_rows = model_concordances['placeholder'] = 1
-# #find what rows in model concordances are msising compared to activity_efficiency_energy_road_stocks
-# missing_rows = activity_efficiency_energy_road_stocks.merge(missing_rows, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
-
-# missing_rows = missing_rows[missing_rows.placeholder.isnull()]#only missing rows are in 2070?
-
-#%%
-#%%
-
-
-# #### prepare data for model
-
-
-# ##calcualte travel km by merging stocks with occupancy
-# travel_km_per_stock = activity_efficiency_energy_road_stocks.merge(occupance_load, on=['Economy', 'Scenario','Transport Type', 'Vehicle Type', 'Year'], how='left')
-
-# travel_km_per_stock['Travel_km'] = travel_km_per_stock['Activity']/travel_km_per_stock['Occupancy_or_load']
-
-# travel_km_per_stock['Travel_km_per_stock'] = travel_km_per_stock['Travel_km']/travel_km_per_stock['Stocks']
-
-# #%%
-# #if deonminator and numerator are 0 then of course we get NAn, so we will fill these with the average of other values for the same vehicle type, using stocks as the denominator for the average
-
-# #first calc mean
-# #note this is probably not the right way to do this, but can fix later
-# average_travel_km_per_stock_of_vehicle_type = travel_km_per_stock.dropna().groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year']).mean()
-# average_travel_km_per_stock_of_vehicle_type.reset_index(inplace=True)
-# average_travel_km_per_stock_of_vehicle_type.rename(columns={"Travel_km_per_stock": "Travel_km_per_stock_mean"}, inplace=True)
-# average_travel_km_per_stock_of_vehicle_type.drop(['Activity', 'Occupancy_or_load', 'Travel_km', 'Stocks'], axis=1, inplace=True)
-
-# travel_km_per_stock_new = travel_km_per_stock.merge(average_travel_km_per_stock_of_vehicle_type, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
-
-# #replace any na's with 0's in travel_km and stocks cols
-# travel_km_per_stock_new['Travel_km'].fillna(0, inplace=True)
-# travel_km_per_stock_new['Stocks'].fillna(0, inplace=True)
-
-# travel_km_per_stock_new.loc[(travel_km_per_stock_new['Travel_km'] == 0) & (travel_km_per_stock_new['Stocks'] == 0), 'Travel_km_per_stock'] = travel_km_per_stock_new['Travel_km_per_stock_mean']
-
-# #remove unneeded cols. while these could be useful, it is more simple to keep dfs that arent central, being as simple as possible to make creating the central dfs more easy
-# travel_km_per_stock_new = travel_km_per_stock_new[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive','Year', 'Travel_km_per_stock', 'Travel_km']]
-
-# #%%
-# road_model_input = road_model_input.merge(travel_km_per_stock_new, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
-# #%%
-# #set surplus stocks to 0 for now
-# road_model_input['Surplus_stocks'] = 0
-
-# road_model_input = road_model_input[['Economy', 'Scenario', 'Transport Type','Vehicle Type', 'Year', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Travel_km_per_stock', 'Occupancy_or_load', 'Vehicle_sales_share','Turnover_rate', 'New_vehicle_efficiency']]#'Activity_per_stock', 
-
-# #%%
-
-
-
-# #%%
+#save activity_energy_road_stocks as it can be useful for extra analysis
+activity_energy_road_stocks.to_csv('intermediate_data/activity_energy_road_stocks.csv', index=False)
