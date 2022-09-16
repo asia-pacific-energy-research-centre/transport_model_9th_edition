@@ -18,6 +18,10 @@ import plotly.io as pio
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 
 #%%
+#economys:'01_AUS', '02_BD', '03_CDA', '04_CHL', '05_PRC', '06_HKC',
+    #    '07_INA', '08_JPN', '09_ROK', '10_MAS', '11_MEX', '12_NZ',
+    #    '13_PNG', '14_PE', '15_RP', '16_RUS', '17_SIN', '18_CT', '19_THA',
+    #    '20_USA', '21_VN'
 economy =  '19_THA'
 AUTO_OPEN_PLOTLY_GRAPHS = True
 #%%
@@ -38,6 +42,7 @@ model_output_8th = model_output_8th[model_output_8th['Scenario'] == 'Reference']
 #check we have graph folder for the economy we are interested in
 if not os.path.exists('plotting_output/{}'.format(economy)):
     os.mkdir('plotting_output/{}'.format(economy))
+    os.mkdir('plotting_output/{}/static/'.format(economy))
 else:
     print('folder already exists')
 

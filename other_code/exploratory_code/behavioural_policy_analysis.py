@@ -56,10 +56,17 @@ model_output = model_output.loc[model_output['Medium'] == 'road']
 #avg eff gain from more EVs
 
 #%%
-model_output['avg_vehicle_efficiency'] = model_output['Energy'] / model_output['Travel_km'] / model_output['Stocks']
+#for freight transport we will increase aveage load by a set proportion, and then see what the effect is on energy use.
+#filter for freight
+model_output_freight = model_output.loc[model_output['Transport Type'] == 'freight']
+
+model_output_freight['avg_vehicle_efficiency'] = model_output_freight['Energy'] / model_output_freight['Travel_km'] / model_output_freight['Stocks']
+
 
 #remove nans in avg vehicle eff for now but maybe we will want to set them to avgs of other eocnomys later
 model_output = model_output.loc[model_output['avg_vehicle_efficiency'].notna()] 
+
+
 #%%
 #work from home module )also useful for buildings integration)
 

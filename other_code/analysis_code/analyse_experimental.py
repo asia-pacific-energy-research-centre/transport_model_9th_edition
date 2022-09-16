@@ -83,3 +83,6 @@ fig.update_yaxes(range=[0, 1])
 
 plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+
+#%%
+#how about a graph which combines the two above so we can see the relationship between the sales and stock shares

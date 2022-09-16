@@ -81,6 +81,6 @@ supply_side_fuel_mixing.to_csv('input_data/previous_run_archive/{}/supply_side_f
 shutil.copyfile('config/config.py', 'input_data/previous_run_archive/{}/config.py'.format(folder_name))
 
 #copy diagnostics graphs to the folder
-shutil.copytree('plotting_output/diagnostics/', 'input_data/previous_run_archive/{}/diagnostics/'.format(folder_name))
+shutil.copytree('plotting_output/diagnostics/', 'input_data/previous_run_archive/{}/diagnostics/'.format(folder_name),dirs_exist_ok=True)
 #%%
 #done

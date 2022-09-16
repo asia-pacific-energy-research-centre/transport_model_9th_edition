@@ -59,3 +59,5 @@ non_road_model_input.to_csv('intermediate_data/aggregated_model_inputs/aggregate
 
 #save activity_energy_road_stocks as it can be useful for extra analysis
 activity_energy_road_stocks.to_csv('intermediate_data/activity_energy_road_stocks.csv', index=False)
+
+#%%

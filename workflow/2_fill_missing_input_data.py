@@ -53,33 +53,49 @@ Turnover_rate_growth_missing_rows['Turnover_rate_growth'].fillna(1, inplace=True
 OccupanceAndLoad_growth_missing_rows = model_concordances.loc[model_concordances['Medium'] == 'road'].drop(['Medium', 'Drive'], axis=1).drop_duplicates()
 OccupanceAndLoad_growth_missing_rows = OccupanceAndLoad_growth_missing_rows.merge(OccupanceAndLoad_growth, on=['Scenario', 'Economy', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
 #fillna with 0
-OccupanceAndLoad_growth_missing_rows['Occupancy_or_load_growth'].fillna(0, inplace=True)
+OccupanceAndLoad_growth_missing_rows['Occupancy_or_load_growth'].fillna(1, inplace=True)
 
 #%%
-# vehicle_sales_share_missing_years = model_concordances.loc[model_concordances['Medium'] == 'road'].drop(['Medium'], axis=1)
-# vehicle_sales_share = vehicle_sales_share_missing_years.merge(vehicle_sales_share, on=['Scenario', 'Economy', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
-# #fillna with 0
-# vehicle_sales_share['Vehicle_sales_share'].fillna(0, inplace=True)
-
-#%%
-
-road_stocks_missing_years = model_concordances.loc[model_concordances['Medium'] == 'road']
-road_stocks = road_stocks_missing_years.merge(road_stocks, on=['Scenario', 'Economy', 'Transport Type', 'Vehicle Type', 'Drive', 'Year', 'Medium'], how='left')
+#fill in missing data in activity df
+activity_missing_rows = model_concordances.merge(activity, on=['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year', 'Economy', 'Scenario'], how='left')
 #fillna with 0
-road_stocks['Stocks'].fillna(0, inplace=True)
+activity_missing_rows['Activity'].fillna(0, inplace=True)
 
 #%%
-#there are missing values for 2017 in new_vehicle_efficiency, we will jsut fill them in with the values for 2018
+#fill in missing data in energy df
+energy_missing_rows = model_concordances.merge(energy, on=['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year', 'Economy', 'Scenario'], how='left')
+#fillna with 0
+energy_missing_rows['Energy'].fillna(0, inplace=True)
+
+#%%
+road_stocks_missing_years = model_concordances.loc[model_concordances['Medium'] == 'road']
+road_stocks_missing_years = road_stocks_missing_years.merge(road_stocks, on=['Scenario', 'Economy', 'Transport Type', 'Vehicle Type', 'Drive', 'Year', 'Medium'], how='left')
+#fillna with 0
+road_stocks_missing_years['Stocks'].fillna(0, inplace=True)
+
+#%%
+new_vehicle_efficiency_missing_rows = model_concordances.loc[model_concordances['Medium'] == 'road']
+new_vehicle_efficiency_missing_rows = new_vehicle_efficiency_missing_rows.merge(new_vehicle_efficiency, on=['Transport Type', 'Vehicle Type', 'Drive', 'Year', 'Economy', 'Scenario'], how='left')
+#fillna with 0
+new_vehicle_efficiency_missing_rows['New_vehicle_efficiency'].fillna(0, inplace=True)
+
+#there are too many missing values for 2017 in new_vehicle_efficiency, we will jsut fill them in with the values for 2018
 
 #filter out anny values for 2017
-new_vehicle_efficiency_2017 = new_vehicle_efficiency[new_vehicle_efficiency['Year'] != 2017]
-new_vehicle_efficiency_missing_years = new_vehicle_efficiency.loc[new_vehicle_efficiency['Year'] == 2018]
+new_vehicle_efficiency_not_2017 = new_vehicle_efficiency_missing_rows[new_vehicle_efficiency_missing_rows['Year'] != 2017]
+new_vehicle_efficiency_2017 = new_vehicle_efficiency_missing_rows.loc[new_vehicle_efficiency_missing_rows['Year'] == 2018]
 #set year to 2017
-new_vehicle_efficiency_missing_years['Year'] = 2017
+new_vehicle_efficiency_2017['Year'] = 2017
 #concat
-new_vehicle_efficiency = pd.concat([new_vehicle_efficiency_2017, new_vehicle_efficiency_missing_years])
+new_vehicle_efficiency_missing_rows = pd.concat([new_vehicle_efficiency_not_2017, new_vehicle_efficiency_2017])
 
 #%%
+non_road_efficiency_growth_missing_rows = model_concordances.loc[model_concordances['Medium'] != 'road']
+non_road_efficiency_growth_missing_rows = non_road_efficiency_growth_missing_rows.merge(non_road_efficiency_growth, on=['Scenario', 'Economy','Medium', 'Transport Type', 'Vehicle Type','Drive', 'Year'], how='left')
+
+#fillna with 1
+non_road_efficiency_growth_missing_rows['Efficiency_growth'].fillna(1, inplace=True)
+
 ########################################################################################
 
 #%%
@@ -118,7 +134,7 @@ occupance_load_2016.drop(columns=['Year'], axis=1, inplace=True)
 #create empty dataframe andd add values for occupance load for 2016 to it
 occ_model_concordances = model_concordances[model_concordances['Medium'] == 'road']
 occupance_load_missing_years = occ_model_concordances.drop(['Drive', 'Medium'], axis=1).drop_duplicates()
-occupance_load = occupance_load_missing_years.merge(occupance_load_2016, on=['Scenario', 'Economy', 'Transport Type', 'Vehicle Type'], how='left')
+occupance_load_missing_years = occupance_load_missing_years.merge(occupance_load_2016, on=['Scenario', 'Economy', 'Transport Type', 'Vehicle Type'], how='left')
 
 ########################################################################################
 
@@ -142,21 +158,20 @@ occupance_load = occupance_load_missing_years.merge(occupance_load_2016, on=['Sc
 ########################################################################################
 
 #%%
-#save data to adjusted_input_data
+#save user input data
 Vehicle_sales_share_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/Vehicle_sales_share.csv', index=False)
 OccupanceAndLoad_growth_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/OccupanceAndLoad_growth.csv', index=False)
 Turnover_rate_growth_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/Turnover_rate_growth.csv', index=False)
 New_vehicle_efficiency_growth_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/New_vehicle_efficiency_growth.csv', index=False)
-non_road_efficiency_growth.to_csv('intermediate_data/non_aggregated_input_data/non_road_efficiency_growth.csv', index=False)
+non_road_efficiency_growth_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/non_road_efficiency_growth.csv', index=False)
 
 #SAVE 8th edition data
-road_stocks.to_csv('intermediate_data/non_aggregated_input_data/road_stocks.csv', index=False)
-activity.to_csv('intermediate_data/non_aggregated_input_data/activity.csv', index=False)
-energy.to_csv('intermediate_data/non_aggregated_input_data/energy.csv', index=False)
+road_stocks_missing_years.to_csv('intermediate_data/non_aggregated_input_data/road_stocks.csv', index=False)
+activity_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/activity.csv', index=False)
+energy_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/energy.csv', index=False)
 
 #save other data
 turnover_rate_new.to_csv('intermediate_data/non_aggregated_input_data/turnover_rate.csv', index=False)
-occupance_load.to_csv('intermediate_data/non_aggregated_input_data/occupance_load.csv', index=False)
-# vehicle_sales_share.to_csv('intermediate_data/non_aggregated_input_data/vehicle_sales_share.csv', index=False)
-new_vehicle_efficiency.to_csv('intermediate_data/non_aggregated_input_data/new_vehicle_efficiency.csv', index=False)
+occupance_load_missing_years.to_csv('intermediate_data/non_aggregated_input_data/occupance_load.csv', index=False)
+new_vehicle_efficiency_missing_rows.to_csv('intermediate_data/non_aggregated_input_data/new_vehicle_efficiency.csv', index=False)
 # %%

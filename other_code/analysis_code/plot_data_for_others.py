@@ -18,6 +18,7 @@ import plotly.io as pio
 model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
 model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
 change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
+model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
 #%%
 #FILTER FOR SCENARIO OF INTEREST
 #this should be temporary as the scenario should be passed in as a parameter through config if it is useed elsewhere
@@ -25,7 +26,7 @@ change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_
 model_output_all = model_output_all[model_output_all['Scenario']==SCENARIO_OF_INTEREST]
 model_output_detailed = model_output_detailed[model_output_detailed['Scenario']==SCENARIO_OF_INTEREST]
 change_dataframe_aggregation = change_dataframe_aggregation[change_dataframe_aggregation['Scenario']==SCENARIO_OF_INTEREST]
-
+model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Scenario']==SCENARIO_OF_INTEREST]
 #%%
 
 ################################################################################################################################################################
@@ -120,6 +121,18 @@ fig = px.line(model_output_detailed_vtype, x="Year", y="Energy", color="Drive", 
              #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
 
+plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
+
+#%%
+################################################################################################################################################################
+#plot fuel use for each economy for each year
+title = 'Total fuel use for each economy for each year, drive type'
+model_output_with_fuels_plot = model_output_with_fuels.groupby(['Year','Economy', 'Fuel'])['Energy'].sum().reset_index()
+
+#plot
+fig = px.line(model_output_with_fuels_plot, x="Year", y="Energy", color="Fuel", line_dash='Fuel', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
 plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 

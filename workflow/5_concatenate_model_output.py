@@ -25,6 +25,12 @@ if road_model_output.isnull().values.any():
 if non_road_model_output.isnull().values.any():
     print(non_road_model_output[non_road_model_output.isnull().any(axis=1)].loc[:, non_road_model_output.isnull().any(axis=0)])
     print('there are NA values in the non road model output')
+
+#also check for duplicates
+if road_model_output.duplicated().any():
+    print('there are duplicates in the road model output')
+if non_road_model_output.duplicated().any():
+    print('there are duplicates in the non road model output')
 #%%
 #set medium for road
 road_model_output['Medium'] ='road'

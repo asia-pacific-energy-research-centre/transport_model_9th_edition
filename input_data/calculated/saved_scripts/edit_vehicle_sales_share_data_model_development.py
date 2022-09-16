@@ -261,14 +261,17 @@ new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp['
 
 #%%
 #drop uneeded cols
-new_sales_shares_concat_interp = new_sales_shares_concat_interp.drop(['D_sum'], axis=1)
-new_sales_shares_sum = new_sales_shares_sum.drop(['Value', 'Drive_share'], axis=1)
+new_sales_shares_interp_by_drive = new_sales_shares_concat_interp.drop(['D_sum'], axis=1)
+original_new_sales_shares_by_vehicle = new_sales_shares_sum.drop(['Value', 'Drive_share'], axis=1)
 #now merge the values onto the oroginal df and times by the vehicle type shares
-new_sales_shares_all = new_sales_shares_concat_interp.merge(new_sales_shares_sum, on=['Economy', 'Scenario', 'Year', 'Transport Type', 'Vehicle Type', 'Drive'], how='left')
+new_sales_shares_all = new_sales_shares_interp_by_drive.merge(original_new_sales_shares_by_vehicle, on=['Economy', 'Scenario', 'Year', 'Transport Type', 'Vehicle Type', 'Drive'], how='left')
 
+#%%
 #times the values to get the final values
 new_sales_shares_all['Value'] = new_sales_shares_all['V_sum']*new_sales_shares_all['Drive_share']
 
+#drop uneeded cols
+new_sales_shares_all = new_sales_shares_all.drop(['V_sum', 'Drive_share'], axis=1)
 ###############################################################################
 #%%
 #now we will plot the data to see if it looks ok and capore to original data
@@ -280,7 +283,6 @@ new_sales_shares_ref_original = new_sales_shares.loc[new_sales_shares['Scenario'
 for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
        #filter for ttype
        new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot.loc[new_sales_shares_ref_plot['Transport Type']==ttype]
-       new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot_ttype.drop(['V_sum', 'Drive_share'], axis=1)
        #order data
        new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot_ttype.sort_values(by=['Economy', 'Year', 'Vehicle Type', 'Drive'])
        #plot using plotly
@@ -317,7 +319,7 @@ for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
 new_sales_shares_all.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(scenario_id), index = False)
 
 #save the variables we used to calculate the data by just saving this file
-shutil.copyfile('other_code/single_use_grooming_code/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(scenario_id))
+shutil.copyfile('other_code/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(scenario_id))
 
 #%%
 
