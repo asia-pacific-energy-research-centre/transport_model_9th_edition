@@ -37,3 +37,18 @@ model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Scena
 #plot energy use by economy by fuel type by drive
 #plot energy use by economy by fuel type by vehicle type
 
+#%%
+#plot energy use by drive type
+title = 'Energy use by drive type'
+model_output_all_drive = model_output_all.groupby(['Year', 'Drive']).sum().reset_index()
+
+fig = px.line(model_output_all_drive, x="Year", y="Energy", color='Drive', title='Energy use by drive type')
+
+plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+
+
+#%%
+
+
+#plot energy use by vehicle type

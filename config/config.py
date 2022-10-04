@@ -76,6 +76,11 @@ Economy_list = pd.read_csv(economy_codes_path).iloc[:,0]#get the first column
 #remove economies we dont want
 Economy_list = Economy_list[Economy_list != 'GBR']
 
+#ECONOMY REGIONS
+#load the economy regions file so that we can easily merge it with a dataframe to create a region column
+economy_regions_path = 'config/utilities/region_economy_mapping.csv'
+economy_regions = pd.read_csv(economy_regions_path)
+
 ###################################################
 #%%
 import plotly.express as px
