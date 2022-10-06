@@ -1,6 +1,6 @@
 #%%
 
-execfile("../config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+run_path("../config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 #%%
 ######################################################################################################

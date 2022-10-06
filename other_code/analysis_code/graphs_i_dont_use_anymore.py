@@ -20,7 +20,7 @@ for key, grp in model_output_detailed_ratio_drive.groupby(['Economy']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='BEV_ICE_ratio', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 #plot
 title='Ratio of PHEVs to ICEs for each year, by economy'
 fig, ax = plt.subplots()
@@ -28,7 +28,7 @@ for key, grp in model_output_detailed_ratio_drive.groupby(['Economy']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='PHEV_ICE_ratio', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 
 
 

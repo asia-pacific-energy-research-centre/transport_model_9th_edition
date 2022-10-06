@@ -5,7 +5,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+run_path("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 #load user input data
 Switching_vehicle_sales_dist = pd.read_csv('intermediate_data/non_aggregated_input_data/Switching_vehicle_sales_dist.csv')
@@ -172,7 +173,7 @@ if low_ram_computer == True:
         print('The year is at the end of a ten year block, in year {}, saving interemediate results to csv.'.format(year))
         low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
         main_dataframe.to_csv(low_ram_file_name, index=False)
-        low_ram_computer_files_list.append(low_ram_file_name)
+        pd.concat([low_ram_computer_files_list,low_ram_file_name])
 
         previous_10_year_block = year
         main_dataframe = pd.DataFrame(columns=main_dataframe.columns)#remove data we just saved from main datafrmae
@@ -181,7 +182,7 @@ if low_ram_computer == True:
         print('The year is at the end of the simulation, saving intermediate results to csv.')
         low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
         main_dataframe.to_csv(low_ram_file_name, index=False)
-        low_ram_computer_files_list.append(low_ram_file_name)
+        pd.concat([low_ram_computer_files_list,low_ram_file_name])
 
 #%%
 #this will be the name of the output file

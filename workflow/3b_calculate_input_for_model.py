@@ -7,7 +7,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 
 #%%
@@ -53,7 +54,7 @@ if EIGHTH_EDITION_DATA:
 
     average_travel_km_per_stock_of_vehicle_type = average_travel_km_per_stock_of_vehicle_type.loc[~((average_travel_km_per_stock_of_vehicle_type['Vehicle Type'] == 'lt') & ( average_travel_km_per_stock_of_vehicle_type['Transport Type'] == 'freight'))]
 
-    average_travel_km_per_stock_of_vehicle_type = average_travel_km_per_stock_of_vehicle_type.append(lt_freight_fill)
+    average_travel_km_per_stock_of_vehicle_type = pd.concat([average_travel_km_per_stock_of_vehicle_type, lt_freight_fill])
 
     road_model_input = road_model_input.merge(average_travel_km_per_stock_of_vehicle_type, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
 
@@ -96,7 +97,7 @@ fcev_ht = new_values_eff.loc[(new_values_eff['Drive'] == 'bev') & (new_values_ef
 fcev_ht['Drive'] = 'fcev'
 fcev_ht['Efficiency'] = fcev_ht['Efficiency'] / avg_diff
 #then concat this onto the new values eff df
-new_values_eff = new_values_eff.append(fcev_ht)
+new_values_eff = pd.concat([new_values_eff, fcev_ht])
 #done
 #%%
 
@@ -104,7 +105,7 @@ new_values_eff = new_values_eff.append(fcev_ht)
 rows_to_fix = rows_to_fix.merge(new_values_eff, on=['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive'], how='left')
 
 #concatenate with correct rows in orgiinal df
-road_model_input = road_model_input.append(rows_to_fix)
+road_model_input = pd.concat([road_model_input, rows_to_fix])
 
 #now recalcualte travel km and activity for these rows:
 road_model_input['Travel_km'] = road_model_input['Energy'] * road_model_input['Efficiency']

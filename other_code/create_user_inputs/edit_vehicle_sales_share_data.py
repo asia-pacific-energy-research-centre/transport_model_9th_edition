@@ -8,7 +8,8 @@ import re
 import shutil
 from turtle import title
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
 # notebook in vscode #or set to notebook
 import plotly

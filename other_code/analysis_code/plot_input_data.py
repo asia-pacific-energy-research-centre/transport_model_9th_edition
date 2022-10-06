@@ -5,7 +5,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import plotly
@@ -42,7 +43,7 @@ fig, ax = plt.subplots()
 for key, grp in model_output_occ_PASS.groupby(['Vehicle Type']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Occupancy_or_load', label=key)
 plt.title(title)
-plt.show()
+
 
 title='Average OCCUPANCY RATE by year and vehicle type for freight'
 #plot
@@ -50,7 +51,7 @@ fig, ax = plt.subplots()
 for key, grp in model_output_occ_PASS.groupby(['Vehicle Type']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Occupancy_or_load', label=key)
 plt.title(title)
-plt.show()
+
 
 #%%
 ################################################################################################################################################################
@@ -81,7 +82,7 @@ fig, ax = plt.subplots()
 for key, grp in model_output_t_PASS.groupby(['Vehicle Type']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Turnover_rate', label=key)
 plt.title(title)
-plt.show()
+
 
 title='Average Turnover_rate by year and vehicle type for freight'
 #plot
@@ -89,7 +90,7 @@ fig, ax = plt.subplots()
 for key, grp in model_output_t_PASS.groupby(['Vehicle Type']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Turnover_rate', label=key)
 plt.title(title)
-plt.show()
+
 
 #%%
 ################################################################################################################################################################
@@ -124,7 +125,7 @@ for v_type in model_output_new_v_eff['Vehicle Type'].unique():
 
             ax = grp.plot(ax=ax, kind='line', x='Year', y='New_vehicle_efficiency', label=key)
         plt.title(title)
-        plt.show()
+
 
     #plot transport type = freight
     model_output_new_v_eff_freight = model_output_new_v_eff[(model_output_new_v_eff['Transport Type']=='freight') & (model_output_new_v_eff['Vehicle Type']==v_type)]
@@ -138,7 +139,7 @@ for v_type in model_output_new_v_eff['Vehicle Type'].unique():
                 continue
             ax = grp.plot(ax=ax, kind='line', x='Year', y='New_vehicle_efficiency', label=key)
         plt.title(title)
-        plt.show()
+        
 
 
 #%%
@@ -177,7 +178,7 @@ for v_type in model_output_v_sales_share['Vehicle Type'].unique():
                 continue
             ax = grp.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share', label=key)
         plt.title(title)
-        plt.show()
+        
 
     #plot transport type = freight
     model_output_v_sales_share_freight = model_output_v_sales_share[(model_output_v_sales_share['Transport Type']=='freight') & (model_output_v_sales_share['Vehicle Type']==v_type)]
@@ -192,7 +193,7 @@ for v_type in model_output_v_sales_share['Vehicle Type'].unique():
                 continue
             ax = grp.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share', label=key)
         plt.title(title)
-        plt.show()
+        
 
 #%%
 ################################################################################################################################################################
@@ -225,7 +226,7 @@ fig, ax = plt.subplots()
 for key, grp in model_output_travel_km_per_stock_pass.groupby(['Vehicle Type']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Travel_km_per_stock', label=key)
 plt.title(title)
-plt.show()
+
 
 title='Average Travel_km_per_stock by year, vehicle type and drive type for freight'
 
@@ -234,7 +235,7 @@ fig, ax = plt.subplots()
 for key, grp in model_output_travel_km_per_stock_freight.groupby(['Vehicle Type']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Travel_km_per_stock', label=key)
 plt.title(title)
-plt.show()
+
 
 #%%
 ################################################################################################################################################################

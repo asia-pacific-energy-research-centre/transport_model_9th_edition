@@ -4,7 +4,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 # model_output_file_name = 'model_output_years_2017_to_2050_DATE20220824_1043.csv'
 #load model output

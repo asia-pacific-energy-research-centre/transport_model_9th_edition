@@ -5,7 +5,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 import plotly
 import plotly.express as px
@@ -66,7 +67,6 @@ pd.options.plotting.backend = "matplotlib"
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_nz_lv.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Stocks', label=key)
-plt.show()
 
 #plot sales share
 fig, ax = plt.subplots()

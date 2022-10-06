@@ -5,7 +5,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 #load user input data
 Vehicle_sales_share_missing_rows = pd.read_csv('intermediate_data/non_aggregated_input_data/Vehicle_sales_share.csv')

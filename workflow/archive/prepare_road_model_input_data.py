@@ -11,7 +11,7 @@
 
 #%%
 
-execfile("../config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+run_path("../config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 #%%
 #now save
@@ -55,7 +55,7 @@ adjustments = pd.read_csv('../intermediate_data/model_inputs/adjustments_merged.
 #we only have duplicates in nonspecified. just sum them here. but be speicifc
 activity_nonspec = activity.loc[(activity['Vehicle Type']=='nonspecified') & (activity['Transport Type']=='Nonspecified') & (activity['Medium']=='Nonspecified') & (activity['Drive']=='nonspecified')].groupby(['Economy', 'Scenario', 'Drive', 'Medium', 'Transport Type', 'Vehicle Type', 'Measure', 'Fuel', 'Year']).sum().reset_index()
 activity = activity.loc[~((activity['Vehicle Type']=='nonspecified') & (activity['Transport Type']=='Nonspecified') & (activity['Medium']=='Nonspecified') & (activity['Drive']=='nonspecified'))]
-activity = activity.append(activity_nonspec)
+activity = pd.concat([activity,activity_nonspec])
 
 #check if there are any duplicates of rows in any of our input data
 print('tehre are this many duplicates in efficiency dataframe: ', len(efficiency)-len(efficiency.drop(columns=['Value']).drop_duplicates()))
@@ -184,7 +184,7 @@ turnover_rate.rename(columns={"Value": "Turnover_rate"}, inplace=True)
 #make 2016 data also data for 2017 in occ_load 
 occupance_load_2017 = occupance_load.loc[occupance_load.Year == 2016,:]
 occupance_load_2017['Year'] = BASE_YEAR
-occupance_load = occupance_load.append(occupance_load_2017)
+occupance_load = pd.concat([occupance_load,occupance_load_2017])
 
 #%%
 #TEMP
@@ -204,7 +204,7 @@ efficiency_base_year.drop(['Efficiency_mean'], axis=1, inplace=True)
 #also tehre is no eff data for FCEV in 2017 Carbon Neutral in 21_VN. 
 efficiency_base_year_vn = efficiency_base_year.loc[(efficiency_base_year.Drive == 'fcev') & (efficiency_base_year.Year == 2017) & (efficiency_base_year.Scenario == 'Reference') & (efficiency_base_year.Economy == '21_VN') ,:]
 efficiency_base_year_vn['Scenario'] = 'Carbon Neutral'
-efficiency_base_year = efficiency_base_year.append(efficiency_base_year_vn)
+efficiency_base_year = pd.concat([efficiency_base_year,efficiency_base_year_vn])
 
 #%%
 # #Filling in data for vehicles where there is no use, yet or even in future:

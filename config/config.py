@@ -88,4 +88,5 @@ import plotly.express as px
 PLOTLY_COLORS_LIST = px.colors.qualitative.Plotly
 
 AUTO_OPEN_PLOTLY_GRAPHS = False
+
 # %%

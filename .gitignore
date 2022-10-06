@@ -135,16 +135,16 @@ dmypy.json
 
 #anything in archive folders doesnt nee to be tracked
 **/archive
-#its not clear that above works
-workflow/archive
+
+#####################
 item.sqlite
-exploratory_code/*
+env_jupyter/*
+env_no_jupyter/*
 #####################
 
-!plotting_output/diagnostics/*.png
 #except any files in these folders
 !config/*
 # !other_outputs/*
 !input_data/*
 !documentation/*
-# !output_data/*
+

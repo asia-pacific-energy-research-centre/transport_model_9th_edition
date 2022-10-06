@@ -5,7 +5,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import matplotlib.pyplot as plt
@@ -49,7 +50,7 @@ for key, grp in model_output_detailed_vtype.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Energy', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 ################################################################################################################################################################
 #%%
 #plot stocks use for all economys for each year, by drive type.
@@ -62,7 +63,7 @@ for key, grp in model_output_detailed_vtype.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Stocks', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 ################################################################################################################################################################
 #%%
 #show the uptake of BEVs by year, per economy
@@ -76,7 +77,7 @@ for key, grp in model_output_detailed_bevs.groupby(['Economy']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Stocks', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 #%%
 ################################################################################################################################################################
 #plot the average vehivle sales shares for each economy for each year, for LV's
@@ -94,7 +95,7 @@ for key, grp in model_output_detailed_sales.groupby(['Drive']):
     
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 #%%
 ################################################################################################################################################################
 
@@ -110,7 +111,7 @@ for key, grp in model_output_detailed_sales.groupby(['Drive']):
 
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 ################################################################################################################################################################
 
 #%%
@@ -122,7 +123,7 @@ model_output_surplus = model_output_detailed.groupby(['Year'])['Surplus_stocks']
 plt.plot(model_output_surplus['Year'], model_output_surplus['Surplus_stocks'])
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 ################################################################################################################################################################
 #%%
 #plot total energy use, activity and stocks compared to the 8th edition
@@ -135,7 +136,7 @@ for key, grp in model_output_energy.groupby(['Dataset']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Energy', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 title = 'Total activity compared to the 8th edition'
 #sum activity for each dataset for each year
 model_output_activity = model_output_both_scenarios.groupby(['Year', 'Dataset'])['Activity'].sum().reset_index()
@@ -145,7 +146,7 @@ for key, grp in model_output_activity.groupby(['Dataset']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Activity', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 title = 'Total stocks compared to the 8th edition'
 #sum stocks for each dataset for each year
 model_output_stocks = model_output_both_scenarios.groupby(['Year', 'Dataset'])['Stocks'].sum().reset_index()
@@ -155,7 +156,7 @@ for key, grp in model_output_stocks.groupby(['Dataset']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Stocks', label=key)
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 ################################################################################################################################################################
 #%%
 #plot activity by drive type 
@@ -173,7 +174,7 @@ for key, grp in model_output_activity_drive.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Year', y='Activity', label=key,c=next(color))
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 #%%
 
 #plot total travel km per stock by vehicle type. To make things simple we will just recalcualte travl km per stock using the mean of travel km and stocks for each vehicle type and year
@@ -204,7 +205,7 @@ for key, grp in model_output_travel_km_per_stock.groupby(['Vehicle_transport_typ
 
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
-plt.show()
+
 
 
 

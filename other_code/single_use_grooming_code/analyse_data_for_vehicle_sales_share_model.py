@@ -6,7 +6,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-execfile("config/config.py")#usae this to load libraries and set variables. Feel free to edit that file as you need
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 
 import plotly
 import plotly.express as px
@@ -137,7 +138,7 @@ pd.options.plotting.backend = "matplotlib"
 fig, ax = plt.subplots()
 ax = plot_data.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share', label='Vehicle_sales_share')
 ax = plot_data.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share_rolling_mean', label='Vehicle_sales_share_rolling_mean')
-plt.show()
+
 
 plot_data = new_sales_shares_rolling_mean_normalised.loc[(new_sales_shares_rolling_mean_normalised['Economy'] == '12_NZ') & (new_sales_shares_rolling_mean_normalised['Scenario'] == 'Carbon Neutral') & (new_sales_shares_rolling_mean_normalised['Transport Type'] == 'freight')& (new_sales_shares_rolling_mean_normalised['Vehicle Type'] == 'lt') & (new_sales_shares_rolling_mean_normalised['Drive'] == 'bev')]
 
@@ -149,7 +150,7 @@ pd.options.plotting.backend = "matplotlib"
 fig, ax = plt.subplots()
 ax = plot_data.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share', label='Vehicle_sales_share')
 ax = plot_data.plot(ax=ax, kind='line', x='Year', y='Vehicle_sales_share_rolling_mean', label='Vehicle_sales_share_rolling_mean')
-plt.show()
+
 # new_sales_shares['Vehicle_sales_share_rolling_average'] = new_sales_shares.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'])['Vehicle_sales_share'].rolling(3).mean()
 #%%
 ################################################################################################################################################################

@@ -7,6 +7,7 @@ often requires that companies build a customized architecture or structure of ap
 
 #%%
 import datetime
+
 #set global variables
 file_date = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 file_date_id = '_DATE{}'.format(file_date)
@@ -14,43 +15,43 @@ file_date_id = ''#comment me out if you want the output and archived input data 
 print('Model run for {} starting'.format(file_date))
 print('\n file_date_id is set to {}'.format(file_date_id))
 #%%
-execfile('./config/utilities/create_model_concordances.py')#currently tehse are vbased off osemosys_concordances = pd.read_csv('config/concordances/OSEMOSYS_concordances.csv')
+exec(open('./config/utilities/create_model_concordances.py').read())#currently tehse are vbased off osemosys_concordances = pd.read_csv('config/concordances/OSEMOSYS_concordances.csv')
 
 #%%
-execfile("workflow/1_clean_8th_edition_data.py")
-execfile("workflow/1_clean_other_input_data.py")
-execfile("workflow/1_clean_user_input.py")
-execfile("workflow/2_fill_missing_input_data.py")
-execfile("workflow/2_calculate_activity_growth.py")
+exec(open("workflow/1_clean_8th_edition_data.py").read())
+exec(open("workflow/1_clean_other_input_data.py").read())
+exec(open("workflow/1_clean_user_input.py").read())
+exec(open("workflow/2_fill_missing_input_data.py").read())
+exec(open("workflow/2_calculate_activity_growth.py").read())
 
 #%%
-execfile("workflow/3a_aggregate_data_for_model.py")
-execfile("workflow/3b_calculate_input_for_model.py")
+exec(open("workflow/3a_aggregate_data_for_model.py").read())
+exec(open("workflow/3b_calculate_input_for_model.py").read())
 
 #%%
-execfile("workflow/4_run_non_road_model.py")
-execfile("workflow/4_run_road_model.py")
+exec(open("workflow/4_run_non_road_model.py").read())
+exec(open("workflow/4_run_road_model.py").read())
 #%%
-execfile("workflow/5_concatenate_model_output.py")
-execfile("workflow/6_apply_fuel_mix_demand_side.py")
-execfile("workflow/7_apply_fuel_mix_supply_side.py")
-execfile("workflow/8_clean_model_output.py")
-execfile("workflow/9_create_osemosys_output.py")
+exec(open("workflow/5_concatenate_model_output.py").read())
+exec(open("workflow/6_apply_fuel_mix_demand_side.py").read())
+exec(open("workflow/7_apply_fuel_mix_supply_side.py").read())
+exec(open("workflow/8_clean_model_output.py").read())
+exec(open("workflow/9_create_osemosys_output.py").read())
 #%%
-execfile("other_code/analysis_code/print_diagnostics.py")
+exec(open("other_code/analysis_code/print_diagnostics.py").read())
 
 #%%
 ANALYSE_OUTPUT = True#True
 if ANALYSE_OUTPUT:
-    # execfile("other_code/analysis_code/compare_8th_to_9th_by_medium.py")
-    # execfile("other_code/analysis_code/compare_8th_to_9th_by_fuel.py")
-    # execfile("other_code/analysis_code/compare_8th_to_9th_by_drive.py")
-    execfile("other_code/analysis_code/plot_input_data.py")
-    execfile("other_code/analysis_code/analyse_experimental.py")
-    execfile("other_code/analysis_code/plot_data_for_others.py")
+    # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
+    # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())
+    # exec(open("other_code/analysis_code/compare_8th_to_9th_by_drive.py").read())
+    exec(open("other_code/analysis_code/plot_input_data.py").read())
+    exec(open("other_code/analysis_code/analyse_experimental.py").read())
+    exec(open("other_code/analysis_code/plot_data_for_others.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:
-    execfile('./config/utilities/archiving_script.py')
+    exec(open('./config/utilities/archiving_script.py').read())
 
 #%%   
