@@ -18,15 +18,15 @@ print('\n file_date_id is set to {}'.format(file_date_id))
 exec(open('./config/utilities/create_model_concordances.py').read())#currently tehse are vbased off osemosys_concordances = pd.read_csv('config/concordances/OSEMOSYS_concordances.csv')
 
 #%%
-exec(open("workflow/1_clean_8th_edition_data.py").read())
-exec(open("workflow/1_clean_other_input_data.py").read())
-exec(open("workflow/1_clean_user_input.py").read())
-exec(open("workflow/2_fill_missing_input_data.py").read())
-exec(open("workflow/2_calculate_activity_growth.py").read())
+exec(open("workflow/grooming_code/1_clean_8th_edition_data.py").read())
+exec(open("workflow/grooming_code/1_clean_other_input_data.py").read())
+exec(open("workflow/grooming_code/1_clean_user_input.py").read())
+exec(open("workflow/grooming_code/2_fill_missing_input_data.py").read())
+exec(open("workflow/grooming_code/2_calculate_activity_growth.py").read())
 
 #%%
-exec(open("workflow/3a_aggregate_data_for_model.py").read())
-exec(open("workflow/3b_calculate_input_for_model.py").read())
+exec(open("workflow/grooming_code/3a_aggregate_data_for_model.py").read())
+exec(open("workflow/grooming_code/3b_calculate_input_for_model.py").read())
 
 #%%
 exec(open("workflow/4_run_non_road_model.py").read())
