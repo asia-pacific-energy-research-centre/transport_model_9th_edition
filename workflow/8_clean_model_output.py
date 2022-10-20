@@ -23,6 +23,7 @@ model_output_non_detailed = model_output_non_detailed[['Year', 'Economy', 'Scena
 
 #now create 'with fuels' output which will only contain energy use. This is to avoid any confusion because the 'with fuels' output contians activity and stocks replicated for each fuel type within a vehicel type / drive combination. 
 model_output_all_with_fuels = model_output_all_with_fuels[['Year', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'Fuel',  'Energy']]
+
 #%%
 #save data
 model_output_detailed.to_csv('output_data/model_output_detailed/{}'.format(model_output_file_name), index=False)

@@ -180,3 +180,53 @@ plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_o
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 #%%
+################################################################################################################################################################
+#plot sales share over time by vehicle type / drive type combination
+#quickly calculate sales share in hughs model:
+#sales share is the share of new stocks of a particulkar vehicle type and drive type in a particular economy in a particular year compared to the total new stocks of that vehicle type and drive type in that economy in that year
+title = 'Compared to 8th, Sales share by vehicle type drive type combination - pasenger'
+model_output_concat_sum_sales = model_output_concat_sum[model_output_concat_sum['Transport Type'] == 'freight']
+model_output_concat_sum_sales = model_output_concat_sum_sales[model_output_concat_sum_sales['Medium'] == 'road']
+model_output_concat_sum_sales = model_output_concat_sum_sales[model_output_concat_sum_sales['Scenario'] == 'Reference']
+#sum stocks by year, vehicle type, drive type, dataset
+model_output_concat_sum_sales = model_output_concat_sum_sales.groupby(['Year', 'Dataset', 'Vehicle Type', 'Drive'], as_index=False).sum()
+#claulcate sales as teh schange in stocks each eyar
+model_output_concat_sum_sales['Sales'] = model_output_concat_sum_sales.groupby(['Dataset', 'Vehicle Type', 'Drive'])['Stocks'].diff()
+#set any negatives to 0
+model_output_concat_sum_sales['Sales'] = model_output_concat_sum_sales['Sales'].clip(lower=0)
+#create a column that is the sum of sales by year and dataset
+model_output_concat_sum_sales['Sales_sum'] = model_output_concat_sum_sales.groupby(['Year', 'Dataset'])['Sales'].transform('sum')
+#calculate sales share
+model_output_concat_sum_sales['Sales share'] = model_output_concat_sum_sales['Sales'] / model_output_concat_sum_sales['Sales_sum']
+#filter data out from before 2022
+model_output_concat_sum_sales = model_output_concat_sum_sales[model_output_concat_sum_sales['Year'] >= 2022]
+
+#plot using plotly
+fig = px.line(model_output_concat_sum_sales, x="Year", y="Sales share", line_dash='Vehicle Type', color='Drive' ,facet_col="Dataset", facet_col_wrap=2, title=title)
+
+plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=True)
+fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+
+# %%
+#filter for only cars
+model_output_concat_sum_sales = model_output_concat_sum_sales[model_output_concat_sum_sales['Vehicle Type'] == 'lv']
+#create a column that is the sum of sales by year and dataset
+model_output_concat_sum_sales['Sales_sum'] = model_output_concat_sum_sales.groupby(['Year', 'Dataset'])['Sales'].transform('sum')
+#calculate sales share
+model_output_concat_sum_sales['Sales share'] = model_output_concat_sum_sales['Sales'] / model_output_concat_sum_sales['Sales_sum']
+
+#plot using plotly
+fig = px.line(model_output_concat_sum_sales, x="Year", y="Sales share", color='Drive' ,facet_col="Dataset", facet_col_wrap=2, title=title)
+title = 'Compared to 8th, Sales share by drive in passenger cars'
+plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=True)
+fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+
+title = 'APERC outlook 8th, sales share by drive in passenger cars'
+#create a area plot of sales by drive type
+fig = px.area(model_output_concat_sum_sales, x="Year", y="Sales share", color='Drive' ,facet_col="Dataset", facet_col_wrap=2, title=title, category_orders={'Drive': ['g', 'phevg', 'bev', 'fcev', 'cng', 'lpg', 'd']},
+color_discrete_map= {'g': 'red', 'phevg': 'white', 'bev': 'blue', 'fcev': 'green', 'cng': 'orange', 'lpg': 'purple', 'd': 'black'})
+
+plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=True)
+fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+# %%
+################################################################################################################################################################
