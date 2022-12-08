@@ -1,6 +1,8 @@
 #this will go through all the input data and add new rows if necessary. This is so that the input data covers all necessary rows, and also to get rid of NA's
 #this will use concordances created in config/utilities/create_model_concordances.py to fill in the missing data
-
+#to do:
+#ewither make it so that this also loads data from the transport datas system or create a new script for that. 
+#make it so that this file makes it clear that we arent doing all the transport data grooiming in the mdoel anymore.
 #%%
 #set working directory as one folder back so that config works
 import os
@@ -18,7 +20,7 @@ OccupanceAndLoad_growth = pd.read_excel('intermediate_data/cleaned_input_data/cl
 non_road_efficiency_growth = pd.read_excel('intermediate_data/cleaned_input_data/clean_user_input.xlsx', sheet_name = 'non_road_efficiency_growth')
 
 #load model concordances
-model_concordances = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name))
+model_concordances = pd.read_csv('config/concordances_and_config_data/{}'.format(model_concordances_file_name))
 
 #load adjsutments
 turnover_rate = pd.read_csv('intermediate_data/cleaned_input_data/turnover_rate.csv')

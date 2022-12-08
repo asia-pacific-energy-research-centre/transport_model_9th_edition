@@ -74,6 +74,18 @@ if economy_growth == True:
 activity_growth.drop(['Activity'], axis=1, inplace=True)
 
 #%%
+#TEMP FIX
+#create scenario column and replicate the activity data for each scenario in SCENARIOS_LIST
+i=False
+for scenario in SCENARIOS_LIST:
+    activity_growth_scenario = activity_growth.copy()
+    activity_growth_scenario['Scenario'] = scenario
+    if i==False:
+        activity_growth = activity_growth_scenario.copy()
+        i=True
+    else:
+        activity_growth = activity_growth.append(activity_growth_scenario, ignore_index=True)
+#%%
 #i wuoldve thought that the activity growth rate would be the same for all groups ? Perhaps that is what i should aim for in the future, but keep this code the same as it is so it can be more flexible? I guess it raises question of how i want to calcualte activity growth? Should it be simplified to 'ecnony activity griwth' or more complex like transport type activity growth or even medium/trans[porttype activity growth
 #or even pct change by econmy since the rate should be the same?
 

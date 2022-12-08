@@ -8,20 +8,24 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+
 #%%
 #load user input data
-Vehicle_sales_share = pd.read_csv('intermediate_data/non_aggregated_input_data/Vehicle_sales_share.csv')
-OccupanceAndLoad_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/OccupanceAndLoad_growth.csv')
-Turnover_rate_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/Turnover_Rate_growth.csv')
-New_vehicle_efficiency_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/New_vehicle_efficiency_growth.csv')
-
+road_user_input_and_growth_rates = pd.read_csv('intermediate_data/aggregated_model_inputs/road_user_input_and_growth_rates.csv')
+#laod base year data
 road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input.csv')
 
-activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
 #%%
+#separate user inputs into different dataframes
+Vehicle_sales_share = road_user_input_and_growth_rates[['Economy','Scenario', 'Vehicle Type', 'Transport Type', 'Year', 'Vehicle sales share']].drop_duplicates()
+Occupancy_or_load_growth = road_user_input_and_growth_rates[['Economy','Scenario', 'Vehicle Type', 'Transport Type', 'Year', 'Occupancy_or_load_growth']].drop_duplicates()
+Turnover_rate_growth = road_user_input_and_growth_rates[['Economy','Scenario', 'Vehicle Type', 'Transport Type', 'Drive', 'Year', 'Turnover_rate_growth']].drop_duplicates()
+Activity_growth = road_user_input_and_growth_rates[['Economy','Scenario', 'Year', 'Activity_growth']].drop_duplicates()
+New_vehicle_efficiency_growth = road_user_input_and_growth_rates[['Economy','Scenario', 'Vehicle Type', 'Transport Type', 'Drive', 'Year', 'New_vehicle_efficiency_growth']].drop_duplicates()
 
-previous_year_main_dataframe = road_model_input.loc[road_model_input.Year == BASE_YEAR,:]
+#%%
 #create main dataframe as previous year dataframe, so that currently it only holds the base year's data. This will have each years data added to it at the end of each loop.
+previous_year_main_dataframe = road_model_input.loc[road_model_input.Year == BASE_YEAR,:]
 main_dataframe = previous_year_main_dataframe.copy()
 
 #%%
@@ -64,7 +68,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #######################################################################
 
     #CALCUALTE NEW OCCUPANCY VALUE BY APPLYING THE OCCUPANCY GROWTH RATE
-    change_dataframe = change_dataframe.merge(OccupanceAndLoad_growth, on=['Economy','Scenario', 'Vehicle Type', 'Transport Type', 'Year'], how='left')
+    change_dataframe = change_dataframe.merge(Occupancy_or_load_growth, on=['Economy','Scenario', 'Vehicle Type', 'Transport Type', 'Year'], how='left')
     change_dataframe['Occupancy_or_load'] = change_dataframe['Occupancy_or_load'] * change_dataframe['Occupancy_or_load_growth']
 
     #CALCUALTE NEW TURNOVER RATE AND THEN TURNOVER OF OLD STOCKS
@@ -111,7 +115,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
 
     #Now we will apply activity growth to original activity summed by transport type to find new activity to be satisfied by new vehicles according to the stock dist.
     #join on activity growth
-    change_dataframe = change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Year'], how='left')#one day if growth is determined by transport type, add transport type ot this grouping
+    change_dataframe = change_dataframe.merge(Activity_growth, on=['Economy', 'Scenario', 'Year'], how='left')#one day if growth is determined by transport type, add transport type ot this grouping
 
     #calc
     change_dataframe['Transport_type_sum_of_activity_growth'] = (change_dataframe['Activity_growth'] * change_dataframe['Transport_type_sum_of_activity'])

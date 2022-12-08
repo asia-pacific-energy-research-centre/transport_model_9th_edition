@@ -12,24 +12,24 @@ import re
 # %config Completer.use_jedi = False#Jupiter lab specific setting to fix Auto fill bug
 
 
-#we can set file_date_id here so that if we are running the script alone, versus through integrate, we can have the variable available
+#we can set FILE_DATE_ID here so that if we are running the script alone, versus through integrate, we can have the variable available
 try:
-    if file_date_id:
+    if FILE_DATE_ID:
        pass
 except NameError:
-    file_date_id = ''
+    FILE_DATE_ID = ''
     
 #%%
 BASE_YEAR= 2017
 END_YEAR = 2050
 Scenario_list = ['Carbon Neutral', 'Reference']
 
-model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, file_date_id)
+model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 
 EIGHTH_EDITION_DATA = True
 #%%
 #state model concordances
-model_concordances_version = file_date_id#'20220824_1256'
+model_concordances_version = FILE_DATE_ID#'20220824_1256'
 model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
 model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
 model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)

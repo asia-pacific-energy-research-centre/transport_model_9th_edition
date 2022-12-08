@@ -15,7 +15,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #create fake user input for demand side fuel mixes using model concordances
 
 #load model concordances
-model_concordances = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name_fuels))
+model_concordances = pd.read_csv('config/concordances_and_config_data/{}'.format(model_concordances_file_name_fuels))
 #%%
 #startwith the model concordances with fuel types, filter for each fuel type, and split it into biofuel and fuel type. have to do each fuel type separately depnding on the resulting biofuel mix.
 #Remember this allows for the option of not splitting all diesel use into biofuels. you can set it so vehicle type doesnt equal rail for example

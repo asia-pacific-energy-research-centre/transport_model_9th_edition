@@ -1,6 +1,8 @@
 #this file is intended for gathering the most useful data from the 8th edition model and fromatting it so that it can be used in this model. the code is long by nature, but an effort has been made to keep it in parts. so look for stocks, efficiency or wahtever data type you need if you need to make a fix or something. 
 
 #CLEANING IS anything that involves changing the format of the data. The next step is filling in missing values. 
+RUN_OLD_METHOD = False#Pleasse note that we are in the process of moving this to the transport datya system and once done we will remove this file from the transport model.
+if RUN_OLD_METHOD:
 #%%
 #set working directory as one folder back so that config works
 import os

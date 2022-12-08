@@ -10,12 +10,12 @@ import datetime
 
 #set global variables
 file_date = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-file_date_id = '_DATE{}'.format(file_date)
-file_date_id = ''#comment me out if you want the output and archived input data to be saved with a specific date id
+FILE_DATE_ID = '_DATE{}'.format(file_date)
+FILE_DATE_ID = ''#comment me out if you want the output and archived input data to be saved with a specific date id
 print('Model run for {} starting'.format(file_date))
-print('\n file_date_id is set to {}'.format(file_date_id))
+print('\n FILE_DATE_ID is set to {}'.format(FILE_DATE_ID))
 #%%
-exec(open('./config/utilities/create_model_concordances.py').read())#currently tehse are vbased off osemosys_concordances = pd.read_csv('config/concordances/OSEMOSYS_concordances.csv')
+exec(open('./config/utilities/create_model_concordances.py').read())#currently tehse are vbased off osemosys_concordances = pd.read_csv('config/concordances_and_config_data/OSEMOSYS_concordances.csv')
 
 #%%
 exec(open("workflow/grooming_code/1_clean_8th_edition_data.py").read())

@@ -20,7 +20,7 @@ model_output = pd.read_csv('intermediate_data/model_output_concatenated/{}'.form
 demand_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')
 
 #load model concordances with fuels
-model_concordances_fuels = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name_fuels))
+model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/{}'.format(model_concordances_file_name_fuels))
 
 #%%
 #join the fuel mixing data to the model output. This will result in a new fuel column. Note that there can be multiple fuels per drive, so this could also create new rows for each drive. 

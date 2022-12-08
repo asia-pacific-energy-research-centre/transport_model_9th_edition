@@ -13,17 +13,20 @@ from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 
-#laod clean user input from intermediate file
-non_road_efficiency_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/non_road_efficiency_growth.csv')
+#load user input data
+non_road_user_input_and_growth_rates = pd.read_csv('intermediate_data/aggregated_model_inputs/non_road_user_input_and_growth_rates.csv')
 
-# road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input.csv')
+#load model input data
 non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input.csv')
 
-activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
-#%%
 
-previous_year_main_dataframe = non_road_model_input.loc[non_road_model_input.Year == BASE_YEAR,:]
+#%%
+#separate user inputs into different dataframes
+non_road_efficiency_growth = non_road_user_input_and_growth_rates[['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Year','Efficiency_growth']].drop_duplicates()
+activity_growth = non_road_user_input_and_growth_rates[['Economy', 'Scenario', 'Year', 'Activity_growth']].drop_duplicates()
+#%%
 #create main dataframe as previous year dataframe, so that currently it only holds the base year's data. This will have each years data added to it at the end of each loop.
+previous_year_main_dataframe = non_road_model_input.loc[non_road_model_input.Year == BASE_YEAR,:]
 main_dataframe = previous_year_main_dataframe.copy()
 
 #%%

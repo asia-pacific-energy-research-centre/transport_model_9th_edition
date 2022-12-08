@@ -3,6 +3,8 @@
 #CLEANING IS anything that involves changing the format of the data. The next step is filling in missing values. 
 
 #NOTE this data only needs to be available for the base year, as it is then changed by the growth rate that is part of the user input. 
+RUN_OLD_METHOD = False#Pleasse note that we are in the process of moving this to the transport datya system and once done we will remove this file from the transport model.
+if RUN_OLD_METHOD:
 #%%
 #set working directory as one folder back so that config works
 import os
@@ -20,7 +22,7 @@ occupance_load = pd.read_excel('input_data/adjustments_spreadsheet.xlsx', sheet_
 new_vehicle_efficiency = pd.read_excel('input_data/adjustments_spreadsheet.xlsx', sheet_name='new_vehicle_efficiency')
 
 #load model concordances for filling in missing dates where needed
-model_concordances = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name))
+model_concordances = pd.read_csv('config/concordances_and_config_data/{}'.format(model_concordances_file_name))
 
 #%%
 #adjust adjustments data

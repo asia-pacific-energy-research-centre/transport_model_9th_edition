@@ -15,7 +15,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #create fake user input for demand side fuel mixes using model concordances
 
 #load model concordances for filling in 
-model_concordances_fuels = pd.read_csv('config/concordances/{}'.format(model_concordances_file_name_fuels))
+model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/{}'.format(model_concordances_file_name_fuels))
 
 #%%
 #the process will run like:
