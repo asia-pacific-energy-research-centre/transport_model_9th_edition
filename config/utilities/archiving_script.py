@@ -27,12 +27,9 @@ else:
 #load data that we want to archive 
 #t omake thigns simple while we havent got a clear idea of what we need we will just load and save the model inputs and fuel mixing data
 
-#NON ROAD
-non_road_user_input_and_growth_rates = pd.read_csv('intermediate_data/aggregated_model_inputs/non_road_user_input_and_growth_rates.csv')
+#Major model inputs:
+activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
 non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input.csv')
-
-#ROAD
-road_user_input_and_growth_rates = pd.read_csv('intermediate_data/aggregated_model_inputs/non_road_user_input_and_growth_rates.csv')
 road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input.csv')
 
 #load user input for fuel mixing 
@@ -55,11 +52,10 @@ model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{
 #save file to folder in input_data/previous_run_archive/{}.foramt(folder_name)
 
 #save files
-non_road_user_input_and_growth_rates.to_csv('input_data/previous_run_archive/{}/non_road_user_input_and_growth_rates.csv'.format(folder_name), index=False)
-non_road_model_input.to_csv('input_data/previous_run_archive/{}/non_road_model_input.csv'.format(folder_name))
-
+non_road_model_input.to_csv('input_data/previous_run_archive/{}/non_road_model_input.csv'.format(folder_name), index=False)
 road_model_input.to_csv('input_data/previous_run_archive/{}/road_model_input.csv'.format(folder_name))
-road_user_input_and_growth_rates.to_csv('input_data/previous_run_archive/{}/road_user_input_and_growth_rates.csv'.format(folder_name))
+
+activity_growth.to_csv('input_data/previous_run_archive/{}/activity_growth.csv'.format(folder_name))
 
 #save fuel mixing data
 demand_side_fuel_mixing.to_csv('input_data/previous_run_archive/{}/demand_side_fuel_mixing.csv'.format(folder_name))

@@ -1,3 +1,44 @@
+######################################
+#following are my own additions
+######################################
+
+# excell files 
+*.xlsx
+*.csv
+
+#graphs
+*.png
+*.jpg
+*.html
+#####################
+
+#anything in archive folders doesnt need to be tracked:
+**/archive 
+
+#####################
+#env folders dont need to be tracked:
+env_jupyter/*
+env_no_jupyter/*
+#####################
+
+#dont ignore any files in these folders:
+!config/*
+#but ignore all files in this folder:
+config/concordances_and_config_data/computer_generated_concordances/*
+
+#####################
+#dont ignore any files in these folders:
+# !other_outputs/*
+!input_data/*
+!documentation/*
+
+#####################
+#tryinng to remove this folder from tracking:
+item.sqlite
+
+######################################
+#Following are defaults based on a file i found on github
+######################################
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -123,28 +164,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# excell files 
-*.xlsx
-*.csv
-
-#graphs
-*.png
-*.jpg
-*.html
-
-#anything in archive folders doesnt nee to be tracked
-**/archive
-
-#####################
-item.sqlite
-env_jupyter/*
-env_no_jupyter/*
-#####################
-
-#except any files in these folders
-!config/*
-# !other_outputs/*
-!input_data/*
-!documentation/*
 

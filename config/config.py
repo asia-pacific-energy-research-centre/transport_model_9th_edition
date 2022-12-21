@@ -13,6 +13,8 @@ import re
 import shutil
 # %config Completer.use_jedi = False#Jupiter lab specific setting to fix Auto fill bug
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
+#can activate below to remove caveat warnings. but for now keep it there till confident:
+# pd.options.mode.chained_assignment = None  # default='warn'
 #%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 try:
@@ -22,7 +24,7 @@ except NameError:
     FILE_DATE_ID = ''
    
 #%%
-USE_LATEST_OUTPUT_DATE_ID = True#True
+USE_LATEST_OUTPUT_DATE_ID = False#True
 #create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
 if USE_LATEST_OUTPUT_DATE_ID:
     list_of_files = glob.glob('./output_data/model_output/*.csv') 
@@ -37,7 +39,7 @@ END_YEAR = 2050
 
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 
-EIGHTH_EDITION_DATA = True
+EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable
 
 #get sceanrios from scenarios_list file
 SCENARIOS_LIST = pd.read_csv('config/concordances_and_config_data/scenarios_list.csv')
@@ -47,6 +49,15 @@ SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolis
 #For graphing and analysis we sometimes will single out a scenario to look at. This is the scenario we will use for that:
 SCENARIO_OF_INTEREST = 'Reference'
 
+user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
+       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth']
+user_input_measures_list_NON_ROAD = ['Non_road_efficiency_growth']
+
+base_year_measures_list_ROAD = ['Activity', 'Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency']
+base_year_measures_list_NON_ROAD = ['Activity', 'Energy', 'Stocks']
+
+calculated_measures_ROAD = ['Travel_km', 'Efficiency', 'Travel_km_per_stock', 'Surplus_stocks']
+calculated_measures_NON_ROAD = ['Efficiency']
 ###################################################
 #%%
 
@@ -55,8 +66,6 @@ SCENARIO_OF_INTEREST = 'Reference'
 economy_codes_path = 'config/concordances_and_config_data/economy_code_to_name.csv'
 
 ECONOMY_LIST = pd.read_csv(economy_codes_path).iloc[:,0]#get the first column
-#remove economies we dont want
-ECONOMY_LIST = ECONOMY_LIST[ECONOMY_LIST != 'GBR']
 
 #ECONOMY REGIONS
 #load the economy regions file so that we can easily merge it with a dataframe to create a region column
@@ -72,4 +81,17 @@ PLOTLY_COLORS_LIST = px.colors.qualitative.Plotly
 AUTO_OPEN_PLOTLY_GRAPHS = False
 
 # %%
+#state model concordances file names for concordances we create manually
+model_concordances_version = FILE_DATE_ID#'20220824_1256'
+model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)
 
+#state model concordances file names for concordances we create using inputs into the model. these model concordances state what measures are used in the model
+model_concordances_base_year_measures_file_name = 'model_concordances_measures{}.csv'.format(model_concordances_version)
+model_concordances_user_input_and_growth_rates_file_name = 'model_concordances_user_input_and_growth_rates{}.csv'.format(model_concordances_version)
+model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_supply_side_fuel_mixing{}.csv'.format(model_concordances_version)
+model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing{}.csv'.format(model_concordances_version)
+
+#AND A model_concordances_all_file_name
+model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
