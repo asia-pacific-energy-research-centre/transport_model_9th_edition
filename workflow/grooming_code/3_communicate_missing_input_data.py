@@ -183,4 +183,3 @@ for scenario in aggregated_model_data['Scenario'].unique():
 #%%
 #NOW we have plottted the data coverage and saved the data to a csv file for use in the rest of the model. (if the data is inccomplete then we will ?? work out waht to do with it?). So now begin calculating inpuits for the model befor erunnning it.
 
-
