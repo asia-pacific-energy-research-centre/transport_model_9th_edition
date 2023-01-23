@@ -23,16 +23,20 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 #load transport data  from the transport data system which is out of this repo but is in the same folder as this repo #file name is like DATE20221214_interpolated_combined_data_concordance
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
-FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 = 'DATE20221214'
+# FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
+FILE_DATE_ID2 = 'DATE20230120'
 
 transport_data_system_folder = '../transport_data_system'
-transport_data_system_df = pd.read_csv('{}/output_data/{}_interpolated_combined_data_concordance.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
+transport_data_system_df = pd.read_csv('{}/output_data/{}_interpolated_combined_data.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
 
 #%%
 #TEMPORARY FIX, CHANGE THE MEASURE IN TRANSPORT DATA SYSTEM FOR passenger_km and freight_tonne_km to Activity so that it matches the model concordance. It is undecided whether it would be best to change the model to use the measure of passenger_km and freight_tonne_km or to change the transport data system to use activity. Or keep this here. There are pros and cons to each approach #TODO: decide on the best approach
 transport_data_system_df.loc[transport_data_system_df['Measure']=='passenger_km','Measure'] = 'Activity'
 transport_data_system_df.loc[transport_data_system_df['Measure']=='freight_tonne_km','Measure'] = 'Activity'
+
+#change Date to year and filter out all non yearly data
+transport_data_system_df['Year'] = transport_data_system_df['Date'].str.split('-').str[0].astype(int)
+transport_data_system_df = transport_data_system_df[transport_data_system_df['Frequency']=='Yearly']
 
 #%%
 #filter for the same years as are in the model concordances in the transport data system (should just be base year)
@@ -42,14 +46,19 @@ transport_data_system_df = transport_data_system_df[transport_data_system_df.Yea
 transport_data_system_df = transport_data_system_df[transport_data_system_df.Measure.isin(model_concordances_measures.Measure.unique())]
 
 #now we have filtered out the majority of rows we dont need from the transport data system, we can use pandas difference() function to find out what rows we are missing from the transport data system. This will be useful for debugging and for the user to know what data is missing from the transport data system (as its expected that no data will be missing for the model to actually run))
+
+#%%
+#also we are going to create some made up vlaues where we would expect to retrieve these vlaues through a research process but we havent done that yet. This is so that the model can run and we can test it. We will need to replace these values with offical ones later on.
+turnover_rate = 14.8#14.8 years is the average turnover rate for a car in the US accoreding to this https://energyfuse.org/americas-aging-vehicles-delay-rate-fleet-turnover/
+
 #%%
 
-INDEX_COLS = ['Year', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
-       'Transport Type','Drive']
+INDEX_COLS_NO_SCENARIO = INDEX_COLS.copy()
+INDEX_COLS_NO_SCENARIO.remove('Scenario')
 
 #set index
-transport_data_system_df.set_index(INDEX_COLS, inplace=True)
-model_concordances_measures.set_index(INDEX_COLS, inplace=True)
+transport_data_system_df.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
+model_concordances_measures.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
 
 #create empty df which is a copy of the transport_data_system_df to store the data we extract from the transport data system using an iterative loop
 new_transport_dataset = []
@@ -76,82 +85,42 @@ if missing_index_values1.empty:
     print('All rows we need are present in the transport system dataset')
 else:
     print('Missing rows in our user transport system dataset when we compare it to the concordance:', missing_index_values1)
-    #add these rows to the user_input and set them to row_and_data_not_available
-    new_transport_data_system_df = transport_data_system_df.reindex(missing_index_values1)
-    new_transport_data_system_df['Data_available'] = 'row_and_data_not_available'
-    new_transport_data_system_df['Value'] = np.nan
 
-    #now append to user_input
-    transport_data_system_df = transport_data_system_df.append(new_transport_data_system_df)
+    #now we need to add these rows to the transport_data_system_df
+    #first create a df with the missing index values
+    missing_index_values1 = pd.DataFrame(index=missing_index_values1)
+    missing_index_values1['Data_available'] = 'row_and_data_not_available'
+    missing_index_values1['Value'] = np.nan
+    #then append to transport_data_system_df
+    transport_data_system_df = transport_data_system_df.append(missing_index_values1)
+
 
 if missing_index_values2.empty:
     #this is unexpected so create an error
     raise ValueError('All rows in the transport system dataset are present in the concordance. This is unexpected. Please check the code.')
 else:
     #we just want to make sure the user is aware that we will be removing rows from the user input
-    print('Removing unnecessary rows from the user input dataset. If you intended to have new data in the dataset, please make sure you have added them to the concordance table as well.')
+    print('Removing unnecessary rows from the transport datasystem dataset. If you intended to have new data in the dataset, please make sure you have added them to the concordance table as well.')
     #remove these rows from the user_input
     transport_data_system_df.drop(missing_index_values2, inplace=True)
 
+#%%
+#save the missing values to a csv for use separately:
+missing_index_values1.to_csv('output_data/for_other_modellers/missing_values/{}_missing_input_values.csv'.format(FILE_DATE_ID), index=False)
 #%%
 #create a scenario column in the transport data system dataset which will have a scenario for each in teh scenarios list in config
 i = 0
 for scenario in SCENARIOS_LIST:
     if i == 0:
         #create copy df
-        new_df = transport_data_system_df.copy()
-        new_df['Scenario'] = scenario
+        new_transport_data_system_df = transport_data_system_df.copy()
+        new_transport_data_system_df['Scenario'] = scenario
         i += 1
     else:
         transport_data_system_df['Scenario'] = scenario
-        new_df = new_df.append(transport_data_system_df)
+        new_transport_data_system_df = new_transport_data_system_df.append(transport_data_system_df)
     
-
 #%%
 #save the new transport dataset
-transport_data_system_df.to_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
+new_transport_data_system_df.to_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
 #%%
-
-# #we are misising a lot of valaues lets inspect the data to see what is missing
-# x = transport_data_system_df.loc[transport_data_system_df.Data_available=='row_and_data_not_available']
-# x = x.reset_index()
-# x = x.groupby(['Measure', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive']).count()
-# x = x.reset_index()
-# x
-
-
-#%%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #%%
-# ##load 8th edition data
-# road_stocks= pd.read_csv('intermediate_data/8th_edition_transport_model/road_stocks.csv')
-# activity= pd.read_csv('intermediate_data/8th_edition_transport_model/activity.csv')
-# energy= pd.read_csv('intermediate_data/8th_edition_transport_model/energy.csv')
-
-# turnover_rate = pd.read_csv('intermediate_data/8th_edition_transport_model/turnover_rate.csv')
-# new_vehicle_efficiency = pd.read_csv('intermediate_data/8th_edition_transport_model/new_vehicle_efficiency.csv')
-# occupance_load = pd.read_csv('intermediate_data/8th_edition_transport_model/occupance_load.csv')
-# # 
-# # SAVE
-# turnover_rate.to_csv('intermediate_data/cleaned_input_data/turnover_rate.csv', index=False)
-# occupance_load.to_csv('intermediate_data/cleaned_input_data/occupance_load.csv', index=False)
-
-# new_vehicle_efficiency.to_csv('intermediate_data/cleaned_input_data/new_vehicle_efficiency.csv', index=False)
-
-
-# final_combined_data_concordance.to_csv('output_data/{}_interpolated_combined_data_concordance.csv'.format(FILE_DATE_ID))
-
-# #%%

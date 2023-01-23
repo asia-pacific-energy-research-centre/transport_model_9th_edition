@@ -30,6 +30,7 @@ PLOT_INPUT_DATA = False
 #%%
 exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
 exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
+#%%
 exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
 exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
 if PLOT_INPUT_DATA:
@@ -47,7 +48,7 @@ exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
 exec(open("./workflow/5_clean_model_output.py").read())
 exec(open("./workflow/6_create_osemosys_output.py").read())
 #%%
-ANALYSE_OUTPUT = False#True
+ANALYSE_OUTPUT = True#True
 if ANALYSE_OUTPUT:
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())

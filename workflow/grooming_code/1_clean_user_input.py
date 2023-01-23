@@ -35,8 +35,6 @@ for sheet in user_input_file.sheet_names:
 
 #%%
 #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
-INDEX_COLS = ['Year', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
-       'Transport Type','Drive', 'Scenario'] 
 
 #set index
 user_input.set_index(INDEX_COLS, inplace=True)

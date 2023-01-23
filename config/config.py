@@ -37,6 +37,10 @@ if USE_LATEST_OUTPUT_DATE_ID:
 BASE_YEAR= 2017
 END_YEAR = 2050
 
+#this is important for defining how the dataframes are used. Generally this shouldnt change unless a column name changes or the model is changed
+INDEX_COLS = ['Year', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
+       'Transport Type','Drive', 'Scenario']
+
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 
 EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable

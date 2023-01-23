@@ -1,5 +1,7 @@
 #this file is intended to help with creating a set of 'concordances' which as i see it are blueprints of exactly what data for what categories we need for the model. Perhaps concordances are teh wrong name but for now we use that (can replace-all later).
+
 #teh concordances are useful for systematically defining what data we need and what data we have. They are also useful for understanding exactly what to call different categories in teh data.
+
 #One issue is that the process requires the model and data preparation to be run to create the concordances which use the inputs into the model. This is because they use the inputs to easily determine what measures were used. So if the user defines a new set of measures then at minimum they will need to create some dummy data and edit the code to use that dummy data. 
 
 
@@ -24,7 +26,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 ################################################################################################################################################################
 
 #%%
-#PLEASE NOTE THAT ALL MODEL CONCORDANCE FILE NAMES ARE STORED AND SET IN ./config/config.py
+#PLEASE NOTE THAT ALL MODEL CONCORDANCE FILE NAMES VARIABLES ARE STORED AND SET IN ./config/config.py
 
 
 ################################################################################################################################################################

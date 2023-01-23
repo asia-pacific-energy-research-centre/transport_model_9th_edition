@@ -1,4 +1,5 @@
 """This file is intended to be able ot be used in the beginnning of any jupyter ntoebook to set the config variables for the model. This helps to reduce clutter, as that is a big issue for notebooks. So if you ever need to chnage conifgurations, just change this. """
+#to make the code in this library clear we will name every variable that is stated in here with all caps
 #%%
 
 #import common libraries 
@@ -6,79 +7,95 @@ import pandas as pd
 import numpy as np
 import glob
 import os
-from string import digits
+from string import digits#is this used?
 import datetime
 import re
+import shutil
 # %config Completer.use_jedi = False#Jupiter lab specific setting to fix Auto fill bug
-
-
-#we can set FILE_DATE_ID here so that if we are running the script alone, versus through integrate, we can have the variable available
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
+#can activate below to remove caveat warnings. but for now keep it there till confident:
+# pd.options.mode.chained_assignment = None  # default='warn'
+#%%
+#we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 try:
     if FILE_DATE_ID:
        pass
 except NameError:
     FILE_DATE_ID = ''
-    
+   
 #%%
+USE_LATEST_OUTPUT_DATE_ID = False#True
+#create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
+if USE_LATEST_OUTPUT_DATE_ID:
+    list_of_files = glob.glob('./output_data/model_output/*.csv') 
+    latest_file = max(list_of_files, key=os.path.getctime)
+    #get file data id using regex. want to grab the firt 8 digits and then an underscore and then the next 4 digits
+    FILE_DATE_ID = re.search(r'_DATE(\d{8})_(\d{4})', latest_file).group(0)
+
+#%%
+#state important modelling variables
 BASE_YEAR= 2017
 END_YEAR = 2050
-Scenario_list = ['Carbon Neutral', 'Reference']
+
+#this is important for defining how the dataframes are used. Generally this shouldnt change unless a column name changes or the model is changed
+INDEX_COLS = ['Year', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
+       'Transport Type','Drive', 'Scenario']
 
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 
-EIGHTH_EDITION_DATA = True
-#%%
-#state model concordances
-model_concordances_version = FILE_DATE_ID#'20220824_1256'
-model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
-model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
-model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)
+EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable
 
-#%%
-#ANALYSIS VARIABLES
+#get sceanrios from scenarios_list file
+SCENARIOS_LIST = pd.read_csv('config/concordances_and_config_data/scenarios_list.csv')
+#grab the scenario names where 'Use' column is true and put them into a list
+SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolist()
+
+#For graphing and analysis we sometimes will single out a scenario to look at. This is the scenario we will use for that:
 SCENARIO_OF_INTEREST = 'Reference'
-###################################################
-#%%
-#import and create common variables
 
+user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
+       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth']
+user_input_measures_list_NON_ROAD = ['Non_road_efficiency_growth']
 
-config_folder_path = 'config'#folder where all the config files are stored. these may be input data or just general config files like names of eocnomies used, or correspondances
-#have set above to config_new for now just so that its clear what is new
+base_year_measures_list_ROAD = ['Activity', 'Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency']
+base_year_measures_list_NON_ROAD = ['Activity', 'Energy', 'Stocks']
 
-output_data_path = 'output_data'#this is data that is output from the model and or other processes, at least for use outside of this project
-other_outputs_path = 'other_outputs'
-
-intermediate_data_path = 'intermediate_data'#this is data that is saved during the process when you reach major checkpoints, before being loaded later in assistance of creating output data. Contains subfolders to reduce the clutter
-
-input_data_path = 'input_data'#this data shouldnt be interacted with manually. rather it is just data you take from another source, maybe reformat, and then put here. eg. EGEDA Data
-
+calculated_measures_ROAD = ['Travel_km', 'Efficiency', 'Travel_km_per_stock', 'Surplus_stocks']
+calculated_measures_NON_ROAD = ['Efficiency']
 ###################################################
 #%%
 
 ## Choose which economies to import and calculate data for:
 #first take in economy names file, then we will remove the economies we dont want (or if there are too many, just  choose the one you do want)
-economy_codes_path = '{}/utilities/economy_code_to_name.csv'.format(config_folder_path)#have set above to config_new for now just so that its clear what is new
+economy_codes_path = 'config/concordances_and_config_data/economy_code_to_name.csv'
 
-Economy_list = pd.read_csv(economy_codes_path).iloc[:,0]#get the first column
-#remove economies we dont want
-Economy_list = Economy_list[Economy_list != 'GBR']
+ECONOMY_LIST = pd.read_csv(economy_codes_path).iloc[:,0]#get the first column
 
-###################################################
-#%%
-#SET VARIABLES
-
-# Senareo = "Reference"  #can fix spelling of all things later. 
-Senareo = "Net-zero"  
-BASE_YEAR = 2017
-MAX_YEAR = 2070
-
-#until i aa confident about the the use of this value, it will have this name. Once i am conifdent that the use of this is correct, then i can just change the use of this value in the file non_specifed_transport.py to Base_year + 2
-NON_SPEC_TRANSPORT_BASE_YEAR = BASE_YEAR + 2
-NON_SPEC_TRANSPORT_MAX_YEAR = 2051#i have serious concerns about use of 2051 here and not 2070
+#ECONOMY REGIONS
+#load the economy regions file so that we can easily merge it with a dataframe to create a region column
+economy_regions_path = 'config/concordances_and_config_data/region_economy_mapping.csv'
+ECONOMY_REGIONS = pd.read_csv(economy_regions_path)
 
 ###################################################
 #%%
 import plotly.express as px
 #graphing tools:
 PLOTLY_COLORS_LIST = px.colors.qualitative.Plotly
+
+AUTO_OPEN_PLOTLY_GRAPHS = False
+
 # %%
+#state model concordances file names for concordances we create manually
+model_concordances_version = FILE_DATE_ID#'20220824_1256'
+model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)
+
+#state model concordances file names for concordances we create using inputs into the model. these model concordances state what measures are used in the model
+model_concordances_base_year_measures_file_name = 'model_concordances_measures{}.csv'.format(model_concordances_version)
+model_concordances_user_input_and_growth_rates_file_name = 'model_concordances_user_input_and_growth_rates{}.csv'.format(model_concordances_version)
+model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_supply_side_fuel_mixing{}.csv'.format(model_concordances_version)
+model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing{}.csv'.format(model_concordances_version)
+
+#AND A model_concordances_all_file_name
+model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)

@@ -12,7 +12,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #import graphing libraries
 import matplotlib
 import matplotlib.pyplot as plt
-%matplotlib inline
+# %matplotlib inline
 #%%
 #load in the transport dataset that contains all data and plot the data coverage usinga  kind of scatterplot. 
 #this will allow the user to understand where data is missing and where it is present so that if any errors occur they can find out with ease
@@ -181,5 +181,79 @@ for scenario in aggregated_model_data['Scenario'].unique():
                 plt.savefig('plotting_output/plot_data_coverage/{}_{}_{}_{}_plot.png'.format(FILE_DATE_ID, measure, transport_type, scenario))
 
 #%%
-#NOW we have plottted the data coverage and saved the data to a csv file for use in the rest of the model. (if the data is inccomplete then we will ?? work out waht to do with it?). So now begin calculating inpuits for the model befor erunnning it.
 
+#lets also communicate the missing datapoints in the data.
+#So how about plotting the number of missing data points in each economy for each measure using a tree plot, which uses similar colors for each measure
+aggregated_model_data['index_col'] = aggregated_model_data['Transport Type'] + '_' + aggregated_model_data['Medium'] + '_' + aggregated_model_data['Vehicle Type'] + '_' + aggregated_model_data['Drive']
+
+# %matplotlib inline
+#%%
+#plot the user input measures vs other measures
+user_input = pd.read_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID))
+#loop through the measures
+user_input_measures = user_input.Measure.unique()
+non_user_input_measures = [measure for measure in aggregated_model_data.Measure.unique() if measure not in user_input_measures]
+
+#put them in a dict
+measures_to_plot = dict()
+measures_to_plot['user_input_measures'] = user_input_measures
+measures_to_plot['non_user_input_measures'] = non_user_input_measures
+#loop through the measures
+for measures_name in measures_to_plot.keys():
+    #get the data for the measures
+    measures = measures_to_plot[measures_name]
+    #filter for the measures
+    aggregated_model_data_measures = aggregated_model_data.loc[aggregated_model_data['Measure'].isin(measures)]
+    #set the colors to use using a color map
+    colors = plt.get_cmap('tab10')
+    #set the number of colors to use
+    num_colors = len(measures)
+    #set the colors to use, making sure that the colors are as different as possible
+    colors_to_use_measure = [colors(i) for i in np.linspace(0, 1, num_colors)]
+
+    # unique_index_rows_index_col = aggregated_model_data.index_col.unique()
+    # #set the colors to use using a color map
+    # colors = plt.get_cmap('tab10')
+    # #set the number of colors to use
+    # num_colors = len(unique_index_rows_index_col)
+    # #set the colors to use, making sure that the colors are as different as possible
+    # colors_to_use_index_col = [colors(i) for i in np.linspace(0, 1, num_colors)]
+
+    #plot tree using plotly
+    #now check data by creating a visualisation of it
+    #for now we'll use a treemap in plotly to visualise the data
+    import plotly.express as px
+    columns_to_plot =[ 'Economy', 'Measure','index_col']
+    #set colors for the plot using colors_to_use_measure and colors_to_use_index_col
+    fig = px.treemap(aggregated_model_data_measures, path=columns_to_plot,  color='Measure')#color_discrete_map =colors_to_use_measure,
+    #make it bigger
+    fig.update_layout(width=1000, height=1000)
+    #show it in browser rather than in the notebook
+    fig.show()
+    fig.write_html("plotting_output/plot_data_coverage/missing_data/all_data_tree_{}.html".format(measures_name))
+
+    columns_to_plot =[ 'Economy', 'Measure','index_col']
+    #set colors for the plot using colors_to_use_measure and colors_to_use_index_col
+    fig = px.treemap(aggregated_model_data_measures, path=columns_to_plot, color='Measure')#color_discrete_map =colors_to_use_measure, 
+    #make it bigger
+    fig.update_layout(width=2500, height=1300)
+    #show it in browser rather than in the notebook
+    fig.show()
+    fig.write_html("plotting_output/plot_data_coverage/missing_data/all_data_tree_{}.html".format(measures_name))
+
+    #try a sunburst
+    fig = px.sunburst(aggregated_model_data_measures, path=columns_to_plot, color='Measure')#, color_discrete_map =colors_to_use_measure)
+    #make it bigger
+    fig.update_layout(width=1000, height=1000)
+    #show it in browser rather than in the notebook
+    fig.show()
+    fig.write_html("plotting_output/plot_data_coverage/missing_data/all_data_sun_{}.html".format(measures_name))
+
+    #and make one that can fit on my home screen which will be 1.3 times taller and 3 times wider
+    fig = px.sunburst(aggregated_model_data_measures, path=columns_to_plot, color='Measure')#, color_discrete_map =colors_to_use_measure)
+    #make it bigger
+    fig.update_layout(width=3000, height=2000)
+    #show it in browser rather than in the notebook
+    fig.write_html("plotting_output/plot_data_coverage/missing_data/all_data_sun_big_{}.html".format(measures_name))
+
+    # %%
