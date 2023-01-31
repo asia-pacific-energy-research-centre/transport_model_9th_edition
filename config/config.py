@@ -38,8 +38,8 @@ BASE_YEAR= 2017
 END_YEAR = 2050
 
 #this is important for defining how the dataframes are used. Generally this shouldnt change unless a column name changes or the model is changed
-INDEX_COLS = ['Year', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
-       'Transport Type','Drive', 'Scenario']
+INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
+       'Transport Type','Drive', 'Scenario', 'Unit', 'Frequency']
 
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 
@@ -54,14 +54,15 @@ SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolis
 SCENARIO_OF_INTEREST = 'Reference'
 
 user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
-       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth']
+       'New_vehicle_efficiency_growth', 'Occupancy_growth', 'Load_growth']
 user_input_measures_list_NON_ROAD = ['Non_road_efficiency_growth']
 
-base_year_measures_list_ROAD = ['Activity', 'Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency']
-base_year_measures_list_NON_ROAD = ['Activity', 'Energy', 'Stocks']
+base_year_measures_list_ROAD = ['passenger_km', 'freight_tonne_km','Energy', 'Stocks', 'Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency']
+base_year_measures_list_NON_ROAD = ['passenger_km', 'freight_tonne_km','Energy', 'Stocks']
 
 calculated_measures_ROAD = ['Travel_km', 'Efficiency', 'Travel_km_per_stock', 'Surplus_stocks']
 calculated_measures_NON_ROAD = ['Efficiency']
+
 ###################################################
 #%%
 

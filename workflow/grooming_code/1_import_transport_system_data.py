@@ -24,32 +24,35 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 = 'DATE20230120'
+FILE_DATE_ID2 = 'DATE20230124'
 
 transport_data_system_folder = '../transport_data_system'
 transport_data_system_df = pd.read_csv('{}/output_data/{}_interpolated_combined_data.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
 
 #%%
+#Load in estimates made usinng the transport data system for the new vehicle efficiency for LDVs
+ldv_eff = pd.read_csv('input_data/calculated/iea_new_vehicle_efficiency_ldv_ice.csv')
+other_eff = pd.read_csv('input_data/calculated/new_vehicle_efficiency_other_estimates.csv')
+#concatenate the eff dfs to the transport data system df
+transport_data_system_df = pd.concat([transport_data_system_df, ldv_eff, other_eff], ignore_index=True)
+#%%
 #TEMPORARY FIX, CHANGE THE MEASURE IN TRANSPORT DATA SYSTEM FOR passenger_km and freight_tonne_km to Activity so that it matches the model concordance. It is undecided whether it would be best to change the model to use the measure of passenger_km and freight_tonne_km or to change the transport data system to use activity. Or keep this here. There are pros and cons to each approach #TODO: decide on the best approach
-transport_data_system_df.loc[transport_data_system_df['Measure']=='passenger_km','Measure'] = 'Activity'
-transport_data_system_df.loc[transport_data_system_df['Measure']=='freight_tonne_km','Measure'] = 'Activity'
+# transport_data_system_df.loc[transport_data_system_df['Measure']=='passenger_km','Measure'] = 'Activity'
+# transport_data_system_df.loc[transport_data_system_df['Measure']=='freight_tonne_km','Measure'] = 'Activity'
 
 #change Date to year and filter out all non yearly data
-transport_data_system_df['Year'] = transport_data_system_df['Date'].str.split('-').str[0].astype(int)
+transport_data_system_df['Date'] = transport_data_system_df['Date'].str.split('-').str[0].astype(int)
 transport_data_system_df = transport_data_system_df[transport_data_system_df['Frequency']=='Yearly']
 
 #%%
-#filter for the same years as are in the model concordances in the transport data system (should just be base year)
-transport_data_system_df = transport_data_system_df[transport_data_system_df.Year.isin(model_concordances_measures.Year.unique())]
+#filter for the same years as are in the model concordances in the transport data system (should just be base Date)
+transport_data_system_df = transport_data_system_df[transport_data_system_df.Date.isin(model_concordances_measures.Date.unique())]
 
 #filter for the same measures as are in the model concordances in the transport data system
 transport_data_system_df = transport_data_system_df[transport_data_system_df.Measure.isin(model_concordances_measures.Measure.unique())]
 
 #now we have filtered out the majority of rows we dont need from the transport data system, we can use pandas difference() function to find out what rows we are missing from the transport data system. This will be useful for debugging and for the user to know what data is missing from the transport data system (as its expected that no data will be missing for the model to actually run))
 
-#%%
-#also we are going to create some made up vlaues where we would expect to retrieve these vlaues through a research process but we havent done that yet. This is so that the model can run and we can test it. We will need to replace these values with offical ones later on.
-turnover_rate = 14.8#14.8 years is the average turnover rate for a car in the US accoreding to this https://energyfuse.org/americas-aging-vehicles-delay-rate-fleet-turnover/
 
 #%%
 
@@ -105,6 +108,7 @@ else:
     transport_data_system_df.drop(missing_index_values2, inplace=True)
 
 #%%
+missing_index_values1.reset_index(inplace=True)
 #save the missing values to a csv for use separately:
 missing_index_values1.to_csv('output_data/for_other_modellers/missing_values/{}_missing_input_values.csv'.format(FILE_DATE_ID), index=False)
 #%%

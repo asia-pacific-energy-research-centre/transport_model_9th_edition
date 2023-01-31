@@ -40,20 +40,21 @@ manually_defined_transport_categories.drop_duplicates(inplace=True)
 
 #could create concordances for each year, economy and scenario and then cross that with the osemosys_concordances to get the final concordances
 model_concordances = pd.DataFrame(columns=manually_defined_transport_categories.columns)
-for year in range(BASE_YEAR, END_YEAR+1):
+for Date in range(BASE_YEAR, END_YEAR+1):
     for economy in ECONOMY_LIST:#get economys from economy_code_to_name concordance in config.py
         for scenario in SCENARIOS_LIST:
             #create concordances for each year, economy and scenario
             manually_defined_transport_categories_year = manually_defined_transport_categories.copy()
-            manually_defined_transport_categories_year['Year'] = int(year)
+            manually_defined_transport_categories_year['Date'] = int(Date)
             manually_defined_transport_categories_year['Economy'] = economy
             manually_defined_transport_categories_year['Scenario'] = scenario
             #merge with manually_defined_transport_categories_year
             model_concordances = pd.concat([model_concordances, manually_defined_transport_categories_year])
 
 #convert year to int
-model_concordances['Year'] = model_concordances['Year'].astype(int)
-
+model_concordances['Date'] = model_concordances['Date'].astype(int)
+#create 'Frequency col which is set to 'Yearly'
+model_concordances['Frequency'] = 'Yearly'
 #save model_concordances with date
 model_concordances.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name), index=False)
 
@@ -82,8 +83,8 @@ model_concordances_fuels_NO_BIOFUELS.to_csv('config/concordances_and_config_data
 ########################################################################################################################################################################
 #%%
 #now for each measure create a copy of the model concordance for that medium and the base year only and add the measure to the copy (where non road is all non road mediums)
-base_year_model_concordances_ROAD = model_concordances[(model_concordances['Medium'] == 'road') & (model_concordances['Year'] == BASE_YEAR)]
-base_year_model_concordances_NON_ROAD = model_concordances[(model_concordances['Medium'] != 'road') & (model_concordances['Year'] == BASE_YEAR)]
+base_year_model_concordances_ROAD = model_concordances[(model_concordances['Medium'] == 'road') & (model_concordances['Date'] == BASE_YEAR)]
+base_year_model_concordances_NON_ROAD = model_concordances[(model_concordances['Medium'] != 'road') & (model_concordances['Date'] == BASE_YEAR)]
 #remove scenarios column
 base_year_model_concordances_ROAD.drop(columns=['Scenario'], inplace=True)
 base_year_model_concordances_ROAD.drop_duplicates(inplace=True)
@@ -107,6 +108,18 @@ for measure in base_year_measures_list_NON_ROAD:
 #join the two dfs using concat
 model_concordances_base_year_measures = pd.concat([base_year_road_measures, base_year_non_road_measures])
 
+#Measure to Unit concordance (load it in and merge it to the model concordances)
+measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+
+#merge the dict to our model concordances
+model_concordances_base_year_measures = pd.merge(model_concordances_base_year_measures, measure_to_unit_concordance, how='left', on=['Measure'])
+#%%
+#TEMP
+#Remove cases so we dont have passenger_km measure where the transport type is freight and vice versa for freight_tonne_km
+model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'passenger_km') & (model_concordances_base_year_measures['Transport Type'] == 'freight'))]
+model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'freight_tonne_km') & (model_concordances_base_year_measures['Transport Type'] == 'passenger'))]
+#TEMP Over
+#%%
 #now save
 model_concordances_base_year_measures.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_base_year_measures_file_name), index=False)
 
@@ -134,7 +147,7 @@ for measure in user_input_measures_list_NON_ROAD:
 #join the two dfs using concat
 model_concordances_user_input_and_growth_rates = pd.concat([non_road_user_input_and_growth_rates, road_user_input_and_growth_rates], ignore_index=True)
 #remove the BASE year as we don't need it. 
-model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Year'] != BASE_YEAR]
+model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Date'] != BASE_YEAR]
 #now save
 model_concordances_user_input_and_growth_rates.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name), index=False)
 
@@ -145,6 +158,18 @@ model_concordances_user_input_and_growth_rates.to_csv('config/concordances_and_c
 #load user input for fuel mixing 
 demand_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')
 supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
+
+#TEMP
+#add Frequency column of 'Yearly'
+demand_side_fuel_mixing['Frequency'] = 'Yearly'
+supply_side_fuel_mixing['Frequency'] = 'Yearly'
+#rename Year to Date
+demand_side_fuel_mixing = demand_side_fuel_mixing.rename(columns={'Year': 'Date'})
+supply_side_fuel_mixing = supply_side_fuel_mixing.rename(columns={'Year': 'Date'})
+#Unit = %
+demand_side_fuel_mixing['Unit'] = '%'
+supply_side_fuel_mixing['Unit'] = '%'
+#TEMP OVER
 
 #replace fuel_share column measure and make the value the original col name
 supply_side_fuel_mixing = supply_side_fuel_mixing.rename(columns={'Supply_side_fuel_share': 'Measure'})
@@ -166,7 +191,7 @@ supply_side_fuel_mixing.to_csv('config/concordances_and_config_data/computer_gen
 #LASTLY CREATE A MODEL CONCORDANCE WHICH CONTAINS ALL THE DETAILS FROM ABOVE, TOGETHER
 #PERHAPS THIS SINT SO USEFUL BECAUSE COMBINING ALL THE MEASURES CREATES PRTOBLEMS WITH HOW THE MIXES HAVE DIFFERENT TIME PERIODS AND CATEGORIES AND SAUCH., KEEPING THEM IN THEIR OWN FILES IS PROBABLY BETTER?
 #note that im 99% that we dont need to include model_concordances_fuels in here because it doesnt have any measures in it. The way we use fuels are in demand/supply side fuel mixing to determine the amount of fuel used in each transport category. Splitting the other measures by fuel will be silly so to have that in the concordance would be a waste of time.
-# model_concordances_all = model_concordances_fuels.merge(model_concordances_measures, on=['Year', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Economy'], how='outer')
+# model_concordances_all = model_concordances_fuels.merge(model_concordances_measures, on=['Date', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Economy'], how='outer')
 #%%
 #concat model_concordances_measures and model_concordances_user_input_and_growth_rates
 model_concordances_all = pd.concat([model_concordances_base_year_measures, model_concordances_user_input_and_growth_rates], ignore_index=True)
