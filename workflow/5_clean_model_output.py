@@ -19,10 +19,10 @@ model_output_all_with_fuels = model_output_all_with_fuels[model_output_all_with_
 #detailed output can jsut be the current output, the non_deetailed can just have stocks, energy and activity data
 model_output_detailed = model_output_all.copy()
 model_output_non_detailed = model_output_all.copy()
-model_output_non_detailed = model_output_non_detailed[['Year', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium','Stocks', 'Activity', 'Energy']]
+model_output_non_detailed = model_output_non_detailed[['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium','Stocks', 'passenger_km','freight_tonne_km', 'Energy']]
 
 #now create 'with fuels' output which will only contain energy use. This is to avoid any confusion because the 'with fuels' output contians activity and stocks replicated for each fuel type within a vehicel type / drive combination. 
-model_output_all_with_fuels = model_output_all_with_fuels[['Year', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'Fuel',  'Energy']]
+model_output_all_with_fuels = model_output_all_with_fuels[['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'Fuel',  'Energy']]
 
 #%%
 #save data

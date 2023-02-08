@@ -18,13 +18,7 @@ pio.renderers.default = "browser"#allow plotting of graphs in the interactive no
 
 #%%
 #load data.
-#we will load the vehicle sales shares that were in the input data folder of 8th edition, whoch it seems hugh projected.
-# vehicle_sales_share = pd.read_excel('input_data/adjustments_spreadsheet.xlsx', sheet_name='Vehicle_sales_share')
-# vehicle_sales_share = pd.read_csv('intermediate_data/non_aggregated_input_data/vehicle_sales_share.csv')#this is jsut a formatted version of above
-#load data
-vehicle_sales_share_ref = pd.read_excel('input_data/from_8th/raw_data/vehicle_sales_share_model.xlsx', sheet_name='Reference')
 
-vehicle_sales_share_netzero = pd.read_excel('input_data/from_8th/raw_data/vehicle_sales_share_model.xlsx', sheet_name='Net-zero')
 
 #we will merge a regions dataframe so that we can treat data wrt regions if need be
 # regions = pd.read_csv('intermediate_data/non_aggregated_input_data/regions.csv')
@@ -152,66 +146,72 @@ if save_as_user_input:
 
 
 
+run_this= False
+if run_this:
+
+    #we will load the vehicle sales shares that were in the input data folder of 8th edition, whoch it seems hugh projected.
+    # vehicle_sales_share = pd.read_excel('input_data/adjustments_spreadsheet.xlsx', sheet_name='Vehicle_sales_share')
+    # vehicle_sales_share = pd.read_csv('intermediate_data/non_aggregated_input_data/vehicle_sales_share.csv')#this is jsut a formatted version of above
+    #load data
+    vehicle_sales_share_ref = pd.read_excel('input_data/from_8th/raw_data/vehicle_sales_share_model.xlsx', sheet_name='Reference')
+
+    vehicle_sales_share_netzero = pd.read_excel('input_data/from_8th/raw_data/vehicle_sales_share_model.xlsx', sheet_name='Net-zero')
+    ################################################################################################################################################################
+    #OPTION 2, cancelled
+    #This method seemed okay until i realised that it was the proportion of sales per vehicle type, so it didnt consider the proportion of vehicle type sales for each transport type. 
+
+    ##first extract daata from hugs original data
+    #make data long and create scenario column then concatenate
+    vehicle_sales_share_ref_long = pd.melt(vehicle_sales_share_ref, id_vars=['Economy', 'Transport Type', 'Vehicle Type', 'Drive'], var_name='Year', value_name='Value')
+
+    vehicle_sales_share_cn_long = pd.melt(vehicle_sales_share_netzero, id_vars=['Economy', 'Transport Type', 'Vehicle Type', 'Drive'], var_name='Year', value_name='Value')
+
+    #create scen cols
+    vehicle_sales_share_ref_long['Scenario'] = 'Reference'
+    vehicle_sales_share_cn_long['Scenario'] = 'Carbon Neutral'
+
+    #concatenate
+    vehicle_sales_share_long = pd.concat([vehicle_sales_share_ref_long, vehicle_sales_share_cn_long])
+
+    #now we will create a normalised vehicle sales share from the 8th edition data
+    vehicle_sales_share_transport_type_sum = vehicle_sales_share_long[['Economy', 'Scenario', 'Transport Type', 'Year', 'Value']]
+
+    #group by transport type and year. we will make it so that the sum of the vehicle sales share for each transport type is 1
+    vehicle_sales_share_transport_type_sum = vehicle_sales_share_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Year']).sum()
+
+    vehicle_sales_share_transport_type_sum.rename(columns={"Value": "Vehicle_sales_share_sum"}, inplace=True)
+
+    vehicle_sales_share_normalised = vehicle_sales_share_long.merge(vehicle_sales_share_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Year'], how='left')
+
+    vehicle_sales_share_normalised['Vehicle_sales_share_normalised'] = vehicle_sales_share_normalised['Value'] * (1 / vehicle_sales_share_normalised['Vehicle_sales_share_sum'])
+
+
+    #drop cols
+    vehicle_sales_share_normalised.drop(columns=['Value', 'Vehicle_sales_share_sum'], inplace=True)
+    save_as_user_input = False
+    if save_as_user_input:
+        #save teh data bove to the adjsutments spreadsheet
+
+        #rename Vehicle_sales_share_normalised to Value
+        vehicle_sales_share_normalised2 = vehicle_sales_share_normalised.rename(columns={"Vehicle_sales_share_normalised": "Value"})
+
+        with pd.ExcelWriter('input_data/user_input_spreadsheet.xlsx',engine='openpyxl', mode='a',if_sheet_exists = 'replace') as writer: 
+                vehicle_sales_share_normalised2.to_excel(writer, sheet_name='Vehicle_sales_share',  index=False)
+
+        #save to reformatted data folder
+        vehicle_sales_share_normalised.to_csv('input_data/from_8th/reformatted/vehicle_sales_share_normalised.csv', index=False)
 
 
 
-################################################################################################################################################################
-#OPTION 2, cancelled
-#%%
-#This method seemed okay until i realised that it was the proportion of sales per vehicle type, so it didnt consider the proportion of vehicle type sales for each transport type. 
+    #it would be interesting to compare the above to the data we create below from the final stocks data from 8th
 
-##first extract daata from hugs original data
-#make data long and create scenario column then concatenate
-vehicle_sales_share_ref_long = pd.melt(vehicle_sales_share_ref, id_vars=['Economy', 'Transport Type', 'Vehicle Type', 'Drive'], var_name='Year', value_name='Value')
-
-vehicle_sales_share_cn_long = pd.melt(vehicle_sales_share_netzero, id_vars=['Economy', 'Transport Type', 'Vehicle Type', 'Drive'], var_name='Year', value_name='Value')
-
-#create scen cols
-vehicle_sales_share_ref_long['Scenario'] = 'Reference'
-vehicle_sales_share_cn_long['Scenario'] = 'Carbon Neutral'
-
-#concatenate
-vehicle_sales_share_long = pd.concat([vehicle_sales_share_ref_long, vehicle_sales_share_cn_long])
-
-#now we will create a normalised vehicle sales share from the 8th edition data
-vehicle_sales_share_transport_type_sum = vehicle_sales_share_long[['Economy', 'Scenario', 'Transport Type', 'Year', 'Value']]
-
-#group by transport type and year. we will make it so that the sum of the vehicle sales share for each transport type is 1
-vehicle_sales_share_transport_type_sum = vehicle_sales_share_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Year']).sum()
-
-vehicle_sales_share_transport_type_sum.rename(columns={"Value": "Vehicle_sales_share_sum"}, inplace=True)
-
-vehicle_sales_share_normalised = vehicle_sales_share_long.merge(vehicle_sales_share_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Year'], how='left')
-#%%
-vehicle_sales_share_normalised['Vehicle_sales_share_normalised'] = vehicle_sales_share_normalised['Value'] * (1 / vehicle_sales_share_normalised['Vehicle_sales_share_sum'])
-
-#%%
-#drop cols
-vehicle_sales_share_normalised.drop(columns=['Value', 'Vehicle_sales_share_sum'], inplace=True)
-save_as_user_input = False
-if save_as_user_input:
-       #save teh data bove to the adjsutments spreadsheet
-
-       #rename Vehicle_sales_share_normalised to Value
-       vehicle_sales_share_normalised2 = vehicle_sales_share_normalised.rename(columns={"Vehicle_sales_share_normalised": "Value"})
-
-       with pd.ExcelWriter('input_data/user_input_spreadsheet.xlsx',engine='openpyxl', mode='a',if_sheet_exists = 'replace') as writer: 
-              vehicle_sales_share_normalised2.to_excel(writer, sheet_name='Vehicle_sales_share',  index=False)
-
-       #save to reformatted data folder
-       vehicle_sales_share_normalised.to_csv('input_data/from_8th/reformatted/vehicle_sales_share_normalised.csv', index=False)
-
-
-
-#it would be interesting to compare the above to the data we create below from the final stocks data from 8th
-#%%
-##ERROR CHECKING
-#does the vehicle_sales_share add up to 1 for each transport type
-################################################################################################################################################################
-#sum by economy, transport type and vehicle type
-vehicle_sales_share_normalised_sum = vehicle_sales_share_normalised.groupby(['Economy', 'Scenario', 'Year', 'Transport Type']).sum()
-#print where the sum is not 1
-vehicle_sales_share_normalised_sum[(vehicle_sales_share_normalised_sum['Vehicle_sales_share_normalised'] >= 1.0000001) | (vehicle_sales_share_normalised_sum['Vehicle_sales_share_normalised'] <= 0.9999999999)]
+    ##ERROR CHECKING
+    #does the vehicle_sales_share add up to 1 for each transport type
+    ################################################################################################################################################################
+    #sum by economy, transport type and vehicle type
+    vehicle_sales_share_normalised_sum = vehicle_sales_share_normalised.groupby(['Economy', 'Scenario', 'Year', 'Transport Type']).sum()
+    #print where the sum is not 1
+    vehicle_sales_share_normalised_sum[(vehicle_sales_share_normalised_sum['Vehicle_sales_share_normalised'] >= 1.0000001) | (vehicle_sales_share_normalised_sum['Vehicle_sales_share_normalised'] <= 0.9999999999)]
 
 
 

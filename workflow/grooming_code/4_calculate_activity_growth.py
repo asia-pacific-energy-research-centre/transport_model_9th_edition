@@ -12,13 +12,14 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #%%
 #data
 #take in activity data from 8th edition up to 2050 (activity_from_OSEMOSYS-hughslast.csv)
-activity = pd.read_csv('intermediate_data/cleaned_input_data/activity_from_OSEMOSYS-hughslast.csv')#TODO, keeping this input for now because we intend to calculate activity growth using a more complex method in the future (not just importing activity from transport data system)
+activity = pd.read_csv('input_data/from_8th/reformatted/activity_from_OSEMOSYS-hughslast.csv')#TODO, keeping this input for now because we intend to calculate activity growth using a more complex method in the future (not just importing activity from transport data system)
 
+#%%
 #RENAME Activity to Value
 activity.rename(columns={'Activity': 'Value'}, inplace=True)
 
 #define index cols
-INDEX_COLS = ['Economy','Year']
+INDEX_COLS = ['Economy','Date']
 
 #remove unnecessary cols and remove duplicates (all cols that arent INDEX_COLS or Value)
 activity.drop([col for col in activity.columns if col not in INDEX_COLS + ['Value']], axis=1, inplace=True)
@@ -35,7 +36,7 @@ activity_growth = activity_growth.sort_values(by=INDEX_COLS)
 activity_growth = activity_growth.set_index(INDEX_COLS).pct_change()
 
 #now set all vlaues during the base year to 1 as the growth rate is not defined for the base year (in the code its actually using the row above for 2050 currently)
-activity_growth.loc[activity_growth.index.get_level_values('Year') == BASE_YEAR, 'Value'] = 0
+activity_growth.loc[activity_growth.index.get_level_values('Date') == BASE_YEAR, 'Value'] = 0
 
 #replace NAN with 0 
 activity_growth = activity_growth.fillna(0)

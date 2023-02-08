@@ -19,7 +19,7 @@ model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordance
 
 #Load user input from 'input_data/user_input_spreadsheet.xlsx' by looping through the sheets in the excel file and then concat them together
 #first load the sheets
-user_input_file = pd.ExcelFile('input_data/user_input_spreadsheet.xlsx')
+user_input_file = pd.ExcelFile('input_data/user_input_spreadsheet.xlsx', engine='openpyxl')
 for sheet in user_input_file.sheet_names:
     print('Importing user input sheet: {}'.format(sheet))
     if sheet == user_input_file.sheet_names[0]:
@@ -27,11 +27,10 @@ for sheet in user_input_file.sheet_names:
     else:
         user_input = pd.concat([user_input, pd.read_excel('input_data/user_input_spreadsheet.xlsx', sheet_name=sheet)])
 
-
+#%%
 ################################################################################
 ################################################################################
 ################################################################################
-
 
 #%%
 #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
@@ -65,12 +64,12 @@ if missing_index_values1.empty:
 else:
     print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
     #add these rows to the user_input and set them to row_and_data_not_available
-    new_user_input = user_input.reindex(missing_index_values1)
-    new_user_input['Data_available'] = 'row_and_data_not_available'
-    new_user_input['Value'] = np.nan
+    missing_index_values1 = pd.DataFrame(index=missing_index_values1)
+    missing_index_values1['Data_available'] = 'row_and_data_not_available'
+    missing_index_values1['Value'] = np.nan
+    #then append to transport_data_system_df
+    user_input = pd.concat([missing_index_values1, user_input], sort=False)
 
-    #now append to user_input
-    user_input = user_input.append(new_user_input)
 
 if missing_index_values2.empty:
     pass#this is to be expected as the cocnordance should always have everything we need in it!
@@ -82,8 +81,10 @@ else:
     user_input.drop(missing_index_values2, inplace=True)
 
 #%%
+user_input = user_input.reset_index()
+
 #save the new_user_inputs
-user_input.to_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID))
+user_input.to_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID), index=False)
 
 
 #%%
@@ -126,26 +127,26 @@ user_input.to_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format
 # #and then save all the data sets to the original excel file again
 # new_user_input = user_input.reindex(missing_index_values1).reset_index()
 
-# #%%
-# #separate the new user input by measure
-# Vehicle_sales_share_new = new_user_input.loc[new_user_input.Measure == 'Vehicle sales share']
-# Turnover_rate_growth_new = new_user_input.loc[new_user_input.Measure == 'Turnover rate growth']
-# New_vehicle_efficiency_growth_new = new_user_input.loc[new_user_input.Measure == 'New vehicle efficiency growth']
-# non_road_efficiency_growth_new = new_user_input.loc[new_user_input.Measure == 'non-road efficiency growth']
-# OccupanceAndLoad_growth_new = new_user_input.loc[new_user_input.Measure == 'OccupanceAndLoad growth']
-
+# #RESAVE
+# new_user_input = user_input.copy()
+# # #separate the new user input by measure
+# Vehicle_sales_share_new = new_user_input.loc[new_user_input.Measure == 'Vehicle_sales_share']
+# Turnover_rate_growth_new = new_user_input.loc[new_user_input.Measure == 'Turnover_rate_growth']
+# New_vehicle_efficiency_growth_new = new_user_input.loc[new_user_input.Measure == 'New_vehicle_efficiency_growth']
+# non_road_efficiency_growth_new = new_user_input.loc[new_user_input.Measure == 'Non_road_efficiency_growth']
+# Occupance_growth_new = new_user_input.loc[new_user_input.Measure == 'Occupancy_growth']
+# Load_growth_new = new_user_input.loc[new_user_input.Measure == 'Load_growth']
 
 
 # # save all the new data sets to the oringal excel file (with multiple sheets)
 # write = pd.ExcelWriter('input_data/user_input_spreadsheet.xlsx', engine='xlsxwriter')
-# Vehicle_sales_share.to_excel(write, sheet_name='Vehicle_sales_share', index=False)
-# Turnover_rate_growth.to_excel(write, sheet_name='Turnover_rate_growth', index=False)
-# New_vehicle_efficiency_growth.to_excel(write, sheet_name='New_vehicle_efficiency_growth', index=False)
-# non_road_efficiency_growth.to_excel(write, sheet_name='non_road_efficiency_growth', index=False)
-# OccupanceAndLoad_growth.to_excel(write, sheet_name='OccupanceAndLoad_growth', index=False)
+# Vehicle_sales_share_new.to_excel(write, sheet_name='Vehicle_sales_share', index=False)
+# Turnover_rate_growth_new.to_excel(write, sheet_name='Turnover_rate_growth', index=False)
+# New_vehicle_efficiency_growth_new.to_excel(write, sheet_name='New_vehicle_efficiency_growth', index=False)
+# non_road_efficiency_growth_new.to_excel(write, sheet_name='non_road_efficiency_growth', index=False)
+# Occupance_growth_new.to_excel(write, sheet_name='Occupancy_growth', index=False)
+# Load_growth_new.to_excel(write, sheet_name='Load_growth', index=False)
 # write.save()
-
-
 
 
 

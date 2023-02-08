@@ -313,14 +313,27 @@ for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
        plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html')
        fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
+
 ###############################################################################
 
 #%%
 #save using scenario_id
-new_sales_shares_all.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(scenario_id), index = False)
+new_sales_shares_all.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(FILE_DATE_ID), index = False)
 
 #save the variables we used to calculate the data by just saving this file
-shutil.copyfile('other_code/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(scenario_id))
+shutil.copyfile('other_code/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(FILE_DATE_ID))
+
+#%%
+#before saving data to user input spreadsheety we will do some formatting:
+#add cols for Unit,Medium,Data_available, frequency and Measure
+new_sales_shares_all['Unit'] = '%'
+new_sales_shares_all['Medium'] = 'road'
+new_sales_shares_all['Data_available'] = 'data_available'
+new_sales_shares_all['Measure'] = 'Vehicle_sales_share'
+new_sales_shares_all['Frequency'] = 'Yearly'
+#rename year to date
+new_sales_shares_all = new_sales_shares_all.rename(columns={'Year':'Date'})
+
 
 #%%
 #also save the data to the user_input_spreadsheet

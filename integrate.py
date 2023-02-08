@@ -27,8 +27,10 @@ print('Model run for {} starting'.format(file_date))
 print('\n FILE_DATE_ID is set to {}'.format(FILE_DATE_ID))
 
 PLOT_INPUT_DATA = False
+CREATE_MODEL_CONCORDANCES = False
 #%%
-exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
+if CREATE_MODEL_CONCORDANCES:
+    exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
 exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
 #%%
 exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
@@ -37,6 +39,7 @@ if PLOT_INPUT_DATA:
     exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
 
 exec(open("./workflow/grooming_code/4_calculate_activity_growth.py").read())
+#%%
 exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
 
 #%%

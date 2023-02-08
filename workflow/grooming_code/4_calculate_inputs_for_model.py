@@ -17,9 +17,9 @@ transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_ag
 #%%
 #remove uneeded columns
 transport_dataset.drop(['Unit','Final_dataset_selection_method','Dataset', 'Data_available'], axis=1, inplace=True)
-
+INDEX_COLS.remove('Unit')
 #set index cols
-# INDEX_COLS = ['Year', 'Economy', 'Vehicle Type', 'Medium','Transport Type', 'Drive', 'Scenario']
+# INDEX_COLS = ['Date', 'Economy', 'Vehicle Type', 'Medium','Transport Type', 'Drive', 'Scenario']
 
 #%%
 #separate into road and non road
@@ -30,21 +30,24 @@ non_road_model_input = transport_dataset.loc[transport_dataset['Medium'].isin(['
 #create INDEX_COLS with no measure
 INDEX_COLS_NO_MEASURE = INDEX_COLS.copy()
 INDEX_COLS_NO_MEASURE.remove('Measure')
-
+#%%
 road_model_input = road_model_input.pivot(index=INDEX_COLS_NO_MEASURE, columns='Measure', values='Value').reset_index()
 non_road_model_input = non_road_model_input.pivot(index=INDEX_COLS_NO_MEASURE, columns='Measure', values='Value').reset_index()
 
 ################################################################################
 #%%
-#CALCUALTE TRAVEL KM
-road_model_input['Travel_km'] = road_model_input['Activity']/road_model_input['Occupancy_or_load']
+#CALCUALTE TRAVEL KM as activity/occupancy or load depending on if transport type is passenger or freight
+road_model_input['Travel_km'] = np.nan
+road_model_input.loc[road_model_input['Transport Type'] == 'passenger', 'Travel_km'] = road_model_input['passenger_km']/road_model_input['Occupancy']
+road_model_input.loc[road_model_input['Transport Type'] == 'freight', 'Travel_km'] = road_model_input['freight_tonne_km']/road_model_input['Load']
+
 
 #%%
 
 #CALCUALTE TRAVEL KM PER STOCK
 #After much deliberation it was arrived at that travel km per stock should be calculated as the average travel km per stock for each vehicle type. This was to avoid the effect of having weird ratios created by very small numbers. By averaging it also makes it easier to keep track of this variable.
-average_travel_km_per_stock_of_vehicle_type = road_model_input[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Travel_km', 'Stocks']]
-average_travel_km_per_stock_of_vehicle_type = average_travel_km_per_stock_of_vehicle_type.dropna().groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year']).sum().reset_index()
+average_travel_km_per_stock_of_vehicle_type = road_model_input[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Travel_km', 'Stocks']]
+average_travel_km_per_stock_of_vehicle_type = average_travel_km_per_stock_of_vehicle_type.dropna().groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date']).sum().reset_index()
 
 average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock'] = average_travel_km_per_stock_of_vehicle_type['Travel_km']/average_travel_km_per_stock_of_vehicle_type['Stocks']
 
@@ -56,7 +59,7 @@ average_travel_km_per_stock_of_vehicle_type.drop(['Travel_km', 'Stocks'], axis=1
 #first set all 0's to na
 average_travel_km_per_stock_of_vehicle_type.loc[average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock']==0, 'Travel_km_per_stock'] = np.nan
 #then replace nas
-average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock'] = average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock'].fillna(average_travel_km_per_stock_of_vehicle_type.groupby(['Transport Type', 'Vehicle Type', 'Year'])['Travel_km_per_stock'].transform('mean'))
+average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock'] = average_travel_km_per_stock_of_vehicle_type['Travel_km_per_stock'].fillna(average_travel_km_per_stock_of_vehicle_type.groupby(['Transport Type', 'Vehicle Type', 'Date'])['Travel_km_per_stock'].transform('mean'))
 
 #now we have a travel km per stock for each vehicle type, we can merge this back into the original data
 #%%
@@ -81,7 +84,7 @@ else:
 
 #%%
 #AND MERGE BACK INTO THE ORIGINAL DATA
-road_model_input = road_model_input.merge(average_travel_km_per_stock_of_vehicle_type, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
+road_model_input = road_model_input.merge(average_travel_km_per_stock_of_vehicle_type, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date'], how='left')
 
 road_model_input['Stocks'] = road_model_input['Travel_km'] / road_model_input['Travel_km_per_stock']#calculate stocks again?
 
@@ -108,9 +111,9 @@ if len(road_model_input_correct_eff) == 0:
 
 else:
     #recalcualte eff for incorrect rows using avgs from correct rows
-    new_values_eff = road_model_input_correct_eff.groupby(['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive']).sum().reset_index()
+    new_values_eff = road_model_input_correct_eff.groupby(['Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive']).sum().reset_index()
     new_values_eff['Efficiency'] = new_values_eff['Travel_km']/new_values_eff['Energy']
-    new_values_eff = new_values_eff[['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive', 'Efficiency']]
+    new_values_eff = new_values_eff[['Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive', 'Efficiency']]
 
     if EIGHTH_EDITION_DATA == True:
         #FIX FOR FCEV HT's:
@@ -118,7 +121,7 @@ else:
         #first filter for only fcev and bev in non ht vehicle types
         avg_diff = new_values_eff.loc[(new_values_eff['Drive'].isin(['bev', 'fcev'])) & (new_values_eff['Vehicle Type'] != 'ht')]
         #then pivot so we ahve an eff col for each drive type.
-        avg_diff = avg_diff.pivot(index=['Scenario', 'Transport Type', 'Vehicle Type', 'Year'], columns='Drive', values='Efficiency').reset_index()
+        avg_diff = avg_diff.pivot(index=['Scenario', 'Transport Type', 'Vehicle Type', 'Date'], columns='Drive', values='Efficiency').reset_index()
         #remvove any na's (eg 2w have no value for fcev)
         avg_diff.dropna(inplace=True)
         #then divide the two and avg to create a singular value for the difference between the two
@@ -133,23 +136,34 @@ else:
         #done
 
     #attach new values for missing/incorrect eff values to rows to fix
-    rows_to_fix = rows_to_fix.merge(new_values_eff, on=['Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive'], how='left')
+    rows_to_fix = rows_to_fix.merge(new_values_eff, on=['Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive'], how='left')
 
     #concatenate with correct rows in orgiinal df
     road_model_input = pd.concat([road_model_input, rows_to_fix])
 
     #now recalcualte travel km and activity for these rows:
     road_model_input['Travel_km'] = road_model_input['Energy'] * road_model_input['Efficiency']
-    road_model_input['Activity'] = road_model_input['Travel_km'] * road_model_input['Occupancy_or_load']
+    #where transport type is freight, activity is travel km *  load, where transport type is passenger activity is travel km * occupancy
+    road_model_input.loc[road_model_input['Transport Type'] == 'passenger', 'passenger_km'] = road_model_input['Travel_km'] * road_model_input['Occupancy']
+    road_model_input.loc[road_model_input['Transport Type'] == 'freight', 'freight_tonne_km'] = road_model_input['Travel_km'] * road_model_input['Load']
+    # road_model_input['Activity'] = road_model_input['Travel_km'] * road_model_input['Occupancy_or_load']
 #%%
 #NON ROAD DATA:
 #also calc non road eff here, but this is just a placeholder for now, as it seems it would be better to also calcualte non road eff as efficiency = travel km / energy not activity /energy
-non_road_model_input['Efficiency'] = non_road_model_input['Activity']/non_road_model_input['Energy']
+
+#where transport type is freight, activity is freight_tonne_km, where transport type is passenger activity is  passenger_km
+non_road_model_input.loc[non_road_model_input['Transport Type'] == 'passenger', 'Efficiency'] = non_road_model_input['passenger_km']/non_road_model_input['Energy']
+non_road_model_input.loc[non_road_model_input['Transport Type'] == 'freight', 'Efficiency'] = non_road_model_input['freight_tonne_km']/non_road_model_input['Energy']
 
 #if activity and energy are 0 then we will get na. In this case we will replace the efficiency with the average efficiency of the whole of apec
-non_road_model_input_avg_eff = non_road_model_input.groupby(['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year','Scenario']).sum().reset_index()
-non_road_model_input_avg_eff['Efficiency_avg'] = non_road_model_input_avg_eff['Activity']/non_road_model_input_avg_eff['Energy']
-non_road_model_input = non_road_model_input.merge(non_road_model_input_avg_eff[['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year','Scenario', 'Efficiency_avg']], on=['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year','Scenario'], how='left')
+non_road_model_input_avg_eff = non_road_model_input.groupby(['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Date','Scenario']).sum().reset_index()
+
+#where transport type is freight, activity is freight_tonne_km, where transport type is passenger activity is  passenger_km
+non_road_model_input_avg_eff.loc[non_road_model_input_avg_eff['Transport Type'] == 'passenger', 'Efficiency_avg'] = non_road_model_input_avg_eff['passenger_km']/non_road_model_input_avg_eff['Energy']
+non_road_model_input_avg_eff.loc[non_road_model_input_avg_eff['Transport Type'] == 'freight', 'Efficiency_avg'] = non_road_model_input_avg_eff['freight_tonne_km']/non_road_model_input_avg_eff['Energy']
+
+
+non_road_model_input = non_road_model_input.merge(non_road_model_input_avg_eff[['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Date','Scenario', 'Efficiency_avg']], on=['Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Date','Scenario'], how='left')
 non_road_model_input.loc[non_road_model_input['Efficiency'].isnull(), 'Efficiency'] = non_road_model_input['Efficiency_avg']
 non_road_model_input.drop(['Efficiency_avg'], axis=1, inplace=True)
 ################################################################################
@@ -163,9 +177,9 @@ road_model_input['Surplus_stocks'] = 0
 
 #%%
 #CREATE STOCKS FOR NON ROAD
-#this is an adjsutment to the road stocks data from 8th edition by setting stocks to 1 for all non road vehicles that have a value >0 for activity
-non_road_model_input.loc[(non_road_model_input['Activity'] > 0), 'Stocks'] = 1
-non_road_model_input.loc[(non_road_model_input['Activity'] == 0), 'Stocks'] = 0
+#this is an adjsutment to the road stocks data from 8th edition by setting stocks to 1 for all non road vehicles that have a value >0 for Energy
+non_road_model_input.loc[(non_road_model_input['Energy'] > 0), 'Stocks'] = 1
+non_road_model_input.loc[(non_road_model_input['Energy'] == 0), 'Stocks'] = 0
 #%%
 road_model_input_new = road_model_input[INDEX_COLS_NO_MEASURE + base_year_measures_list_ROAD + user_input_measures_list_ROAD + calculated_measures_ROAD]
 non_road_model_input_new = non_road_model_input[INDEX_COLS_NO_MEASURE + base_year_measures_list_NON_ROAD + user_input_measures_list_NON_ROAD + calculated_measures_NON_ROAD]

@@ -12,10 +12,10 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #%%
 #we're oging to take in the data that we have from teh transport datasyetm and see if we can calcualte vehicle efficiency.
 
-FILE_DATE_ID2 = 'DATE20230124'
+FILE_DATE_ID2 = 'DATE20230203'
 
 transport_data_system_folder = '../transport_data_system'
-transport_data_system_df_original = pd.read_csv('{}/output_data/{}_interpolated_combined_data.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
+transport_data_system_df_original = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
 
 INDEX_COLS = ['Date',
  'Economy',
@@ -40,10 +40,10 @@ if analyse:
     #pivot the measure col to get an efficiency and new_vehicle_efficiency col
     transport_data_system_df = transport_data_system_df.pivot(index=INDEX_COLS+['Dataset'],columns='Measure',values='Value').reset_index()
 #%%
-
+analyse = True
 if analyse:
     #lets also load in passengerkm and energy use data from the transport data system
-    transport_data_system_df2 = pd.read_csv('{}/output_data/{}_interpolated_combined_data.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
+    transport_data_system_df2 = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
     transport_data_system_df2 = transport_data_system_df2[transport_data_system_df2.Measure.isin(['passenger_km','Energy'])]
     #and we want to calcualte a value for efficiency per km so we will convert passenger km to km by:
     #filtering for only Vehicle Type = lv, lt, and ldv
@@ -59,6 +59,7 @@ if analyse:
     #set dataset to 'Calculated'
     transport_data_system_df2['Dataset'] = 'Calculated'
 #%%
+analyse = False
 if analyse:
     #we will concat with the other eff data so we can plot it altogether.
     eff_data = pd.concat([transport_data_system_df,transport_data_system_df2],sort=False)
@@ -136,6 +137,7 @@ analyse = False
 efficiency_other['Vehicle_drive'] = efficiency_other['Vehicle Type']  + ' ' + efficiency_other['Drive']
 #remove any outliers
 efficiency_other = efficiency_other[efficiency_other.efficiency < efficiency_other.efficiency.quantile(0.9)]
+analyse = True
 if analyse:
     #plot a violin pllot for each vehicle type.
     for vehicle in efficiency_other['Vehicle Type'].unique():

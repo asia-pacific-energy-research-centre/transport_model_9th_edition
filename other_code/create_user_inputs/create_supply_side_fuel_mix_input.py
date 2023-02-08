@@ -15,7 +15,11 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #create fake user input for demand side fuel mixes using model concordances
 
 #load model concordances
-model_concordances = pd.read_csv('config/concordances_and_config_data/{}'.format(model_concordances_file_name_fuels))
+model_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))
+
+INDEX_COLS_no_measure = INDEX_COLS.copy()
+INDEX_COLS_no_measure.remove('Measure')
+INDEX_COLS_no_measure.remove('Unit')
 #%%
 #startwith the model concordances with fuel types, filter for each fuel type, and split it into biofuel and fuel type. have to do each fuel type separately depnding on the resulting biofuel mix.
 #Remember this allows for the option of not splitting all diesel use into biofuels. you can set it so vehicle type doesnt equal rail for example
@@ -23,25 +27,25 @@ model_concordances_diesel = model_concordances.loc[(model_concordances['Fuel'] =
 model_concordances_diesel['16_6_biodiesel'] = 0.05
 model_concordances_diesel['7_7_gas_diesel_oil'] = 0.95
 #now melt so we have a tall dataframe
-model_concordances_diesel_melt = pd.melt(model_concordances_diesel, id_vars=['Scenario', 'Economy', 'Transport Type',  'Medium','Vehicle Type', 'Drive', 'Fuel', 'Year'], var_name='New_fuel', value_name='Supply_side_fuel_share')
+model_concordances_diesel_melt = pd.melt(model_concordances_diesel, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
 
 model_concordances_petrol = model_concordances.loc[(model_concordances['Fuel'] == '7_1_motor_gasoline')]
 model_concordances_petrol['16_5_biogasoline'] = 0.05
 model_concordances_petrol['7_1_motor_gasoline'] = 0.95
 #now melt so we have a tall dataframe
-model_concordances_petrol_melt = pd.melt(model_concordances_petrol, id_vars=['Scenario', 'Economy', 'Transport Type',  'Medium','Vehicle Type', 'Drive', 'Fuel', 'Year'], var_name='New_fuel', value_name='Supply_side_fuel_share')
+model_concordances_petrol_melt = pd.melt(model_concordances_petrol, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
 
 model_concordances_jet_fuel = model_concordances.loc[(model_concordances['Fuel'] == '7_x_jet_fuel')]
 model_concordances_jet_fuel['16_7_bio_jet_kerosene'] = 0.05
 model_concordances_jet_fuel['7_x_jet_fuel'] = 0.95
 #now melt so we have a tall dataframe
-model_concordances_jet_fuel_melt = pd.melt(model_concordances_jet_fuel, id_vars=['Scenario', 'Economy', 'Transport Type',  'Medium','Vehicle Type', 'Drive', 'Fuel', 'Year'], var_name='New_fuel', value_name='Supply_side_fuel_share')
+model_concordances_jet_fuel_melt = pd.melt(model_concordances_jet_fuel, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
 
 model_concordances_avgas = model_concordances.loc[(model_concordances['Fuel'] == '7_2_aviation_gasoline')]
 model_concordances_avgas['16_7_bio_jet_kerosene'] = 0.05
 model_concordances_avgas['7_2_aviation_gasoline'] = 0.95
 #now melt so we have a tall dataframe
-model_concordances_avgas_melt = pd.melt(model_concordances_avgas, id_vars=['Scenario', 'Economy', 'Transport Type',  'Medium','Vehicle Type', 'Drive', 'Fuel', 'Year'], var_name='New_fuel', value_name='Supply_side_fuel_share')
+model_concordances_avgas_melt = pd.melt(model_concordances_avgas, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
 
 #%%
 #CONCATENATE all

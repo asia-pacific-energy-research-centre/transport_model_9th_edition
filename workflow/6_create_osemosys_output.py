@@ -19,21 +19,23 @@ model_output_non_detailed = pd.read_csv('output_data/model_output/{}'.format(mod
 model_output_non_detailed = model_output_non_detailed.drop(['Stocks'], axis=1)
 #%%
 #create activity by drive type df which will also be the accumulated annual demand df.
-activity_by_drive = model_output_non_detailed[['Year', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'Activity']]
+activity_by_drive = model_output_non_detailed[['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'passenger_km','freight_tonne_km',]]
 
-activity_by_drive = activity_by_drive.groupby(['Year', 'Economy','Scenario',  'Transport Type', 'Vehicle Type', 'Drive', 'Medium']).sum().reset_index()
+activity_by_drive = activity_by_drive.groupby(['Date', 'Economy','Scenario',  'Transport Type', 'Vehicle Type', 'Drive', 'Medium']).sum().reset_index()
 #%%
 #using our model output with fuels and the activity by drive type, we will now calculate input activity efficiency by dividing energy by activity by drive type
 
 #join activity by drive type df to model output with fuels
-input_activity_ratio = model_output_all_with_fuels.merge(activity_by_drive, on=['Year', 'Economy','Scenario',  'Transport Type', 'Vehicle Type', 'Drive', 'Medium'], how='left')
+input_activity_ratio = model_output_all_with_fuels.merge(activity_by_drive, on=['Date', 'Economy','Scenario',  'Transport Type', 'Vehicle Type', 'Drive', 'Medium'], how='left')
 
 #calcualte inpyt activity ratio#(INPUTACTIVITYRATIO is the ratio of energy to activity when activity is not broken down into the type of energy used, just what it is used for (eg. activity specifies drive type but not how much activity there is for electricity vs petrol in a PHEVG). also note that its diffrent from efficiency in the road model because that is valavulted as energy / travel km)
 
-input_activity_ratio['Input_Activity_Ratio'] = input_activity_ratio['Energy'] / input_activity_ratio['Activity']
+#
+input_activity_ratio.loc[input_activity_ratio['Transport Type'] == 'passenger', 'Input_Activity_Ratio'] = input_activity_ratio['Energy'] / input_activity_ratio['passenger_km']
+input_activity_ratio.loc[input_activity_ratio['Transport Type'] == 'freight', 'Input_Activity_Ratio'] = input_activity_ratio['Energy'] /input_activity_ratio['Energy'] / input_activity_ratio['freight_tonne_km']
 
 #remove unneeded columns
-input_activity_ratio = input_activity_ratio.drop(['Activity', 'Energy'], axis=1)
+input_activity_ratio = input_activity_ratio.drop(['passenger_km','freight_tonne_km', 'Energy'], axis=1)
 
 
 
@@ -94,9 +96,25 @@ accumulated_annual_demand['UNITS'] = np.nan
 accumulated_annual_demand['NOTES'] = np.nan
 #%%
 #make years to wide output
-input_activity_ratio_wide = input_activity_ratio.pivot(index=['SCENARIO', 'REGION', 'TECHNOLOGY', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], columns='YEAR', values='INPUT_ACTIVITY_RATIO').reset_index()
+input_activity_ratio_wide = input_activity_ratio.pivot(index=['SCENARIO', 'REGION', 'TECHNOLOGY', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], columns='DATE', values='INPUT_ACTIVITY_RATIO').reset_index()
+
+#melt together FREIGHT_TONNE_KM and PASSENGER_KM to create ACTIVITY
+accumulated_annual_demand = pd.melt(accumulated_annual_demand, id_vars=['DATE','SCENARIO', 'REGION', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], value_vars=['FREIGHT_TONNE_KM', 'PASSENGER_KM'], var_name='Activity type', value_name='ACTIVITY')
+#now where FUEL contains 'freight' and the activity type is 'passenger_km' then remove the row, and likewise for FUEL contains 'freight' and  activity type is 'passenger_km'
+accumulated_annual_demand = accumulated_annual_demand[~((accumulated_annual_demand.FUEL.str.contains('freight')) & (accumulated_annual_demand['Activity type'] == 'PASSENGER_KM'))]
+accumulated_annual_demand = accumulated_annual_demand[~((accumulated_annual_demand.FUEL.str.contains('passenger')) & (accumulated_annual_demand['Activity type'] == 'FREIGHT_TONNE_KM'))]
+
+#drop actovoty type column
+accumulated_annual_demand = accumulated_annual_demand.drop(['Activity type'], axis=1)
+#it seems we will only have duplciates where the FUEL contains 'nonspecified'. We will check this and if so then we will remove the duplicates:
+if accumulated_annual_demand[accumulated_annual_demand.duplicated()].FUEL.str.contains('nonspecified').all():
+    accumulated_annual_demand = accumulated_annual_demand.drop_duplicates()
+else:
+    print('ERROR: there are duplicates in the accumulated_annual_demand dataframe that do not contain nonspecified in the FUEL column. Please check this')
+    sys.exit()
+
 #make years to wide output
-accumulated_annual_demand_wide = accumulated_annual_demand.pivot(index=['SCENARIO', 'REGION', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], columns='YEAR', values='ACTIVITY').reset_index()
+accumulated_annual_demand_wide = accumulated_annual_demand.pivot(index=['SCENARIO', 'REGION', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], columns='DATE', values='ACTIVITY').reset_index()#TO DO CHECK THAT THIS WORKS OKAY EVEN THO WE ARE DOING ACTIVITY AND YEAR NOT PASSKM FKM AND DATE
 #%%
 spreadsheet_file_name = model_output_file_name.replace('.csv', '.xlsx')
 #SAVE all in one spreradsheet

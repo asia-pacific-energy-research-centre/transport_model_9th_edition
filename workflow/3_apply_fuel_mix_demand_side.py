@@ -26,8 +26,7 @@ model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/comp
 
 #%%
 #join the fuel mixing data to the model output. This will result in a new fuel column. Note that there can be multiple fuels per drive, so this could also create new rows for each drive. 
-df_with_fuels = model_output.merge(demand_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type',
-       'Drive', 'Year'], how='left')
+df_with_fuels = model_output.merge(demand_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type','Drive', 'Date'], how='left')
 
 #%%
 

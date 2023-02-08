@@ -24,17 +24,24 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 = 'DATE20230124'
+FILE_DATE_ID2 = 'DATE20230203'
 
 transport_data_system_folder = '../transport_data_system'
-transport_data_system_df = pd.read_csv('{}/output_data/{}_interpolated_combined_data.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
+transport_data_system_df = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
 
+#if they are there, remove cols called index, level_0
+if 'index' in transport_data_system_df.columns:
+    transport_data_system_df = transport_data_system_df.drop(columns=['index'])
+if 'level_0' in transport_data_system_df.columns:
+    transport_data_system_df = transport_data_system_df.drop(columns=['level_0'])
+    
 #%%
-#Load in estimates made usinng the transport data system for the new vehicle efficiency for LDVs
-ldv_eff = pd.read_csv('input_data/calculated/iea_new_vehicle_efficiency_ldv_ice.csv')
+#Load in estimates made usinng the transport data system for the new vehicle efficiency for LDVs - these arent included in the transport datasystem becausee i have no confidence in them
+# ldv_eff = pd.read_csv('input_data/calculated/iea_new_vehicle_efficiency_ldv_ice.csv')
 other_eff = pd.read_csv('input_data/calculated/new_vehicle_efficiency_other_estimates.csv')
+#%%
 #concatenate the eff dfs to the transport data system df
-transport_data_system_df = pd.concat([transport_data_system_df, ldv_eff, other_eff], ignore_index=True)
+transport_data_system_df = pd.concat([transport_data_system_df,other_eff], ignore_index=True)# ldv_eff, 
 #%%
 #TEMPORARY FIX, CHANGE THE MEASURE IN TRANSPORT DATA SYSTEM FOR passenger_km and freight_tonne_km to Activity so that it matches the model concordance. It is undecided whether it would be best to change the model to use the measure of passenger_km and freight_tonne_km or to change the transport data system to use activity. Or keep this here. There are pros and cons to each approach #TODO: decide on the best approach
 # transport_data_system_df.loc[transport_data_system_df['Measure']=='passenger_km','Measure'] = 'Activity'
@@ -95,7 +102,7 @@ else:
     missing_index_values1['Data_available'] = 'row_and_data_not_available'
     missing_index_values1['Value'] = np.nan
     #then append to transport_data_system_df
-    transport_data_system_df = transport_data_system_df.append(missing_index_values1)
+    transport_data_system_df = pd.concat([missing_index_values1, transport_data_system_df], sort=False)
 
 
 if missing_index_values2.empty:

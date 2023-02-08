@@ -31,7 +31,7 @@ model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Scena
 #%%
 
 ################################################################################################################################################################
-#plot sales share of each drive type, in the lv vehicle type, on the same graph as the stocks of each drive type in the lv vehicle type, for each economy, year
+#plot sales share of each drive type, in the lv vehicle type, on the same graph as the stocks of each drive type in the lv vehicle type, for each economy, Date
 #this is to show the relationship between the sales share and the stock share
 title='Stocks and sales of each drive vehicle type combination in passenger transport lv vehicles'
 
@@ -79,19 +79,19 @@ for economy in model_output_detailed_lv_passenger['Economy'].unique():
 
             #create subplot for this economy AND DRIVE
             legend_name = drive_type + '_Stocks'
-            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Year'], y=model_output_detailed_lv_passenger_economy_drive['Stocks'],  legendgroup=legend_name, name=legend_name, line=dict(color=color, width=2, )), row=row_number, col=col_number, secondary_y=False)
+            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Date'], y=model_output_detailed_lv_passenger_economy_drive['Stocks'],  legendgroup=legend_name, name=legend_name, line=dict(color=color, width=2, )), row=row_number, col=col_number, secondary_y=False)
 
             legend_name = drive_type + '_Vehicle_sales_share'
-            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Year'], y=model_output_detailed_lv_passenger_economy_drive['Vehicle_sales_share'], legendgroup=legend_name, name=legend_name, line=dict(color=color, dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
+            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Date'], y=model_output_detailed_lv_passenger_economy_drive['Vehicle_sales_share'], legendgroup=legend_name, name=legend_name, line=dict(color=color, dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
         else:#legend is already set, so just add the traces with showlegend=False
             #create subplot for this economy AND DRIVE
             legend_name = drive_type + '_Stocks'
-            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Year'], y=model_output_detailed_lv_passenger_economy_drive['Stocks'],  legendgroup=legend_name, name=legend_name,showlegend=False, line=dict(color=color, width=2, )), row=row_number, col=col_number, secondary_y=False)
+            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Date'], y=model_output_detailed_lv_passenger_economy_drive['Stocks'],  legendgroup=legend_name, name=legend_name,showlegend=False, line=dict(color=color, width=2, )), row=row_number, col=col_number, secondary_y=False)
 
             legend_name = drive_type + '_Vehicle_sales_share'
-            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Year'], y=model_output_detailed_lv_passenger_economy_drive['Vehicle_sales_share'], legendgroup=legend_name, name=legend_name, showlegend=False, line=dict(color=color, dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
+            fig.add_trace(go.Scatter(x=model_output_detailed_lv_passenger_economy_drive['Date'], y=model_output_detailed_lv_passenger_economy_drive['Vehicle_sales_share'], legendgroup=legend_name, name=legend_name, showlegend=False, line=dict(color=color, dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
 
-plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+plotly.offline.plot(fig, filename='./plotting_output/for_others/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 
@@ -103,38 +103,38 @@ title='Stocks of each drive vehicle type combination in passenger transport'
 model_output_all_passenger = model_output_all[model_output_all['Transport Type']=='passenger']
 
 #plot
-fig = px.line(model_output_all_passenger, x="Year", y="Stocks", color="Vehicle Type", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+fig = px.line(model_output_all_passenger, x="Date", y="Stocks", color="Vehicle Type", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
              #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
 
-plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+plotly.offline.plot(fig, filename='./plotting_output/for_others/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 
 ################################################################################################################################################################
 #%%
-#plot energy use for each economy for each year, by drive type.
-title = 'Total energy use for each economy for each year, drive type'
-model_output_detailed_vtype = model_output_detailed.groupby(['Year','Economy', 'Drive'])['Energy'].sum().reset_index()
+#plot energy use for each economy for each Date, by drive type.
+title = 'Total energy use for each economy for each Date, drive type'
+model_output_detailed_vtype = model_output_detailed.groupby(['Date','Economy', 'Drive'])['Energy'].sum().reset_index()
 
 #plot
-fig = px.line(model_output_detailed_vtype, x="Year", y="Energy", color="Drive", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+fig = px.line(model_output_detailed_vtype, x="Date", y="Energy", color="Drive", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
              #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
 
-plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+plotly.offline.plot(fig, filename='./plotting_output/for_others/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 #%%
 ################################################################################################################################################################
-#plot fuel use for each economy for each year
-title = 'Total fuel use for each economy for each year, drive type'
-model_output_with_fuels_plot = model_output_with_fuels.groupby(['Year','Economy', 'Fuel'])['Energy'].sum().reset_index()
+#plot fuel use for each economy for each Date
+title = 'Total fuel use for each economy for each Date, drive type'
+model_output_with_fuels_plot = model_output_with_fuels.groupby(['Date','Economy', 'Fuel'])['Energy'].sum().reset_index()
 
 #plot
-fig = px.line(model_output_with_fuels_plot, x="Year", y="Energy", color="Fuel", line_dash='Fuel', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+fig = px.line(model_output_with_fuels_plot, x="Date", y="Energy", color="Fuel", line_dash='Fuel', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
-plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+plotly.offline.plot(fig, filename='./plotting_output/for_others/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 
@@ -155,12 +155,12 @@ for transport_type in model_output_detailed_medium_road['Transport Type'].unique
         #create title
         title='Vehicle efficiency vs new vehicle efficiency for {} for {}'.format(vehicle, transport_type)
         #since we have the vehicle eff in the same scale we can just put the data in one column with a measure column. To do this use melt
-        model_output_detailed_vtype_melt = model_output_detailed_vtype.melt(id_vars=['Year', 'Economy', 'Drive'], value_vars=['Efficiency', 'New_vehicle_efficiency'], var_name='Measure', value_name='Efficiency')
+        model_output_detailed_vtype_melt = model_output_detailed_vtype.melt(id_vars=['Date', 'Economy', 'Drive'], value_vars=['Efficiency', 'New_vehicle_efficiency'], var_name='Measure', value_name='Efficiency')
 
-        fig = px.line(model_output_detailed_vtype_melt, x="Year", y="Efficiency", color="Drive", line_dash='Measure', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+        fig = px.line(model_output_detailed_vtype_melt, x="Date", y="Efficiency", color="Drive", line_dash='Measure', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
 
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-        plotly.offline.plot(fig, filename='./plotting_output/' + title + '_' + vehicle + '_' + transport_type + '.html',auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+        plotly.offline.plot(fig, filename='./plotting_output/for_others/' + title + '_' + vehicle + '_' + transport_type + '.html',auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
         fig.write_image("./plotting_output/static/" + title + '_' + vehicle + '_' + transport_type + '.png', scale=1, width=2000, height=1500)
 
 
