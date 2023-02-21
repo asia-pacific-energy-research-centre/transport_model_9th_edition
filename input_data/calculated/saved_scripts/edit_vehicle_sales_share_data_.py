@@ -274,13 +274,36 @@ new_sales_shares_all['Value'] = new_sales_shares_all['V_sum']*new_sales_shares_a
 #drop uneeded cols
 new_sales_shares_all = new_sales_shares_all.drop(['V_sum', 'Drive_share'], axis=1)
 ###############################################################################
+
+
+#%%
+# qUICK FIX.  wE WANT TO HAVE LDV DATA INSTEAD OF LV AND LT DATA. SO WE WILL ADD TOGETHER THE LT AND LV DATA FOR EACH ECONOMY AND TRANSPORT TYPE AND THEN REMOVE THE LT AND LV DATA FROM THE DATAFRAME. sO LETS FILTER FOR LT AND LV, PIVOT, THEN ADD TOGETHER(IGNORING NA) THEN REMOVE THE LT AND LV DATA FROM THE DATAFRAME
+lt_lv = new_sales_shares_all.loc[new_sales_shares_all['Vehicle Type'].isin(['lt', 'lv'])]
+cols = new_sales_shares_all.columns.tolist()
+cols.remove('Vehicle Type')
+cols.remove('Value')
+lt_lv_pivot = lt_lv.pivot(index=cols, columns='Vehicle Type', values='Value')
+#reaplce na with 0
+lt_lv_pivot = lt_lv_pivot.fillna(0)
+#add together
+lt_lv_pivot['Value'] = lt_lv_pivot['lt'] + lt_lv_pivot['lv']
+#drop lt and lv cols
+lt_lv_pivot = lt_lv_pivot.drop(['lt', 'lv'], axis=1)
+#set vehicle type to ldv
+lt_lv_pivot['Vehicle Type'] = 'ldv'
+#reset index
+lt_lv_pivot = lt_lv_pivot.reset_index()
+#now we can add this to the original df
+new_sales_shares_all = new_sales_shares_all.loc[~new_sales_shares_all['Vehicle Type'].isin(['lt', 'lv'])]
+new_sales_shares_all = pd.concat([new_sales_shares_all,lt_lv_pivot])
 #%%
 #now we will plot the data to see if it looks ok and capore to original data
 #plot only ref data for now, for each tranposrt type:
 
 new_sales_shares_ref_plot = new_sales_shares_all.loc[new_sales_shares_all['Scenario']=='Reference']
 new_sales_shares_ref_original = new_sales_shares.loc[new_sales_shares['Scenario']=='Reference']
-
+analyse = True
+if analyse:
 for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
        #filter for ttype
        new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot.loc[new_sales_shares_ref_plot['Transport Type']==ttype]
@@ -316,12 +339,25 @@ for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
 
 ###############################################################################
 
+
 #%%
 #save using scenario_id
 new_sales_shares_all.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(FILE_DATE_ID), index = False)
 
 #save the variables we used to calculate the data by just saving this file
 shutil.copyfile('other_code/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(FILE_DATE_ID))
+
+#%%
+#before saving data to user input spreadsheety we will do some formatting:
+#add cols for Unit,Medium,Data_available, frequency and Measure
+new_sales_shares_all['Unit'] = '%'
+new_sales_shares_all['Medium'] = 'road'
+new_sales_shares_all['Data_available'] = 'data_available'
+new_sales_shares_all['Measure'] = 'Vehicle_sales_share'
+new_sales_shares_all['Frequency'] = 'Yearly'
+#rename year to date
+new_sales_shares_all = new_sales_shares_all.rename(columns={'Year':'Date'})
+
 
 #%%
 #also save the data to the user_input_spreadsheet

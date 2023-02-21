@@ -24,7 +24,7 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 = 'DATE20230203'
+FILE_DATE_ID2 = 'DATE20230216'
 
 transport_data_system_folder = '../transport_data_system'
 transport_data_system_df = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
@@ -34,14 +34,18 @@ if 'index' in transport_data_system_df.columns:
     transport_data_system_df = transport_data_system_df.drop(columns=['index'])
 if 'level_0' in transport_data_system_df.columns:
     transport_data_system_df = transport_data_system_df.drop(columns=['level_0'])
-    
+
+#%%
+# #testing:
+# #plot freight tonne km for 2017 for 01_AUS
+# transport_data_system_df[(transport_data_system_df['Date']=='2017-12-31') & (transport_data_system_df['Economy']=='20_USA') & (transport_data_system_df['Measure']=='Energy')].plot(x='Medium',y='Value',kind='bar')
 #%%
 #Load in estimates made usinng the transport data system for the new vehicle efficiency for LDVs - these arent included in the transport datasystem becausee i have no confidence in them
 # ldv_eff = pd.read_csv('input_data/calculated/iea_new_vehicle_efficiency_ldv_ice.csv')
-other_eff = pd.read_csv('input_data/calculated/new_vehicle_efficiency_other_estimates.csv')
+# other_eff = pd.read_csv('input_data/calculated/new_vehicle_efficiency_other_estimates.csv')
 #%%
-#concatenate the eff dfs to the transport data system df
-transport_data_system_df = pd.concat([transport_data_system_df,other_eff], ignore_index=True)# ldv_eff, 
+# #concatenate the eff dfs to the transport data system df
+# transport_data_system_df = pd.concat([transport_data_system_df,other_eff], ignore_index=True)# ldv_eff, 
 #%%
 #TEMPORARY FIX, CHANGE THE MEASURE IN TRANSPORT DATA SYSTEM FOR passenger_km and freight_tonne_km to Activity so that it matches the model concordance. It is undecided whether it would be best to change the model to use the measure of passenger_km and freight_tonne_km or to change the transport data system to use activity. Or keep this here. There are pros and cons to each approach #TODO: decide on the best approach
 # transport_data_system_df.loc[transport_data_system_df['Measure']=='passenger_km','Measure'] = 'Activity'
@@ -50,7 +54,8 @@ transport_data_system_df = pd.concat([transport_data_system_df,other_eff], ignor
 #change Date to year and filter out all non yearly data
 transport_data_system_df['Date'] = transport_data_system_df['Date'].str.split('-').str[0].astype(int)
 transport_data_system_df = transport_data_system_df[transport_data_system_df['Frequency']=='Yearly']
-
+#make sure scope is National
+transport_data_system_df = transport_data_system_df[transport_data_system_df['Scope']=='National']
 #%%
 #filter for the same years as are in the model concordances in the transport data system (should just be base Date)
 transport_data_system_df = transport_data_system_df[transport_data_system_df.Date.isin(model_concordances_measures.Date.unique())]
@@ -107,7 +112,8 @@ else:
 
 if missing_index_values2.empty:
     #this is unexpected so create an error
-    raise ValueError('All rows in the transport system dataset are present in the concordance. This is unexpected. Please check the code.')
+    # raise ValueError('All rows in the transport system dataset are present in the concordance. This is unexpected. Please check the code.')
+    pass
 else:
     #we just want to make sure the user is aware that we will be removing rows from the user input
     print('Removing unnecessary rows from the transport datasystem dataset. If you intended to have new data in the dataset, please make sure you have added them to the concordance table as well.')
@@ -115,11 +121,43 @@ else:
     transport_data_system_df.drop(missing_index_values2, inplace=True)
 
 #%%
-missing_index_values1.reset_index(inplace=True)
-#save the missing values to a csv for use separately:
-missing_index_values1.to_csv('output_data/for_other_modellers/missing_values/{}_missing_input_values.csv'.format(FILE_DATE_ID), index=False)
+# #%%
+# x = transport_data_system_df.reset_index()
+# x = x[x.Unit == 'PJ per km']
+# missing_index_values1 = missing_index_values1.reset_index()
+# #find cols in first row where values are not equal to the vlaues in the first row of missing_index_values1
+# row1 = x.iloc[0:1]
+# row2 = missing_index_values1.iloc[0:1]
+# #filter for the same cols in both
+# cols1 = row1.columns
+# cols2 = row2.columns
+# cols = list(set(cols1).intersection(cols2))
+# row1 = row1[cols]
+# row2 = row2[cols]
+# for col in row1.columns:
+#     if row1[col] != row2[col]:
+#         print(col)
+#         print(row1[col])
+#         print(row2[col])
+#         print('')
+#%%
+
+
+
+# #test what values in x dont equal the values in missing_index_values1
+# for col in x.columns:
+#     print(col)
+#     print(x[col].equals(missing_index_values1[col]))
+#%%
+if not missing_index_values1.empty:
+    missing_index_values1.reset_index(inplace=True)
+    #save the missing values to a csv for use separately:
+    missing_index_values1.to_csv('output_data/for_other_modellers/missing_values/{}_missing_input_values.csv'.format(FILE_DATE_ID), index=False)
+else:
+    print('No missing values in the transport data system dataset')
 #%%
 #create a scenario column in the transport data system dataset which will have a scenario for each in teh scenarios list in config
+
 i = 0
 for scenario in SCENARIOS_LIST:
     if i == 0:

@@ -27,10 +27,11 @@ print('Model run for {} starting'.format(file_date))
 print('\n FILE_DATE_ID is set to {}'.format(FILE_DATE_ID))
 
 PLOT_INPUT_DATA = False
-CREATE_MODEL_CONCORDANCES = False
+CREATE_MODEL_CONCORDANCES = False#True
 #%%
 if CREATE_MODEL_CONCORDANCES:
     exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
+#%%
 exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
 #%%
 exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
@@ -59,9 +60,10 @@ if ANALYSE_OUTPUT:
     exec(open("other_code/analysis_code/plot_input_data.py").read())
     exec(open("other_code/analysis_code/analyse_experimental.py").read())
     exec(open("other_code/analysis_code/plot_data_for_others.py").read())
+    exec(open("other_code/analysis_code/plot_data_for_singluar_economy.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:
     exec(open('./config/utilities/archiving_script.py').read())
 
-#%%   
+#%%

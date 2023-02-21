@@ -15,16 +15,16 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #load all data except activity data (which is calcualteed separately to other calcualted inputs)
 activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
 #load all other data
-non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input.csv')
+non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
 
 
 #%%
-#testing:
-#just set energy and stocks to 1
-non_road_model_input['Energy'] = 1
-non_road_model_input['Stocks'] = 1
-non_road_model_input['Efficiency'] = 1
-non_road_model_input['Non_road_efficiency_growth'] = 1
+# #testing:
+# #just set energy and stocks to 1
+# non_road_model_input['Energy'] = 1
+# non_road_model_input['Stocks'] = 1
+# non_road_model_input['Efficiency'] = 1
+# non_road_model_input['Non_road_efficiency_growth'] = 1
 #%%
 
 #separate user inputs from main dataframe
@@ -221,3 +221,182 @@ if ANALYSE_CHANGE_DATAFRAME:
     change_dataframe_aggregation.to_csv('intermediate_data/non_road_model/change_dataframe_aggregation.csv', index=False)
 
 #%%
+import matplotlib.pyplot as plt
+
+analyse = True
+if analyse:
+    #looking at data during covid period
+    #plot freight tonne km for 2017 TO 2024 for 01_AUS, with a line, and then have the growth rate as a bar in the same graph on right y axis
+    df = change_dataframe_aggregation[(change_dataframe_aggregation['Date'].isin([2017,2018,2019,2020,2021,2022,2023,2024])) & (change_dataframe_aggregation['Economy']=='01_AUS') & (change_dataframe_aggregation['Scenario']=='Reference')].copy()
+    #drop na in freight_tonne_km
+    df = df.dropna(subset=['freight_tonne_km'])
+    # #sum data for each year and medium
+    # df = df.groupby(['Date','Medium']).sum().reset_index()
+
+    fig, ax = plt.subplots()
+    for medium in df['Medium'].unique():
+        df[df['Medium']==medium].plot(x='Date',y='freight_tonne_km',kind='line', ax=ax, label=medium)
+    # df.groupby(['Date']).mean().reset_index().plot(x='Date',y='Activity_growth',kind='bar',secondary_y=True, ax=ax)
+    
+
+#%%
+
+    change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='freight_tonne_km',kind='bar')
+    change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='passenger_km',kind='bar')
+    model_input_wide[(model_input_wide['Date']==2017) & (model_input_wide['Economy']=='20_USA')].groupby(['Medium','Economy']).sum().reset_index().plot(x='Medium',y='Energy',kind='bar') 
+
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+# #%%
+
+# #START MAIN PROCESS
+# for year in range(BASE_YEAR+1, END_YEAR+1):
+#     break
+
+# print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
+
+# #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
+# change_dataframe = previous_year_main_dataframe.copy()
+
+# #change year in all rows to the next year. For now we will refer to the previous year as the original or base year. And values calculcated for the next year may sometimes be refered to as 'new'.
+# change_dataframe.Date = year
+
+# #start cakcualting new values suing the orignal values and adjustments as stated by the user and forecasted by us.
+
+# #generally this will all work on the grouping of economy, year, v-type, drive, transport type, and scenario. The sections will be:
+
+# #For the calcual;tions we will do them for each of passenger and freight transport types seaprately just so that if we ever want to change the claculation for one transport type we can do that (unlikley to happen for non road but possible)
+
+
+# #######################################################################
+# #######################################################################
+
+
+# #PASSENGER
+# passenger_change_dataframe = change_dataframe.loc[change_dataframe['Transport Type'] == 'passenger',:]
+
+# #ACTIVITY GROWTH
+# #we will apply activity growth to the sum of activity for each transport type. Note that activity growth is assumed to be the same for all vehicle types of the same transport type.
+
+# #join on activity growth
+# passenger_change_dataframe = passenger_change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Date'], how='left')
+
+# #calcualte sum of last Dates activity by transport type
+# # activity_transport_type_sum = passenger_change_dataframe.copy()[['Economy', 'Scenario', 'Transport Type', 'Date', "passenger_km"]]
+# # activity_transport_type_sum = activity_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Date']).sum()
+# # activity_transport_type_sum.rename(columns={"passenger_km": "Activity_transport_type_sum"}, inplace=True)
+# # passenger_change_dataframe = passenger_change_dataframe.merge(activity_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Date'], how='left')
+
+# #apply activity growth to activity 
+# passenger_change_dataframe['passenger_km'] = (passenger_change_dataframe['Activity_growth'] * passenger_change_dataframe['passenger_km']) + passenger_change_dataframe['passenger_km']
+
+# #APPLY EFFICIENCY GROWTH TO ORIGINAL EFFICIENCY
+# #note that this will then be split into different fuel types when we appply the fuel mix varaible later on.
+# passenger_change_dataframe = passenger_change_dataframe.merge(non_road_efficiency_growth, on=['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date'], how='left')
+
+# passenger_change_dataframe['New_efficiency'] = passenger_change_dataframe['Efficiency'] * passenger_change_dataframe['Non_road_efficiency_growth']
+
+# passenger_change_dataframe['Efficiency'] = passenger_change_dataframe['New_efficiency']
+
+# #CALCUALTE NEW ENERGY CONSUMPTION. 
+# #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type. It is also only for activity per energy unit, not travel km per energy unit.
+# passenger_change_dataframe['Energy'] = passenger_change_dataframe['passenger_km'] / passenger_change_dataframe['Efficiency'] 
+
+# #CREATE STOCKS VALUE
+# #if energy use is >0 then stock is 1, else 0
+# passenger_change_dataframe['Stock'] = np.where(passenger_change_dataframe['Energy'] > 0, 1, 0)
+
+
+# #######################################################################
+# #######################################################################
+
+
+# #FREIGHT
+# freight_change_dataframe = change_dataframe.loc[change_dataframe['Transport Type'] == 'freight',:]
+
+
+# #ACTIVITY GROWTH
+# #we will apply activity growth to the sum of activity for each transport type. Note that activity growth is assumed to be the same for all vehicle types of the same transport type.
+
+# #join on activity growth
+# freight_change_dataframe = freight_change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Date'], how='left')
+
+# # #calcualte sum of last Dates activity by transport type
+# # activity_transport_type_sum = freight_change_dataframe.copy()[['Economy', 'Scenario', 'Transport Type', 'Date', "freight_tonne_km"]]
+# # activity_transport_type_sum = activity_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Date']).sum()
+# # activity_transport_type_sum.rename(columns={"freight_tonne_km": "Activity_transport_type_sum"}, inplace=True)
+# # freight_change_dataframe = freight_change_dataframe.merge(activity_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Date'], how='left')
+
+# #apply activity growth to activity 
+# freight_change_dataframe['freight_tonne_km'] = (freight_change_dataframe['Activity_growth'] * freight_change_dataframe['freight_tonne_km']) + freight_change_dataframe['freight_tonne_km']
+
+# #APPLY EFFICIENCY GROWTH TO ORIGINAL EFFICIENCY
+# #note that this will then be split into different fuel types when we appply the fuel mix varaible later on.
+# freight_change_dataframe = freight_change_dataframe.merge(non_road_efficiency_growth, on=['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date'], how='left')
+
+# freight_change_dataframe['New_efficiency'] = freight_change_dataframe['Efficiency'] * freight_change_dataframe['Non_road_efficiency_growth']
+
+# freight_change_dataframe['Efficiency'] = freight_change_dataframe['New_efficiency']
+
+# #CALCUALTE NEW ENERGY CONSUMPTION. 
+# #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type. It is also only for activity per energy unit, not travel km per energy unit.
+# freight_change_dataframe['Energy'] = freight_change_dataframe['freight_tonne_km'] / freight_change_dataframe['Efficiency'] 
+
+# #CREATE STOCKS VALUE
+# #if energy use is >0 then stock is 1, else 0
+# freight_change_dataframe['Stock'] = np.where(freight_change_dataframe['Energy'] > 0, 1, 0)
+
+
+
+# #######################################################################
+# #######################################################################
+
+# #join the passenger and freight dataframes back together
+# change_dataframe = pd.concat([passenger_change_dataframe, freight_change_dataframe])
+
+
+# #Now start cleaning up the changes dataframe to create the dataframe for the new Date.
+# addition_to_main_dataframe = change_dataframe.copy() 
+
+# addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive','Medium',  'passenger_km','freight_tonne_km', 'Stocks', 'Efficiency', 'Energy']]
+
+# #add new year to the main dataframe.
+# main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])
+# previous_year_main_dataframe = addition_to_main_dataframe.copy()
+
+# if ANALYSE_CHANGE_DATAFRAME:
+#     if year == BASE_YEAR+1:
+#         change_dataframe_aggregation = change_dataframe.copy()
+#     else:
+#         change_dataframe_aggregation = pd.concat([change_dataframe, change_dataframe_aggregation])
+
+# #if we have a low ram computer then we will save the dataframe to a csv file at 10 year intervals. this is to save memory. during the proecss we will save a list of the file names that we have saved to, from which to stitch the new dataframe togehter from
+# if low_ram_computer == True:
+#     year_counter = year - BASE_YEAR
+#     if year_counter % 10 == 0:
+#         print('The year is at the end of a ten year block, in year {}, saving interemediate results to csv.'.format(year))
+#         low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
+#         main_dataframe.to_csv(low_ram_file_name, index=False)
+#         low_ram_computer_files_list.append(low_ram_file_name)
+
+#         previous_10_year_block = year
+#         main_dataframe = pd.DataFrame(columns=main_dataframe.columns)#remove data we just saved from main datafrmae
+
+#     elif year == END_YEAR:
+#         print('The year is at the end of the simulation, saving intermediate results to csv.')
+#         low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
+#         main_dataframe.to_csv(low_ram_file_name, index=False)
+#         low_ram_computer_files_list.append(low_ram_file_name)
+
+# # %%

@@ -12,7 +12,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #%%
 #we're oging to take in the data that we have from teh transport datasyetm and see if we can calcualte vehicle efficiency.
 
-FILE_DATE_ID2 = 'DATE20230203'
+FILE_DATE_ID2 = 'DATE20230214'
 
 transport_data_system_folder = '../transport_data_system'
 transport_data_system_df_original = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
@@ -28,13 +28,14 @@ INDEX_COLS = ['Date',
 #%%
 analyse = False
 if analyse:
+    #this ends up at 0
     #filter for the same years as are in the model concordances in the transport data system (should just be base year)
     transport_data_system_df = transport_data_system_df_original.copy()
     transport_data_system_df.Measure.unique()
     #we want Efficiency and new_vehicle_efficiency from the transport data system
-    transport_data_system_df = transport_data_system_df[transport_data_system_df.Measure.isin(['Efficiency','new_vehicle_efficiency'])]
-    #where dataset is nan set it to Final_dataset_selection_method
-    transport_data_system_df.loc[transport_data_system_df.Dataset.isna(),'Dataset'] = transport_data_system_df.loc[transport_data_system_df.Dataset.isna(),'Final_dataset_selection_method'] 
+    transport_data_system_df = transport_data_system_df[transport_data_system_df.Measure.isin(['New_vehicle_efficiency'])]
+    #where dataset is nan set it to Dataset_selection_method
+    transport_data_system_df.loc[transport_data_system_df.Dataset.isna(),'Dataset'] = transport_data_system_df.loc[transport_data_system_df.Dataset.isna(),'Dataset_selection_method'] 
     #grab cols we need:
     transport_data_system_df = transport_data_system_df[INDEX_COLS+['Measure','Value']+['Dataset']]
     #pivot the measure col to get an efficiency and new_vehicle_efficiency col
@@ -42,48 +43,101 @@ if analyse:
 #%%
 analyse = True
 if analyse:
-    #lets also load in passengerkm and energy use data from the transport data system
+    #lets also load in passengerkm, freight tonne km and energy use data from the transport data system.
     transport_data_system_df2 = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
-    transport_data_system_df2 = transport_data_system_df2[transport_data_system_df2.Measure.isin(['passenger_km','Energy'])]
-    #and we want to calcualte a value for efficiency per km so we will convert passenger km to km by:
-    #filtering for only Vehicle Type = lv, lt, and ldv
-    transport_data_system_df2 = transport_data_system_df2[transport_data_system_df2['Vehicle Type'].isin(['lv','lt','ldv'])]
-    #then where measure = passenger km , divide by occupancy rate = 1.5 and set passenger km to km
-    transport_data_system_df2.loc[transport_data_system_df2.Measure == 'passenger_km','Value'] = transport_data_system_df2.loc[transport_data_system_df2.Measure == 'passenger_km','Value']/1.5
-    transport_data_system_df2.loc[transport_data_system_df2.Measure == 'passenger_km','Measure'] = 'km'
-    #then pivot the measure col to get an energy and km col
-    transport_data_system_df2 = transport_data_system_df2.pivot(index=INDEX_COLS,columns='Measure',values='Value').reset_index()
-    #and calcualte Efficiency by dividing energy by km
-    transport_data_system_df2['Efficiency'] = transport_data_system_df2['Energy']/transport_data_system_df2['km']
+    transport_data_system_df2 = transport_data_system_df2[transport_data_system_df2.Measure.isin(['passenger_km','freight_tonne_km','Energy','Occupancy', 'Load'])]
+
+    #filter for 2017 only
+    transport_data_system_df2 = transport_data_system_df2[transport_data_system_df2.Date == '2017-12-31']
+    #keep only road
+    transport_data_system_df2 = transport_data_system_df2[transport_data_system_df2.Medium == 'road']
+    #drop nonnec cols
+    transport_data_system_df2 = transport_data_system_df2.drop(columns=['Fuel_Type','Source','Dataset','Dataset_selection_method','Unit'])
+
+    #and we want to calcualte a value for efficiency per km so we will convert x_km to km by dividing by occupancy or load rate. To do thsi we will sep two dfs, based on transport type then pivot the m,easure col to get energy, km and occupancy/load cols. Then we can calcualte efficiency by dividing energy by (km/occupancy or load)
+
+    freight = transport_data_system_df2[transport_data_system_df2['Transport Type'] == 'freight']
+    passenger = transport_data_system_df2[transport_data_system_df2['Transport Type'] == 'passenger']
+    
+    #pivot
+    cols = transport_data_system_df2.columns.to_list()
+    cols.remove('Measure')
+    cols.remove('Value')
+    freight = freight.pivot(index=cols,columns='Measure',values='Value').reset_index()
+    passenger = passenger.pivot(index=cols,columns='Measure',values='Value').reset_index()
+
+    #calcualte efficiency
+    freight['Efficiency'] = freight['Energy']/(freight['freight_tonne_km']/freight['Load'])
+    passenger['Efficiency'] = passenger['Energy']/(passenger['passenger_km']/passenger['Occupancy'])
+
+    # #drop efficiency = na since itll come from0/0
+    freight = freight.dropna(subset=['Efficiency'])
+    passenger = passenger.dropna(subset=['Efficiency'])
+    #concat
+    transport_data_system_df2 = pd.concat([freight,passenger],sort=False)
 
     #set dataset to 'Calculated'
     transport_data_system_df2['Dataset'] = 'Calculated'
 #%%
-analyse = False
+analyse = True
 if analyse:
     #we will concat with the other eff data so we can plot it altogether.
-    eff_data = pd.concat([transport_data_system_df,transport_data_system_df2],sort=False)
+    # eff_data = pd.concat([transport_data_system_df,transport_data_system_df2],sort=False)
+    eff_data = transport_data_system_df2.copy()#atm we only get 0 values for new vehicle eff form the transport data system so lets just use the calculated data
     #drop na and 0 values
     eff_data = eff_data.dropna(subset=['Efficiency'])
     eff_data = eff_data[eff_data.Efficiency != 0]   
     #most of the data ranges from xe-10 to xe-8 whjere x is a number between 1 and 9. the higher numbers are making it hard to see the lower numbers. Lets try filter out bad numbers to get a better plot
+    do_this = False
+    if do_this:
+        #to properly analyse it would be best if kept only the economys where we have data in 'IEA Fuel Economy $ GFEI'
+        IEA_economys = transport_data_system_df.loc[transport_data_system_df.Dataset == 'IEA Fuel Economy $ GFEI','Economy'].unique()
+        eff_data = eff_data[eff_data.Economy.isin(IEA_economys)]
 
-    #to properly analyse it would be best if kept only the economys where we have data in 'IEA Fuel Economy $ GFEI'
-    IEA_economys = transport_data_system_df.loc[transport_data_system_df.Dataset == 'IEA Fuel Economy $ GFEI','Economy'].unique()
-    eff_data = eff_data[eff_data.Economy.isin(IEA_economys)]
-
-    #and keep only drive = 'g' 'd' and 'ice'
-    eff_data = eff_data[eff_data.Drive.isin(['g','d','ice'])]
+    # #and keep only drive = 'g' 'd' and 'ice'
+    # eff_data = eff_data[eff_data.Drive.isin(['g','d','ice'])]
 
     #and make a colwhich joins 'Vehicle Type','Transport Type','Drive'
-    eff_data['Vehicle Type'] = eff_data['Vehicle Type'] + ' ' + eff_data['Transport Type'] + ' ' + eff_data['Drive']
-
+    eff_data['index'] = eff_data['Vehicle Type'] + ' ' + eff_data['Transport Type'] + ' ' + eff_data['Drive']
 
 #%%
+#convert vlaues to litres per km we need to divide eff by 3.42e-8
+eff_data['L_per_100km'] = (eff_data['Efficiency']/3.42e-8)*100
+#convert date to just the first 4 digits so its easier to plot
+eff_data['Date'] = eff_data['Date'].astype(str).str[:4]
+#now 
+#%%
+analyse = False
+if analyse:
+    #now plot violin for y=Efficiency,x=Date and label=Dataset, facet=Economy, hue=Vehicle Type
+    plot = px.bar(eff_data,x='index',y='Efficiency',color='Vehicle Type',facet_col='Economy',facet_col_wrap=3,hover_data=['Vehicle Type','Transport Type','Drive'])
+    #make each y axis independent
+    plot = plot.update_yaxes(matches=None)
+    plot.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+    plot.write_html('plotting_output/testing/efficiency_data_bar.html', auto_open=True)
+
+    # print avg eff for each economy for each dataset
+    for economy in eff_data.Economy.unique():
+        print('\nXXXXX Economy: {} XXXXXXX'.format(economy))
+        for dataset in eff_data.Dataset.unique():
+            #ignore 'interpolation' dataset
+            if dataset == 'interpolation':
+                continue
+            print('Dataset: {}'.format(dataset))
+            print(eff_data[(eff_data.Economy == economy) & (eff_data.Dataset == dataset)].Efficiency.mean())
+    #ok great it loks (jsut from a quick look no avg's) like the eff value centres around 3e-9 PJ per km for all data we plotted. If we convert that to litres of gasoline it is 3e-9/3.42e-8 = 0.087 litres per km.which is 8.7 per 100km which is just a bit higher than the average fuel economy of cars and vans in 2021 in the IEA https://www.iea.org/fuels-and-technologies/fuel-economy which is good because it measn we can feel happy using the IEA value, times the occupancy rate of 1.5 to get the eff per passenger km for ldv's!
+    #Its also good because it means that the ratio of enegry use to passenger km for ldv g or d drives is correct. 
+
+#ALSO PLOT EFFICIENCY IN LITRES PER KM
+analyse = False
 if analyse:
     #now plot y=Efficiency,x=Date and label=Dataset, facet=Economy, hue=Vehicle Type
-    plot = px.line(eff_data,x='Date',y='Efficiency',color='Dataset',line_dash='Vehicle Type',facet_col='Economy',facet_col_wrap=3,hover_data=['Vehicle Type','Transport Type','Drive'])
-    plot.write_html('plotting_output/testing/efficiency_data.html')
+    plot = px.bar(eff_data,x='index',y='L_per_100km',color='Vehicle Type',facet_col='Economy',facet_col_wrap=3,hover_data=['Vehicle Type','Transport Type','Drive'])
+    plot = plot.update_yaxes(matches=None)
+    plot.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+
+    plot.write_html('plotting_output/testing/efficiency_data_l_per_100km_bar.html', auto_open=True)
+
     # print avg eff for each economy for each dataset
     for economy in eff_data.Economy.unique():
         print('\nXXXXX Economy: {} XXXXXXX'.format(economy))
@@ -95,10 +149,91 @@ if analyse:
             print(eff_data[(eff_data.Economy == economy) & (eff_data.Dataset == dataset)].Efficiency.mean())
     #ok great it loks (jsut from a quick look no avg's) like the eff value centres around 3e-9 PJ per km for all data we plotted. If we convert that to litres of gasoline it is 3e-9/3.42e-8 = 0.87 litres per km.which is 8.7 per 100km which is just a bit higher than the average fuel economy of cars and vans in 2021 in the IEA https://www.iea.org/fuels-and-technologies/fuel-economy which is good because it measn we can feel happy using the IEA value, times the occupancy rate of 1.5 to get the eff per passenger km for ldv's!
     #Its also good because it means that the ratio of enegry use to passenger km for ldv g or d drives is correct. 
+    #some others to expect:
+    #heavy truck = 30-40 l/100km
+    #bus = 20-30 l/100km
+    #freight ldv = probably 10-20 l/100km
+    #ldv = 8-10 l/100km
+    #motorcycle = 5-8 l/100km
+    #The typical hybrid offers fuel savings and CO2 reductions of 20 to 40% over gasoline-only vehicles.
+    #The typical ev efficiency of energy conversion from on-board storage to turning the wheels is nearly five times greater for electricity than gasoline ~ which would be equiv to 1-2l/100km for an ldv i think
+
+#%%
+#lets group by index, remove outliers then calculate the mean of L_per_100km and Efficiency then plot again:
+avg_eff = eff_data[['index','Efficiency','L_per_100km','Vehicle Type','Transport Type','Drive']]
+#remove outliers within the group ['index','Vehicle Type']
+avg_eff = avg_eff.groupby(['index','Vehicle Type','Transport Type','Drive']).apply(lambda x: x[(x.Efficiency-x.Efficiency.mean()).abs() < 2*x.Efficiency.std()])
+
+#drop index and vehicle type
+avg_eff.reset_index(inplace=True,drop=True)
+
+#now do again
+avg_eff = avg_eff.groupby(['index','Vehicle Type','Transport Type','Drive']).apply(lambda x: x[(x.Efficiency-x.Efficiency.mean()).abs() < 2*x.Efficiency.std()])
+
+#drop index and vehicle type
+avg_eff.reset_index(inplace=True,drop=True)
+#%%
+if analyse:
+    #plot with no outliers
+    plot = px.box(avg_eff,x='index',y='L_per_100km',color='Vehicle Type',facet_col_wrap=3)
+    plot = plot.update_yaxes(matches=None)
+    plot.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+
+    plot.write_html('plotting_output/testing/efficiency_data_l_per_100km_box_no_outliers.html', auto_open=True)
 
 
 #%%
-analyse =False
+#calcualte the mean
+avg_eff = avg_eff.groupby(['index','Vehicle Type','Transport Type','Drive']).mean()
+avg_eff.reset_index(inplace=True)
+#%%
+if analyse:
+    #now plot y=Efficiency,x=Date and label=Dataset, facet=Economy, hue=Vehicle Type
+    plot = px.bar(avg_eff,x='index',y='L_per_100km',color='Vehicle Type',facet_col_wrap=3)
+    plot = plot.update_yaxes(matches=None)
+    plot.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+
+    plot.write_html('plotting_output/testing/efficiency_data_l_per_100km_bar_no_outliers.html', auto_open=True)
+#%%
+#drop index col and L_per_100km then merge on all the otehr nec cols
+avg_eff = avg_eff.drop(columns=['L_per_100km', 'index'])
+avg_eff = avg_eff.rename(columns={'Efficiency':'Value'})
+avg_eff['Measure'] = 'new_vehicle_efficiency'
+avg_eff['Unit'] = 'PJ_per_km'
+avg_eff['Dataset'] = 'avg_eff_no_outliers'
+avg_eff['Date'] = '2017-12-31'
+# avg_eff['Source'] = 'transport_data_system_9th'
+avg_eff['Medium'] = 'road'
+avg_eff['Frequency'] = 'Yearly'
+avg_eff['Scope'] = 'National'
+
+avg_eff['Economy'] = transport_data_system_df2.Economy.unique()[0]
+new_df = avg_eff.copy()
+for economy in transport_data_system_df2.Economy.unique()[1:]:
+    avg_eff2 = avg_eff.copy()
+    avg_eff2['Economy'] = economy
+    new_df = pd.concat([new_df,avg_eff2],ignore_index=True)
+
+#
+#%%
+#thats good enough. lets just save that in a separate file and incorporate it with all data.
+#save it so that it can be concatenated to the transport_data_system_df_original
+new_df.to_csv('input_data/calculated/new_vehicle_efficiency_other_estimates_2023Feb.csv',index=False)
+
+#%%
+
+
+
+
+
+
+
+
+
+
+
+#%%
+analyse = True
 if analyse:
     #lets just look at new_vehicle_efficiency quickly
     new_vehicle_efficiency_data = transport_data_system_df_original.copy()
@@ -132,7 +267,7 @@ efficiency_other = efficiency_other.pivot(index=['Economy','Dataset','Date','Veh
 efficiency_other = efficiency_other[efficiency_other.passenger_km.notna() & efficiency_other.Energy.notna()]
 efficiency_other['efficiency'] = efficiency_other.Energy/efficiency_other.passenger_km
 efficiency_other = efficiency_other.reset_index()
-analyse = False
+analyse = True
 #make a col which joins 'Vehicle Type','Transport Type','Drive'
 efficiency_other['Vehicle_drive'] = efficiency_other['Vehicle Type']  + ' ' + efficiency_other['Drive']
 #remove any outliers

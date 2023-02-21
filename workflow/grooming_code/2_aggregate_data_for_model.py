@@ -29,6 +29,21 @@ user_input['Dataset'] = 'user_input'
 aggregated_model_data = pd.concat([new_transport_dataset, user_input], sort=False)
 
 #%%
+#convert units to similar magnitudes. 
+#So since we wnat to keep our PJ's, then convert km to billion km. We might want to convert stocks to millions later as well
+#will have to reference measure = passenger km, tonne km, etc. to do this
+#also do efficiency which will change PJ per km to PJ per billion km
+aggregated_model_data.loc[aggregated_model_data['Measure']=='passenger_km', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='passenger_km', 'Value'] / 1e9
+aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] / 1e9
+aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value' ]/ 1e6
+aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] * 1e9
+#units
+aggregated_model_data.loc[aggregated_model_data['Measure']=='passenger_km', 'Unit'] = 'billion_passenger_km'
+aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Unit'] = 'billion_freight_tonne_km'
+aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit'] = 'million_stocks'
+aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Unit'] = 'PJ per billion km'
+
+#%%
 #save
 aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID), index=False)
 
@@ -36,11 +51,16 @@ aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggre
 # #%%
 
 #%%
+# #testing:
+# #plot freight tonne km for 2017 for 01_AUS
+# aggregated_model_data[(aggregated_model_data['Date']=='2017') & (aggregated_model_data['Economy']=='20_USA') & (aggregated_model_data['Measure']=='Energy')].plot(x='Medium',y='Value',kind='bar')
+# aggregated_model_data[(aggregated_model_data['Date']==2017) & (aggregated_model_data['Economy']=='20_USA') & (aggregated_model_data['Measure']=='passenger_km')].groupby(['Medium','Economy']).sum().reset_index().plot(x='Medium',y='Value',kind='bar') 
+
+# #sum by medium and economy then plot
+# aggregated_model_data[(aggregated_model_data['Date']==2017) & (aggregated_model_data['Economy']=='20_USA') & (aggregated_model_data['Measure']=='Energy')].groupby(['Medium']).sum().plot(y='Value',kind='bar')
 
 
-
-
-
+#%%
 
 
 
@@ -141,3 +161,5 @@ aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggre
 
 # #remove unnecessary columns
 # new_transport_dataset.drop(['Unit', 'Final_dataset_selection_method', 'Dataset', 'Data_available'], inplace=True, axis=1)
+
+# %%

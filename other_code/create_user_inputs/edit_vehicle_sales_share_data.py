@@ -274,47 +274,71 @@ new_sales_shares_all['Value'] = new_sales_shares_all['V_sum']*new_sales_shares_a
 #drop uneeded cols
 new_sales_shares_all = new_sales_shares_all.drop(['V_sum', 'Drive_share'], axis=1)
 ###############################################################################
+
+
+#%%
+# qUICK FIX.  wE WANT TO HAVE LDV DATA INSTEAD OF LV AND LT DATA. SO WE WILL ADD TOGETHER THE LT AND LV DATA FOR EACH ECONOMY AND TRANSPORT TYPE AND THEN REMOVE THE LT AND LV DATA FROM THE DATAFRAME. sO LETS FILTER FOR LT AND LV, PIVOT, THEN ADD TOGETHER(IGNORING NA) THEN REMOVE THE LT AND LV DATA FROM THE DATAFRAME
+lt_lv = new_sales_shares_all.loc[new_sales_shares_all['Vehicle Type'].isin(['lt', 'lv'])]
+cols = new_sales_shares_all.columns.tolist()
+cols.remove('Vehicle Type')
+cols.remove('Value')
+lt_lv_pivot = lt_lv.pivot(index=cols, columns='Vehicle Type', values='Value')
+#reaplce na with 0
+lt_lv_pivot = lt_lv_pivot.fillna(0)
+#add together
+lt_lv_pivot['Value'] = lt_lv_pivot['lt'] + lt_lv_pivot['lv']
+#drop lt and lv cols
+lt_lv_pivot = lt_lv_pivot.drop(['lt', 'lv'], axis=1)
+#set vehicle type to ldv
+lt_lv_pivot['Vehicle Type'] = 'ldv'
+#reset index
+lt_lv_pivot = lt_lv_pivot.reset_index()
+#now we can add this to the original df
+new_sales_shares_all = new_sales_shares_all.loc[~new_sales_shares_all['Vehicle Type'].isin(['lt', 'lv'])]
+new_sales_shares_all = pd.concat([new_sales_shares_all,lt_lv_pivot])
 #%%
 #now we will plot the data to see if it looks ok and capore to original data
 #plot only ref data for now, for each tranposrt type:
 
 new_sales_shares_ref_plot = new_sales_shares_all.loc[new_sales_shares_all['Scenario']=='Reference']
 new_sales_shares_ref_original = new_sales_shares.loc[new_sales_shares['Scenario']=='Reference']
+analyse = True
+if analyse:
+    for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
+        #filter for ttype
+        new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot.loc[new_sales_shares_ref_plot['Transport Type']==ttype]
+        #order data
+        new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot_ttype.sort_values(by=['Economy', 'Year', 'Vehicle Type', 'Drive'])
+        #plot using plotly
+        title = 'New Sales Shares by Drive Type for {}'.format(ttype)
 
-for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
-       #filter for ttype
-       new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot.loc[new_sales_shares_ref_plot['Transport Type']==ttype]
-       #order data
-       new_sales_shares_ref_plot_ttype = new_sales_shares_ref_plot_ttype.sort_values(by=['Economy', 'Year', 'Vehicle Type', 'Drive'])
-       #plot using plotly
-       title = 'New Sales Shares by Drive Type for {}'.format(ttype)
+        #plot
+        fig = px.line(new_sales_shares_ref_plot_ttype, x="Year", y="Value", color="Vehicle Type", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+                #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
+        fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
 
-       #plot
-       fig = px.line(new_sales_shares_ref_plot_ttype, x="Year", y="Value", color="Vehicle Type", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
-              #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
-       fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
+        plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html')
+        fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
-       plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html')
-       fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
+        #and plot the orignal data for comparison:
 
-       #and plot the orignal data for comparison:
+        #filter for ttype
+        new_sales_shares_ref_original_ttype = new_sales_shares_ref_original.loc[new_sales_shares_ref_original['Transport Type']==ttype]
+        #order data
+        new_sales_shares_ref_original_ttype = new_sales_shares_ref_original_ttype.sort_values(by=['Economy', 'Year', 'Vehicle Type', 'Drive'])
+        title = 'New Sales Shares by Drive Type Original Data for {}'.format(ttype)
 
-       #filter for ttype
-       new_sales_shares_ref_original_ttype = new_sales_shares_ref_original.loc[new_sales_shares_ref_original['Transport Type']==ttype]
-       #order data
-       new_sales_shares_ref_original_ttype = new_sales_shares_ref_original_ttype.sort_values(by=['Economy', 'Year', 'Vehicle Type', 'Drive'])
-       title = 'New Sales Shares by Drive Type Original Data for {}'.format(ttype)
+        #plot
+        fig = px.line(new_sales_shares_ref_original_ttype, x="Year", y="Value", color="Vehicle Type", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
+                #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
+        fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
 
-       #plot
-       fig = px.line(new_sales_shares_ref_original_ttype, x="Year", y="Value", color="Vehicle Type", line_dash='Drive', facet_col="Economy", facet_col_wrap=7, title=title)#, #facet_col="Economy",
-              #category_orders={"Scenario": ["Reference", "Carbon Neutral"]})
-       fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))#remove 'Economy=X' from titles
-
-       plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html')
-       fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
+        plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html')
+        fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 
 ###############################################################################
+
 
 #%%
 #save using scenario_id

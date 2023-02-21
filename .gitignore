@@ -5,7 +5,7 @@
 # excell files 
 *.xlsx
 *.csv
-
+*.zip
 #graphs
 *.png
 *.jpg
