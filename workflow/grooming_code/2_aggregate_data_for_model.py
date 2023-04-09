@@ -29,19 +29,43 @@ user_input['Dataset'] = 'user_input'
 aggregated_model_data = pd.concat([new_transport_dataset, user_input], sort=False)
 
 #%%
-#convert units to similar magnitudes. 
-#So since we wnat to keep our PJ's, then convert km to billion km. We might want to convert stocks to millions later as well
-#will have to reference measure = passenger km, tonne km, etc. to do this
-#also do efficiency which will change PJ per km to PJ per billion km
-aggregated_model_data.loc[aggregated_model_data['Measure']=='passenger_km', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='passenger_km', 'Value'] / 1e9
-aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] / 1e9
-aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value' ]/ 1e6
-aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] * 1e9
-#units
-aggregated_model_data.loc[aggregated_model_data['Measure']=='passenger_km', 'Unit'] = 'billion_passenger_km'
-aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Unit'] = 'billion_freight_tonne_km'
-aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit'] = 'million_stocks'
-aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Unit'] = 'PJ per billion km'
+#convert units to similar magnitudes. We might need to change the units as well.
+#these are based off the units in measure_to_unit_concordance from config.py
+measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+# 	Unit	Measure	Magnitude_adjustment	Magnitude_adjusted_unit
+# 	Pj	Energy	1.000000e+00	PJ
+# Magnitude_adjustment is needed to convert the numbers from their Unit to their Magnitude adjusted unit. 
+# eg. to convert form stocks to million stocks just itmes the vlaue by magnitude adjustment
+
+#convert to dict
+unit_to_adj_unit_concordance_dict = measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjusted_unit']
+value_adjustment_concordance_dict = measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjustment']
+#just go through the concordance and convert the units and values
+for unit in unit_to_adj_unit_concordance_dict.keys():
+    #convert units
+    aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Unit'] = unit_to_adj_unit_concordance_dict[unit]
+    #convert values
+    aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Value'] = aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Value'] * value_adjustment_concordance_dict[unit]
+
+
+# #%%
+
+# # #WEe wnat to keep our energy in Pj's, so we will convert km to billion km. We might want to convert stocks to millions as well
+# # aggregated_model_data
+
+# #will have to reference measure = passenger km, tonne km, etc. to do this
+# #also do efficiency which will change Pj per km to Pj per billion km
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='Activity', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='Activity', 'Value'] / 1e9
+# # aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] / 1e9
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value' ]/ 1e6
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] * 1e9
+# #units
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='Passenger_km_or_freight_tonne_km', 'Unit'] = 'Billion_passenger_km_or_freight_tonne_km'
+# # aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Unit'] = 'billion_freight_tonne_km'
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit'] = 'Million_stocks'
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Unit'] = 'Pj_per_billion_km'
+# #not sure if mileage will be used but writing here in case
+# aggregated_model_data.loc[aggregated_model_data['Measure']=='Mileage', 'Unit'] = 'Thousand_km_per_stock'
 
 #%%
 #save

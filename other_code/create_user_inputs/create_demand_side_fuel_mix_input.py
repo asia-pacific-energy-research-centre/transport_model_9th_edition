@@ -26,61 +26,60 @@ model_concordances_fuels['dummy'] = np.nan
 INDEX_COLS_no_measure = INDEX_COLS.copy()
 INDEX_COLS_no_measure.remove('Measure')
 INDEX_COLS_no_measure.remove('Unit')
-#%%
 
+#%%
 #startwith the model concordances, filter for drive == PHEVG or PHEVD and create a col for PHEV elec and PHEV non-elec, fill them with 0.5. The icct paper indicates that for europe its more like 0.4 for elec and 0.6 for oil, but this doesnt include expeted growth. easier and simpler to assume 0.5
 
-#PHEVG
-model_concordances_PHEVG = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phevg')]
-#make wide
-model_concordances_PHEVG = model_concordances_PHEVG.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
-#fill cols with values
-model_concordances_PHEVG['17_electricity'] = 0.5
-model_concordances_PHEVG['7_1_motor_gasoline'] = 0.5
-#fill na with 0
-model_concordances_PHEVG = model_concordances_PHEVG.fillna(0)
-#now melt so we have a tall dataframe
-model_concordances_PHEVG_melt = pd.melt(model_concordances_PHEVG, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+#NOTE THAT ICE IS DELAT WITH IN other_code\create_user_inputs\estimate_ice_fuel_splits.py through estimate_ice_fuel_splits(demand_side_fuel_mixing)
 
-# #drop medium 
-# model_concordances_PHEV_melt = model_concordances_PHEV_melt.drop(['Medium'], axis=1)
-
-#PHEVD
-model_concordances_PHEVD = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phevd')]
+#PHEV bus or ht
+model_concordances_PHEVD = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev') & (model_concordances_fuels['Vehicle Type'].isin(['bus','ht']))]
 #make wide
 model_concordances_PHEVD = model_concordances_PHEVD.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
 #fill cols with values
 model_concordances_PHEVD['17_electricity'] = 0.5
-model_concordances_PHEVD['7_7_gas_diesel_oil'] = 0.5
+model_concordances_PHEVD['07_07_gas_diesel_oil'] = 0.5
 #fill na with 0
 model_concordances_PHEVD = model_concordances_PHEVD.fillna(0)
 #now melt so we have a tall dataframe
 model_concordances_PHEVD_melt = pd.melt(model_concordances_PHEVD, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
-#G #Note that we set these to 1 so that on the supply side we can just multiply by the fuel share to get the fuel mix for biofuels vs the original fuel
-model_concordances_G = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'g')]
+#PHEV ldv
+model_concordances_PHEVG = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev') & (model_concordances_fuels['Vehicle Type'] == 'ldv')]
 #make wide
-model_concordances_G = model_concordances_G.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+model_concordances_PHEVG = model_concordances_PHEVG.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
 #fill cols with values
-model_concordances_G['7_1_motor_gasoline'] = 1
+model_concordances_PHEVG['17_electricity'] = 0.5
+model_concordances_PHEVG['07_01_motor_gasoline'] = 0.5
 #fill na with 0
-model_concordances_G = model_concordances_G.fillna(0)
+model_concordances_PHEVG = model_concordances_PHEVG.fillna(0)
 #now melt so we have a tall dataframe
-model_concordances_G_melt = pd.melt(model_concordances_G, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+model_concordances_PHEVG_melt = pd.melt(model_concordances_PHEVG, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
-#D #Note that we set these to 1 so that on the supply side we can just multiply by the fuel share to get the fuel mix for biofuels vs the original fuel
-model_concordances_D = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'd')]
+#bev
+model_concordances_BEV = model_concordances_fuels.loc[model_concordances_fuels['Drive'] == 'bev']
 #make wide
-model_concordances_D = model_concordances_D.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+model_concordances_BEV = model_concordances_BEV.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
 #fill cols with values
-model_concordances_D['7_7_gas_diesel_oil'] = 1
+model_concordances_BEV['17_electricity'] = 1
 #fill na with 0
-model_concordances_D = model_concordances_D.fillna(0)
+model_concordances_BEV = model_concordances_BEV.fillna(0)
 #now melt so we have a tall dataframe
-model_concordances_D_melt = pd.melt(model_concordances_D, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+model_concordances_BEV_melt = pd.melt(model_concordances_BEV, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
+#fcev
+model_concordances_FCEV = model_concordances_fuels.loc[model_concordances_fuels['Drive'] == 'fcev']
+#make wide
+model_concordances_FCEV = model_concordances_FCEV.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+#fill cols with values
+model_concordances_FCEV['16_x_hydrogen'] = 1
+#fill na with 0
+model_concordances_FCEV = model_concordances_FCEV.fillna(0)
+#now melt so we have a tall dataframe
+model_concordances_FCEV_melt = pd.melt(model_concordances_FCEV, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+#%%
 #RAIL
-model_concordances_rail = model_concordances_fuels.loc[model_concordances_fuels['Drive'] == 'rail']
+model_concordances_rail = model_concordances_fuels.loc[model_concordances_fuels['Medium'] == 'rail']
 #make wide
 model_concordances_rail = model_concordances_rail.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
 #fill cols with values
@@ -93,7 +92,7 @@ model_concordances_rail = model_concordances_rail.fillna(0)
 model_concordances_rail_melt = pd.melt(model_concordances_rail, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
 #AIR
-model_concordances_air = model_concordances_fuels.loc[model_concordances_fuels['Drive'] == 'air']
+model_concordances_air = model_concordances_fuels.loc[model_concordances_fuels['Medium'] == 'air']
 #make wide
 model_concordances_air = model_concordances_air.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
 #fill cols with values
@@ -105,7 +104,7 @@ model_concordances_air = model_concordances_air.fillna(0)
 model_concordances_air_melt = pd.melt(model_concordances_air, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
 #SHIP
-model_concordances_ship = model_concordances_fuels.loc[model_concordances_fuels['Drive'] == 'ship']
+model_concordances_ship = model_concordances_fuels.loc[model_concordances_fuels['Medium'] == 'ship']
 #make wide
 model_concordances_ship = model_concordances_ship.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
 #fill cols with values
@@ -119,12 +118,16 @@ model_concordances_ship_melt = pd.melt(model_concordances_ship, id_vars=INDEX_CO
 
 #%%
 #CONCATENATE all
-model_concordances_all = pd.concat([model_concordances_PHEVG_melt, model_concordances_PHEVD_melt, model_concordances_rail_melt, model_concordances_air_melt, model_concordances_ship_melt, model_concordances_D_melt, model_concordances_G_melt], axis=0)
+demand_side_fuel_mixing = pd.concat([model_concordances_PHEVD_melt, model_concordances_PHEVG_melt, model_concordances_rail_melt, model_concordances_air_melt, model_concordances_ship_melt,model_concordances_BEV_melt,model_concordances_FCEV_melt], axis=0)
 
 #remove any rows where demand side fuel share is 0 as they are just fuels where there is no use of the fuel
-model_concordances_all = model_concordances_all[model_concordances_all['Demand_side_fuel_share'] != 0]
+demand_side_fuel_mixing = demand_side_fuel_mixing[demand_side_fuel_mixing['Demand_side_fuel_share'] != 0]
+
+#load in ice data:
+import estimate_ice_fuel_splits
+demand_side_fuel_mixing = estimate_ice_fuel_splits.estimate_ice_fuel_splits(demand_side_fuel_mixing)
 #%%
 #save as user input csv
-model_concordances_all.to_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv', index=False)
+demand_side_fuel_mixing.to_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv', index=False)
 #%%
 

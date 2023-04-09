@@ -19,7 +19,7 @@ model_output_non_detailed = pd.read_csv('output_data/model_output/{}'.format(mod
 model_output_non_detailed = model_output_non_detailed.drop(['Stocks'], axis=1)
 #%%
 #create activity by drive type df which will also be the accumulated annual demand df.
-activity_by_drive = model_output_non_detailed[['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'passenger_km','freight_tonne_km',]]
+activity_by_drive = model_output_non_detailed[['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium', 'Activity']]
 
 activity_by_drive = activity_by_drive.groupby(['Date', 'Economy','Scenario',  'Transport Type', 'Vehicle Type', 'Drive', 'Medium']).sum().reset_index()
 #%%
@@ -31,11 +31,10 @@ input_activity_ratio = model_output_all_with_fuels.merge(activity_by_drive, on=[
 #calcualte inpyt activity ratio#(INPUTACTIVITYRATIO is the ratio of energy to activity when activity is not broken down into the type of energy used, just what it is used for (eg. activity specifies drive type but not how much activity there is for electricity vs petrol in a PHEVG). also note that its diffrent from efficiency in the road model because that is valavulted as energy / travel km)
 
 #
-input_activity_ratio.loc[input_activity_ratio['Transport Type'] == 'passenger', 'Input_Activity_Ratio'] = input_activity_ratio['Energy'] / input_activity_ratio['passenger_km']
-input_activity_ratio.loc[input_activity_ratio['Transport Type'] == 'freight', 'Input_Activity_Ratio'] = input_activity_ratio['Energy'] /input_activity_ratio['Energy'] / input_activity_ratio['freight_tonne_km']
+input_activity_ratio['Input_Activity_Ratio'] = input_activity_ratio['Energy'] / input_activity_ratio['Activity']
 
 #remove unneeded columns
-input_activity_ratio = input_activity_ratio.drop(['passenger_km','freight_tonne_km', 'Energy'], axis=1)
+input_activity_ratio = input_activity_ratio.drop(['Activity','Energy'], axis=1)
 
 
 
@@ -97,6 +96,14 @@ accumulated_annual_demand['NOTES'] = np.nan
 #%%
 #make years to wide output
 input_activity_ratio_wide = input_activity_ratio.pivot(index=['SCENARIO', 'REGION', 'TECHNOLOGY', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], columns='DATE', values='INPUT_ACTIVITY_RATIO').reset_index()
+
+
+
+
+#NOTE IM NOT SURE HOW THE CHANGES TO ACTIVITY VS PASSKM AND FRIEGHT TONNE KM HAVE AFFECTED THE BELOW SO IVE LEFT AS IS:
+print('Note that the below is not the same as the original output as the original output had passenger_km and freight_tonne_km as seperate columns, but now they are in the same column with the activity type column... or something like that')
+
+
 
 #melt together FREIGHT_TONNE_KM and PASSENGER_KM to create ACTIVITY
 accumulated_annual_demand = pd.melt(accumulated_annual_demand, id_vars=['DATE','SCENARIO', 'REGION', 'FUEL', 'MODE_OF_OPERATION', 'UNITS', 'NOTES'], value_vars=['FREIGHT_TONNE_KM', 'PASSENGER_KM'], var_name='Activity type', value_name='ACTIVITY')

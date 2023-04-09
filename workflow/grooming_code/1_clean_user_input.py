@@ -32,6 +32,8 @@ for sheet in user_input_file.sheet_names:
 ################################################################################
 ################################################################################
 
+#drop any rows in user input that are for the base year
+user_input = user_input[user_input.Date != BASE_YEAR]
 #%%
 #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
 
@@ -54,31 +56,46 @@ new_user_inputs = []
 user_input.loc[user_input.Value.notna(), 'Data_available'] = 'data_available'
 user_input.loc[user_input.Value.isna(), 'Data_available'] = 'data_not_available'
 
+# #%%
+# # x = user_input.copy()
+# user_input = x.copy()
 #%%
-# use the difference method to find the index values that are missing from the user_input and also the index values that are present in the user_input but not in the concordance # this is a lot faster than looping through each index row in the concordance and checking if it is in the user_input
+# use the difference method to find:
+#missing_index_values1 :  the index values that are missing from the user_input 
+#missing_index_values2 : and also the index values that are present in the user_input but not in the concordance 
+# # this is a lot faster than looping through each index row in the concordance and checking if it is in the user_input
 missing_index_values1 = model_concordances_user_input_and_growth_rates.index.difference(user_input.index)
 missing_index_values2 = user_input.index.difference(model_concordances_user_input_and_growth_rates.index)
 
 if missing_index_values1.empty:
     print('All rows are present in the user input')
 else:
-    print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
     #add these rows to the user_input and set them to row_and_data_not_available
-    missing_index_values1 = pd.DataFrame(index=missing_index_values1)
+    missing_index_values1 = pd.DataFrame(index=missing_index_values1).reset_index()
     missing_index_values1['Data_available'] = 'row_and_data_not_available'
     missing_index_values1['Value'] = np.nan
     #then append to transport_data_system_df
     user_input = pd.concat([missing_index_values1, user_input], sort=False)
+    print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
 
-
+#%%
 if missing_index_values2.empty:
     pass#this is to be expected as the cocnordance should always have everything we need in it!
 else:
     #we want to make sure user is aware of this as we will be removing rows from the user input
-    print('Missing rows in the user input concordance: {}'.format(missing_index_values2))
-    print('We will remove these rows from the user input dataset. If you intended to have data for these rows, please add them to the concordance table.')
+    
     #remove these rows from the user_input
     user_input.drop(missing_index_values2, inplace=True)
+    #convert missing_index_values to df
+    missing_index_values2 = pd.DataFrame(index=missing_index_values2).reset_index()
+    print('Missing rows in the user input concordance: {}'.format(missing_index_values2))
+    print('We will remove these rows from the user input dataset. If you intended to have data for these rows, please add them to the concordance table.')
+
+    # #print the unique Vehicle types and drives that are missing
+    # print('Unique Vehicle types and drives that are missing: {}'.format(missing_index_values2[['Vehicle Type', 'Drive']].drop_duplicates()))#as of /4 we ha
+
+
+
 
 #%%
 user_input = user_input.reset_index()

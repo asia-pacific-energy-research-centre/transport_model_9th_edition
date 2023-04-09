@@ -110,20 +110,22 @@ model_concordances_base_year_measures = pd.concat([base_year_road_measures, base
 #%%
 #Measure to Unit concordance (load it in and merge it to the model concordances)
 measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+#keep only Measure and Unit columns
+measure_to_unit_concordance = measure_to_unit_concordance[['Measure', 'Unit']]
 
 #merge the dict to our model concordances
 model_concordances_base_year_measures = model_concordances_base_year_measures.merge(measure_to_unit_concordance, how='left', on=['Measure'])
 #%%
-#TEMP
-#where measure is Occupancy_growth, remove rows where transport type is freight
-model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'Occupancy') & (model_concordances_base_year_measures['Transport Type'] == 'freight'))]
-#and measure is Load_growth, remove rows where transport type is passenger
-model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'Load') & (model_concordances_base_year_measures['Transport Type'] == 'passenger'))]
+# #TEMP
+# #where measure is Occupancy_growth, remove rows where transport type is freight
+# model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'Occupancy') & (model_concordances_base_year_measures['Transport Type'] == 'freight'))]
+# #and measure is Load_growth, remove rows where transport type is passenger
+# model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'Load') & (model_concordances_base_year_measures['Transport Type'] == 'passenger'))]
 
-#Remove cases so we dont have passenger_km measure where the transport type is freight and vice versa for freight_tonne_km
-model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'passenger_km') & (model_concordances_base_year_measures['Transport Type'] == 'freight'))]
-model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'freight_tonne_km') & (model_concordances_base_year_measures['Transport Type'] == 'passenger'))]
-#TEMP Over
+# #Remove cases so we dont have passenger_km measure where the transport type is freight and vice versa for freight_tonne_km
+# model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'passenger_km') & (model_concordances_base_year_measures['Transport Type'] == 'freight'))]
+# model_concordances_base_year_measures = model_concordances_base_year_measures[~((model_concordances_base_year_measures['Measure'] == 'freight_tonne_km') & (model_concordances_base_year_measures['Transport Type'] == 'passenger'))]
+# #TEMP Over
 #%%
 #now save
 model_concordances_base_year_measures.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_base_year_measures_file_name), index=False)
@@ -156,10 +158,10 @@ model_concordances_user_input_and_growth_rates = model_concordances_user_input_a
 #make units = %
 model_concordances_user_input_and_growth_rates['Unit'] = '%'
 #%%
-#where measure is Occupancy_growth, remove rows where transport type is freight
-model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~((model_concordances_user_input_and_growth_rates['Measure'] == 'Occupancy_growth') & (model_concordances_user_input_and_growth_rates['Transport Type'] == 'freight'))]
-#and measure is Load_growth, remove rows where transport type is passenger
-model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~((model_concordances_user_input_and_growth_rates['Measure'] == 'Load_growth') & (model_concordances_user_input_and_growth_rates['Transport Type'] == 'passenger'))]
+# #where measure is Occupancy_growth, remove rows where transport type is freight
+# model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~((model_concordances_user_input_and_growth_rates['Measure'] == 'Occupancy_growth') & (model_concordances_user_input_and_growth_rates['Transport Type'] == 'freight'))]
+# #and measure is Load_growth, remove rows where transport type is passenger
+# model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~((model_concordances_user_input_and_growth_rates['Measure'] == 'Load_growth') & (model_concordances_user_input_and_growth_rates['Transport Type'] == 'passenger'))]
 #now save
 #%%
 model_concordances_user_input_and_growth_rates.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name), index=False)

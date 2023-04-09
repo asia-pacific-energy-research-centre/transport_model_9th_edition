@@ -29,17 +29,12 @@ model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/comp
 df_with_fuels = model_output.merge(demand_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type','Drive', 'Date'], how='left')
 
 #%%
+#identify any nas in Demand_side_fuel_share column. If so make the user add them to other_code\create_user_inputs\create_demand_side_fuel_mix_input.py.
+#this is because the user needs to specify what the fuel share is for each medium/vehicletype/drive type, and if it is not specified it will cause an error.
+if df_with_fuels['Demand_side_fuel_share'].isna().sum() > 0:
+    print('There are {} rows with a missing fuel share. Please add them to other_code\create_user_inputs\create_demand_side_fuel_mix_input.py'.format(df_with_fuels['Demand_side_fuel_share'].isna().sum()))
+    raise Exception('Missing fuel shares')
 
-#where we are missing fuels, fill them in with what is in the mdoel concordances, based on the drive type
-model_concordances_fuels = model_concordances_fuels[['Drive', 'Fuel']].drop_duplicates().rename(columns={'Fuel': 'Fuel_Concordance'})
-df_with_fuels = df_with_fuels.merge(model_concordances_fuels, on='Drive', how='left')
-df_with_fuels['Fuel'].fillna(df_with_fuels.Fuel_Concordance, inplace=True)
-df_with_fuels.drop(['Fuel_Concordance'], axis=1, inplace=True)
-df_with_fuels.drop_duplicates(inplace=True)#its important to drop duplicates here because the model concordances doubles up what was done by fuels covered by demand_side_fuel mixing.
-
-#%%
-#fill NA's in the Demand side fuel share with 1's as these are where there is no share to make *note that we have handled where the fuels may be biodiesel or gas, since we set them to just gas in the file create_demand_side_fuel_mix_input.py
-df_with_fuels.loc[df_with_fuels.Demand_side_fuel_share.isna(), 'Demand_side_fuel_share'] = 1
 #%%
 #times teh fuel sahres by energy. This will result in a new energy value, reflecting the share of fuel used in each drive type.
 df_with_fuels['Energy'] = df_with_fuels['Energy'] * df_with_fuels['Demand_side_fuel_share']

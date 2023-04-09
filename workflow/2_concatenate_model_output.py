@@ -22,10 +22,10 @@ non_road_model_output = pd.read_csv('intermediate_data/non_road_model/{}'.format
 # check if there are any NA's in any columns in the dataframe. If there are, print them out
 if road_model_output.isnull().values.any():
     print(road_model_output[road_model_output.isnull().any(axis=1)].loc[:, road_model_output.isnull().any(axis=0)])
-    print('there are NA values in the road model output')
+    print('there are NA values in the road model output. However if they are only in the user input columns for 2017 then ignore them')
 if non_road_model_output.isnull().values.any():
     print(non_road_model_output[non_road_model_output.isnull().any(axis=1)].loc[:, non_road_model_output.isnull().any(axis=0)])
-    print('there are NA values in the non road model output')
+    print('there are NA values in the non road model output. However if they are only in the user input columns for 2017 then ignore them')
 
 #also check for duplicates
 if road_model_output.duplicated().any():

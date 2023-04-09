@@ -27,7 +27,7 @@ print('Model run for {} starting'.format(file_date))
 print('\n FILE_DATE_ID is set to {}'.format(FILE_DATE_ID))
 
 PLOT_INPUT_DATA = False
-CREATE_MODEL_CONCORDANCES = False#True
+CREATE_MODEL_CONCORDANCES = True
 #%%
 if CREATE_MODEL_CONCORDANCES:
     exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
@@ -35,6 +35,7 @@ if CREATE_MODEL_CONCORDANCES:
 exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
 #%%
 exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
+#%%
 exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
 if PLOT_INPUT_DATA:
     exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
@@ -46,13 +47,15 @@ exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
 #%%
 exec(open("./workflow/1_run_non_road_model.py").read())
 exec(open("./workflow/1_run_road_model.py").read())
+#%%
 exec(open("./workflow/2_concatenate_model_output.py").read())
-exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
+exec(open("./workflow/3a_apply_ice_fuel_splits.py").read())
+exec(open("./workflow/3b_apply_fuel_mix_demand_side.py").read())
 exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
 exec(open("./workflow/5_clean_model_output.py").read())
 exec(open("./workflow/6_create_osemosys_output.py").read())
 #%%
-ANALYSE_OUTPUT = True#True
+ANALYSE_OUTPUT = False#True
 if ANALYSE_OUTPUT:
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())

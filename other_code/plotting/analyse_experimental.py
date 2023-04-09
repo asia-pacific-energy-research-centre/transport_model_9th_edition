@@ -41,9 +41,10 @@ model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.pivot(inde
 #replace any nan's with 0's
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.fillna(0)
 
-model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['ice'])# + model_output_detailed_ratio_drive['d'])
 
-model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd']) / (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+# model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd']) / (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev'] ) / (model_output_detailed_ratio_drive['phev'] + model_output_detailed_ratio_drive['ice'])
 
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive[['BEV_ICE_ratio', 'PHEV_ICE_ratio']]
 
@@ -70,9 +71,11 @@ model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.pivot(inde
 #replace any nan's with 0's
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.fillna(0)
 
-model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+# model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['ice'])# + model_output_detailed_ratio_drive['d'])
 
-model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd']) / (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+# model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd']) / (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
+model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev'] ) / (model_output_detailed_ratio_drive['phev'] + model_output_detailed_ratio_drive['ice'])
 
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive[['BEV_ICE_ratio', 'PHEV_ICE_ratio']]
 

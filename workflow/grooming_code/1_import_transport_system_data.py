@@ -24,38 +24,44 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 = 'DATE20230216'
+FILE_DATE_ID2 =1# 'DATE20230216'
 
 transport_data_system_folder = '../transport_data_system'
-transport_data_system_df = pd.read_csv('{}/output_data/9th_dataset/combined_dataset_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
+transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
 
+#%%
 #if they are there, remove cols called index, level_0
 if 'index' in transport_data_system_df.columns:
     transport_data_system_df = transport_data_system_df.drop(columns=['index'])
 if 'level_0' in transport_data_system_df.columns:
     transport_data_system_df = transport_data_system_df.drop(columns=['level_0'])
+if 'Unnamed: 0' in transport_data_system_df.columns:
+    transport_data_system_df = transport_data_system_df.drop(columns=['Unnamed: 0'])
 
 #%%
-# #testing:
-# #plot freight tonne km for 2017 for 01_AUS
-# transport_data_system_df[(transport_data_system_df['Date']=='2017-12-31') & (transport_data_system_df['Economy']=='20_USA') & (transport_data_system_df['Measure']=='Energy')].plot(x='Medium',y='Value',kind='bar')
+#TEMP
+#change the column names to be in capital letters with spaces instead of underscores
+transport_data_system_df.columns = [x.title().replace('_',' ') for x in transport_data_system_df.columns]
+#change some of the columns to have capitals in the first letter of their names (the columns are: Frequency, Measure, Unit ). BUT MAKE SURE ALL THE OTEHR LETTERS ARE LOWER CASE
+transport_data_system_df['Frequency'] = transport_data_system_df['Frequency'].str.capitalize()
+transport_data_system_df['Scope'] = transport_data_system_df['Scope'].str.capitalize()
+transport_data_system_df['Measure'] = transport_data_system_df['Measure'].str.capitalize()
+transport_data_system_df['Unit'] = transport_data_system_df['Unit'].str.capitalize()
+#TEMP
 #%%
-#Load in estimates made usinng the transport data system for the new vehicle efficiency for LDVs - these arent included in the transport datasystem becausee i have no confidence in them
-# ldv_eff = pd.read_csv('input_data/calculated/iea_new_vehicle_efficiency_ldv_ice.csv')
-# other_eff = pd.read_csv('input_data/calculated/new_vehicle_efficiency_other_estimates.csv')
-#%%
-# #concatenate the eff dfs to the transport data system df
-# transport_data_system_df = pd.concat([transport_data_system_df,other_eff], ignore_index=True)# ldv_eff, 
-#%%
-#TEMPORARY FIX, CHANGE THE MEASURE IN TRANSPORT DATA SYSTEM FOR passenger_km and freight_tonne_km to Activity so that it matches the model concordance. It is undecided whether it would be best to change the model to use the measure of passenger_km and freight_tonne_km or to change the transport data system to use activity. Or keep this here. There are pros and cons to each approach #TODO: decide on the best approach
+#TEMPORARY FIX, CHANGE THE MEASURE IN TRANSPORT DATA SYSTEM FOR passenger_km and freight_tonne_km to Activity so that it matches the model concordance.
 # transport_data_system_df.loc[transport_data_system_df['Measure']=='passenger_km','Measure'] = 'Activity'
 # transport_data_system_df.loc[transport_data_system_df['Measure']=='freight_tonne_km','Measure'] = 'Activity'
 
-#change Date to year and filter out all non yearly data
-transport_data_system_df['Date'] = transport_data_system_df['Date'].str.split('-').str[0].astype(int)
+# #change Date to year and filter out all non yearly data
+# transport_data_system_df['Date'] = transport_data_system_df['Date'].str.split('-').str[0].astype(int)
 transport_data_system_df = transport_data_system_df[transport_data_system_df['Frequency']=='Yearly']
 #make sure scope is National
 transport_data_system_df = transport_data_system_df[transport_data_system_df['Scope']=='National']
+
+#%%
+#drop unneccessary columns: 'Dataset', 'Source', 'Fuel', 'Comment', 'Scope'
+transport_data_system_df = transport_data_system_df.drop(columns=[ 'Source', 'Fuel', 'Comment', 'Scope'])
 #%%
 #filter for the same years as are in the model concordances in the transport data system (should just be base Date)
 transport_data_system_df = transport_data_system_df[transport_data_system_df.Date.isin(model_concordances_measures.Date.unique())]
@@ -65,7 +71,6 @@ transport_data_system_df = transport_data_system_df[transport_data_system_df.Mea
 
 #now we have filtered out the majority of rows we dont need from the transport data system, we can use pandas difference() function to find out what rows we are missing from the transport data system. This will be useful for debugging and for the user to know what data is missing from the transport data system (as its expected that no data will be missing for the model to actually run))
 
-
 #%%
 
 INDEX_COLS_NO_SCENARIO = INDEX_COLS.copy()
@@ -74,6 +79,7 @@ INDEX_COLS_NO_SCENARIO.remove('Scenario')
 #set index
 transport_data_system_df.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
 model_concordances_measures.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
+
 
 #create empty df which is a copy of the transport_data_system_df to store the data we extract from the transport data system using an iterative loop
 new_transport_dataset = []
@@ -105,10 +111,9 @@ else:
     #first create a df with the missing index values
     missing_index_values1 = pd.DataFrame(index=missing_index_values1)
     missing_index_values1['Data_available'] = 'row_and_data_not_available'
-    missing_index_values1['Value'] = np.nan
+    missing_index_values1['Value'] = 0
     #then append to transport_data_system_df
     transport_data_system_df = pd.concat([missing_index_values1, transport_data_system_df], sort=False)
-
 
 if missing_index_values2.empty:
     #this is unexpected so create an error
@@ -121,25 +126,9 @@ else:
     transport_data_system_df.drop(missing_index_values2, inplace=True)
 
 #%%
-# #%%
-# x = transport_data_system_df.reset_index()
-# x = x[x.Unit == 'PJ per km']
-# missing_index_values1 = missing_index_values1.reset_index()
-# #find cols in first row where values are not equal to the vlaues in the first row of missing_index_values1
-# row1 = x.iloc[0:1]
-# row2 = missing_index_values1.iloc[0:1]
-# #filter for the same cols in both
-# cols1 = row1.columns
-# cols2 = row2.columns
-# cols = list(set(cols1).intersection(cols2))
-# row1 = row1[cols]
-# row2 = row2[cols]
-# for col in row1.columns:
-#     if row1[col] != row2[col]:
-#         print(col)
-#         print(row1[col])
-#         print(row2[col])
-#         print('')
+#TEMP
+#if any of the missing values were for turnover rate then set it to 0.03
+transport_data_system_df.loc[((transport_data_system_df.index.get_level_values('Measure')=='Turnover_rate') & (transport_data_system_df.Data_available=='row_and_data_not_available')), 'Value'] = 0.03
 #%%
 
 

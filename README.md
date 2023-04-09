@@ -28,3 +28,6 @@ There are some documentation files in ./documentation/. They can be used in addi
 ./workflow/ - inside here are the files you need to run the model. 
 ./other_code/ - inside here is extra code that is useful to use for visualisation of the outputs, creation of input data and some kinds of analysis/exploration files. 
 ./config/ - general configurations you can set, other than those that are in the integrate.py file.
+
+## To do:
+- how to make use of more than one year of base year data even if some of the data is missing? I geuss we can use the frist x years of data to help estaimte the growth rate for the froecast?
