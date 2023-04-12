@@ -55,7 +55,7 @@ SCENARIO_OF_INTEREST = 'Reference'
 
 user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
        'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth']
-user_input_measures_list_NON_ROAD = ['Non_road_efficiency_growth']
+user_input_measures_list_NON_ROAD = ['Non_road_intensity_improvement']
 
 base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
 base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Stocks', 'Intensity']

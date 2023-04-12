@@ -54,15 +54,21 @@ SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolis
 SCENARIO_OF_INTEREST = 'Reference'
 
 user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
-       'New_vehicle_efficiency_growth', 'Occupancy_growth', 'Load_growth']
-user_input_measures_list_NON_ROAD = ['Non_road_efficiency_growth']
+       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth']
+user_input_measures_list_NON_ROAD = ['Non_road_intensity_improvement']
 
-base_year_measures_list_ROAD = ['passenger_km', 'freight_tonne_km','Energy', 'Stocks', 'Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency']
-base_year_measures_list_NON_ROAD = ['passenger_km', 'freight_tonne_km','Energy', 'Stocks']
+base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
+base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Stocks', 'Intensity']
 
-calculated_measures_ROAD = ['Travel_km', 'Efficiency', 'Travel_km_per_stock', 'Surplus_stocks']
-calculated_measures_NON_ROAD = ['Efficiency']
+calculated_measures_ROAD = ['Travel_km','Surplus_stocks']#tinclude travel km as to be calcualted as it is not widely available publicly, so its best just to calculate it.its also kind of an intermediate measure as it is reliant on what mileage,efficiency and stocks are, but is not the goal like energy or activity really are
+calculated_measures_NON_ROAD = []
 
+#%%
+#import measure to unit concordance
+measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+
+#import manually_defined_transport_categories
+transport_categories = pd.read_csv('config/concordances_and_config_data/manually_defined_transport_categories.csv')
 ###################################################
 #%%
 

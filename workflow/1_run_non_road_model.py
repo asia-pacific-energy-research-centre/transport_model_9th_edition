@@ -28,9 +28,9 @@ non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_mode
 #%%
 
 #separate user inputs from main dataframe
-non_road_efficiency_growth = non_road_model_input[['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date','Non_road_efficiency_growth']].drop_duplicates()
+non_road_intensity_improvement = non_road_model_input[['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date','Non_road_intensity_improvement']].drop_duplicates()
 
-non_road_model_input.drop(columns=['Non_road_efficiency_growth'], inplace=True)
+non_road_model_input.drop(columns=['Non_road_intensity_improvement'], inplace=True)
 #%%
 #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
 previous_year_main_dataframe = non_road_model_input.loc[non_road_model_input.Date == BASE_YEAR,:]
@@ -88,15 +88,15 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     
     #APPLY EFFICIENCY GROWTH TO ORIGINAL EFFICIENCY
     #note that this will then be split into different fuel types when we appply the fuel mix varaible later on.
-    change_dataframe = change_dataframe.merge(non_road_efficiency_growth, on=['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date'], how='left')
+    change_dataframe = change_dataframe.merge(non_road_intensity_improvement, on=['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date'], how='left')
 
-    change_dataframe['New_efficiency'] = change_dataframe['Efficiency'] * change_dataframe['Non_road_efficiency_growth']
+    change_dataframe['New_intensity'] = change_dataframe['Intensity'] * (1/change_dataframe['Non_road_intensity_improvement'])
 
-    change_dataframe['Efficiency'] = change_dataframe['New_efficiency']
+    change_dataframe['Intensity'] = change_dataframe['New_intensity']
     
     #CALCUALTE NEW ENERGY CONSUMPTION. 
     #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type. It is also only for activity per energy unit, not travel km per energy unit.
-    change_dataframe['Energy'] = change_dataframe['Activity'] / change_dataframe['Efficiency'] 
+    change_dataframe['Energy'] = change_dataframe['Activity'] * change_dataframe['Intensity'] 
 
     #CREATE STOCKS VALUE
     #if energy use is >0 then stock is 1, else 0
@@ -108,7 +108,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #Now start cleaning up the changes dataframe to create the dataframe for the new Date.
     addition_to_main_dataframe = change_dataframe.copy() 
     
-    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive','Medium',  'Activity', 'Stocks', 'Efficiency', 'Energy']]
+    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive','Medium',  'Activity', 'Stocks', 'Intensity', 'Energy']]
     
     #add new year to the main dataframe.
     main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])

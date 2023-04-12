@@ -16,8 +16,10 @@ transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_ag
 
 #%%
 #remove uneeded columns
-transport_dataset.drop(['Unit','Dataset', 'Data_available', 'Frequency'], axis=1, inplace=True)
-INDEX_COLS.remove('Unit')
+unneeded_cols =['Unit','Dataset', 'Data_available', 'Frequency']
+transport_dataset.drop(unneeded_cols, axis=1, inplace=True)
+#remove those cols from INDEX_COLS
+INDEX_COLS = [x for x in INDEX_COLS if x not in unneeded_cols]
 #set index cols
 # INDEX_COLS = ['Date', 'Economy', 'Vehicle Type', 'Medium','Transport Type', 'Drive', 'Scenario']
 
@@ -190,13 +192,13 @@ road_model_input_wide['Surplus_stocks'] = 0
 non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] > 0), 'Stocks'] = 1
 non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] == 0), 'Stocks'] = 0
 #%%
-road_model_input_wide_new = road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_ROAD + user_input_measures_list_ROAD + calculated_measures_ROAD]
-non_road_model_input_wide_new = non_road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_NON_ROAD + user_input_measures_list_NON_ROAD + calculated_measures_NON_ROAD]
+# road_model_input_wide_new = road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_ROAD + user_input_measures_list_ROAD + calculated_measures_ROAD]
+# non_road_model_input_wide_new = non_road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_NON_ROAD + user_input_measures_list_NON_ROAD + calculated_measures_NON_ROAD]
 
 #%%
 #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
-road_model_input_wide_new.to_csv('intermediate_data/model_inputs/road_model_input_wide.csv', index=False)
-non_road_model_input_wide_new.to_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv', index=False)
+road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide.csv', index=False)
+non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv', index=False)
 
 #%%
 

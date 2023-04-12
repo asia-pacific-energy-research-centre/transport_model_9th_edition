@@ -24,7 +24,7 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 =1# 'DATE20230216'
+FILE_DATE_ID2 ='DATE20230410' # 'DATE20230216'
 
 transport_data_system_folder = '../transport_data_system'
 transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
@@ -60,8 +60,8 @@ transport_data_system_df = transport_data_system_df[transport_data_system_df['Fr
 transport_data_system_df = transport_data_system_df[transport_data_system_df['Scope']=='National']
 
 #%%
-#drop unneccessary columns: 'Dataset', 'Source', 'Fuel', 'Comment', 'Scope'
-transport_data_system_df = transport_data_system_df.drop(columns=[ 'Source', 'Fuel', 'Comment', 'Scope'])
+#drop unneccessary columns: 'Dataset', 'Source', 'Fuel', 'Comment', 'Scope' if they are in there
+transport_data_system_df = transport_data_system_df.drop(columns=['Dataset', 'Source', 'Fuel', 'Comment', 'Scope'], errors='ignore')
 #%%
 #filter for the same years as are in the model concordances in the transport data system (should just be base Date)
 transport_data_system_df = transport_data_system_df[transport_data_system_df.Date.isin(model_concordances_measures.Date.unique())]
