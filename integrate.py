@@ -49,21 +49,18 @@ exec(open("./workflow/1_run_non_road_model.py").read())
 exec(open("./workflow/1_run_road_model.py").read())
 #%%
 exec(open("./workflow/2_concatenate_model_output.py").read())
-exec(open("./workflow/3a_apply_ice_fuel_splits.py").read())
-exec(open("./workflow/3b_apply_fuel_mix_demand_side.py").read())
+exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
 exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
 exec(open("./workflow/5_clean_model_output.py").read())
-exec(open("./workflow/6_create_osemosys_output.py").read())
+# exec(open("./workflow/6_create_osemosys_output.py").read())
 #%%
-ANALYSE_OUTPUT = False#True
+ANALYSE_OUTPUT = True
 if ANALYSE_OUTPUT:
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_drive.py").read())
-    exec(open("other_code/analysis_code/plot_input_data.py").read())
-    exec(open("other_code/analysis_code/analyse_experimental.py").read())
-    exec(open("other_code/analysis_code/plot_data_for_others.py").read())
-    exec(open("other_code/analysis_code/plot_data_for_singluar_economy.py").read())
+    exec(open("other_code/plotting/all_economy_graphs.py").read())
+    exec(open("other_code/plotting/analyse_experimental.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:
