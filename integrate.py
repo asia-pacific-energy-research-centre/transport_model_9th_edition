@@ -59,8 +59,11 @@ if ANALYSE_OUTPUT:
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_drive.py").read())
-    exec(open("other_code/plotting/all_economy_graphs.py").read())
-    exec(open("other_code/plotting/analyse_experimental.py").read())
+    exec(open("other_code/plotting/plot_diagnostics.py").read())
+    plot_all = False
+    if plot_all:
+        exec(open("other_code/plotting/all_economy_graphs.py").read())
+        exec(open("other_code/plotting/analyse_experimental.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:

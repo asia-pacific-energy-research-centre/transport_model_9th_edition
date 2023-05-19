@@ -150,7 +150,8 @@ for measure in user_input_measures_list_NON_ROAD:
     model_concordances_NON_ROAD_copy['Measure'] = measure
     non_road_user_input_and_growth_rates = pd.concat([non_road_user_input_and_growth_rates, model_concordances_NON_ROAD_copy])
 
-#%
+#%%
+
 #join the two dfs using concat
 model_concordances_user_input_and_growth_rates = pd.concat([non_road_user_input_and_growth_rates, road_user_input_and_growth_rates], ignore_index=True)
 #remove the BASE year as we don't need it. 
@@ -162,6 +163,26 @@ model_concordances_user_input_and_growth_rates['Unit'] = '%'
 # model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~((model_concordances_user_input_and_growth_rates['Measure'] == 'Occupancy_growth') & (model_concordances_user_input_and_growth_rates['Transport Type'] == 'freight'))]
 # #and measure is Load_growth, remove rows where transport type is passenger
 # model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~((model_concordances_user_input_and_growth_rates['Measure'] == 'Load_growth') & (model_concordances_user_input_and_growth_rates['Transport Type'] == 'passenger'))]
+
+##########################
+
+#SETUP TEMP FIX FOR GOMEPRTZ PARAMETERS:
+#since these use a bit different conventions we will treat them uniquely. 
+##set medium to road, vehicle type to all, transport type to passenger, unit to Parameter and drive to all
+#first filter for where measure startswith Gompertz
+model_concordances_GOMPERTZ = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Measure'].str.startswith('Gompertz')]
+model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~['Measure'].str.startswith('Gompertz')]
+model_concordances_GOMPERTZ['Medium'] = 'road'
+model_concordances_GOMPERTZ['Vehicle Type'] = 'all'
+model_concordances_GOMPERTZ['Transport Type'] = 'passenger'
+model_concordances_GOMPERTZ['Unit'] = 'Parameter'
+model_concordances_GOMPERTZ['Drive'] = 'all'
+#drop duplicates
+model_concordances_GOMPERTZ = model_concordances_GOMPERTZ.drop_duplicates()
+#now add to the road_user_input_and_growth_rates df
+model_concordances_user_input_and_growth_rates = pd.concat([model_concordances_user_input_and_growth_rates, model_concordances_GOMPERTZ])
+
+##########################
 #now save
 #%%
 model_concordances_user_input_and_growth_rates.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name), index=False)

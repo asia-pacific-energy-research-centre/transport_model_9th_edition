@@ -27,6 +27,9 @@ for sheet in user_input_file.sheet_names:
     else:
         user_input = pd.concat([user_input, pd.read_excel('input_data/user_input_spreadsheet.xlsx', sheet_name=sheet)])
 
+#print then remove any measures not in model_concordances_user_input_and_growth_rates
+print('Measures in user input that are not in the model concordances:', user_input[~user_input.Measure.isin(model_concordances_user_input_and_growth_rates.Measure)].Measure.unique())
+user_input = user_input[user_input.Measure.isin(model_concordances_user_input_and_growth_rates.Measure)]
 #%%
 ################################################################################
 ################################################################################
@@ -34,6 +37,7 @@ for sheet in user_input_file.sheet_names:
 
 #drop any rows in user input that are for the base year
 user_input = user_input[user_input.Date != BASE_YEAR]
+
 #%%
 #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
 
