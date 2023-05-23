@@ -75,7 +75,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #we will apply activity growth to the sum of activity for each transport type. Note that activity growth is assumed to be the same for all vehicle types of the same transport type.
     
     #join on activity growth
-    change_dataframe = change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Date'], how='left')
+    change_dataframe = change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Date','Transport Type'], how='left')
 
     #calcualte sum of last Dates activity by transport type
     # activity_transport_type_sum = change_dataframe.copy()[['Economy', 'Scenario', 'Transport Type', 'Date', "Activity"]]

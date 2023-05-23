@@ -171,7 +171,7 @@ model_concordances_user_input_and_growth_rates['Unit'] = '%'
 ##set medium to road, vehicle type to all, transport type to passenger, unit to Parameter and drive to all
 #first filter for where measure startswith Gompertz
 model_concordances_GOMPERTZ = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Measure'].str.startswith('Gompertz')]
-model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~['Measure'].str.startswith('Gompertz')]
+model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[~(model_concordances_user_input_and_growth_rates['Measure'].str.startswith('Gompertz'))]
 model_concordances_GOMPERTZ['Medium'] = 'road'
 model_concordances_GOMPERTZ['Vehicle Type'] = 'all'
 model_concordances_GOMPERTZ['Transport Type'] = 'passenger'

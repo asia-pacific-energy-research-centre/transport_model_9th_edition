@@ -26,10 +26,10 @@ Turnover_rate_growth = road_model_input[['Economy','Scenario','Vehicle Type', 'T
 # Activity_growth = road_model_input[['Economy','Scenario', 'Date', 'Activity_growth']].drop_duplicates()
 New_vehicle_efficiency_growth = road_model_input[['Economy','Scenario', 
 'Vehicle Type', 'Transport Type', 'Drive', 'Date', 'New_vehicle_efficiency_growth']].drop_duplicates()
-Mileage_growth = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Mielage_growth']].drop_duplicates()
+Mileage_growth = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Mileage_growth']].drop_duplicates()
 
 #drop those cols
-road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'Turnover_rate_growth', 'New_vehicle_efficiency_growth','Mielage_growth']+ [col for col in road_model_input.columns if 'Gompertz_' in col], axis=1)
+road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'Turnover_rate_growth', 'New_vehicle_efficiency_growth','Mileage_growth']+ [col for col in road_model_input.columns if 'Gompertz_' in col], axis=1)
 #%%
 #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
 previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == BASE_YEAR,:]
@@ -95,6 +95,11 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #calculate stock turnover plus surplus
     change_dataframe['Stock_turnover_and_surplus_total'] = change_dataframe['Stock_turnover'] + change_dataframe['Surplus_stocks'] 
 
+
+    #Now we will apply activity growth to original activity summed by transport type to find new activity to be satisfied by new veh
+    # icles according to the stock dist.
+    #join on activity growth
+    change_dataframe = change_dataframe.merge(activity_growth, on=['Economy', 'Scenario','Transport Type', 'Date'], how='left')
 
     #######################################################################
 
@@ -191,9 +196,9 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
 
     #now, because this is a bit of a commplicated process that could have things go worng, we will extract the data and save it to a csv file so we can plot it and check it is working as expected:
     if gompertz_function_diagnostics_dataframe.empty:
-        gompertz_function_diagnostics_dataframe = change_dataframe[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Stocks_per_capita', 'Expected_gdp_per_capita', 'GDP_per_capita','Expected_stocks_per_capita_derivative', 'Activity_growth_adjusted', 'Activity_growth','Mileage_growth_adjusted', 'Mielage_growth', 'Mileage', 'Expected_stocks_per_capita', 'Expected_GDP_per_capita', 'Expected_stocks_per_capita_2', 'Expected_stocks_per_capita_derivative_2']]
+        gompertz_function_diagnostics_dataframe = change_dataframe[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Stocks_per_capita', 'Expected_gdp_per_capita', 'GDP_per_capita','Expected_stocks_per_capita_derivative', 'Activity_growth_adjusted', 'Activity_growth','Mileage_growth_adjusted', 'Mileage_growth', 'Mileage', 'Expected_stocks_per_capita', 'Expected_GDP_per_capita', 'Expected_stocks_per_capita_2', 'Expected_stocks_per_capita_derivative_2']]
     else:
-        gompertz_function_diagnostics_dataframe = pd.concat([gompertz_function_diagnostics_dataframe, change_dataframe[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Stocks_per_capita', 'Expected_gdp_per_capita', 'GDP_per_capita','Expected_stocks_per_capita_derivative', 'Activity_growth_adjusted', 'Activity_growth','Mileage_growth_adjusted', 'Mielage_growth', 'Mileage', 'Expected_stocks_per_capita', 'Expected_GDP_per_capita', 'Expected_stocks_per_capita_2', 'Expected_stocks_per_capita_derivative_2']]])
+        gompertz_function_diagnostics_dataframe = pd.concat([gompertz_function_diagnostics_dataframe, change_dataframe[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Stocks_per_capita', 'Expected_gdp_per_capita', 'GDP_per_capita','Expected_stocks_per_capita_derivative', 'Activity_growth_adjusted', 'Activity_growth','Mileage_growth_adjusted', 'Mileage_growth', 'Mileage', 'Expected_stocks_per_capita', 'Expected_GDP_per_capita', 'Expected_stocks_per_capita_2', 'Expected_stocks_per_capita_derivative_2']]])
 
     # This and the parameters used are all based on research from the paper MODELLING GAMMA COEFFICIENT IN THE GOMPERTZ CURVE TO DETERMINE THE VARIABILITY OF VEHICLE OWNERSHIP SATURATION by M Mavin De Silva, A S Kumarage, K P Dilini and T Amala 
 
@@ -222,11 +227,6 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
 
     #calcualte sum of activity (by default is summed by transport type but will keep original code to make it easier to change later)
     change_dataframe['Transport_type_sum_of_activity'] = change_dataframe.groupby(['Economy', 'Scenario', 'Transport Type', 'Date'])['Activity'].transform('sum')
-
-    #Now we will apply activity growth to original activity summed by transport type to find new activity to be satisfied by new veh
-    # icles according to the stock dist.
-    #join on activity growth
-    change_dataframe = change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Date'], how='left')#one day if growth is determined by transport type, add transport type ot this grouping
 
     #calc
     change_dataframe['Transport_type_sum_of_activity_growth'] = (change_dataframe['Activity_growth_adjusted'] * change_dataframe['Transport_type_sum_of_activity'])
