@@ -30,6 +30,9 @@ for sheet in user_input_file.sheet_names:
     else:
         user_input = pd.concat([user_input, pd.read_excel('input_data/user_input_spreadsheet.xlsx', sheet_name=sheet)])
 
+
+
+
 #%%
 # Example of dataset:
 #cols: 	Economy	Scenario	Transport Type	Date	Vehicle Type	Drive	Value	Unit	Medium	Data_available	Measure	Frequency
@@ -128,3 +131,22 @@ with pd.ExcelWriter('input_data/user_input_spreadsheet.xlsx') as writer:
         user_input[user_input.Measure == measure].to_excel(writer, sheet_name=measure, index=False)
 
 #%%
+
+#%%
+# update_gompertz_inputs = True
+# if update_gompertz_inputs:
+
+#     #take in Gompertz inputs and set them manually here (because changing them in the spreadsheet is a bit hard and usually results in issues - because there are so many values)
+#     #where the value is Gompertz_gamma, then set the values based on the economy to the values in:
+#     #so filter for measure contains Gompertz
+#     gompertz_inputs = user_input[user_input.Measure.str.contains('Gompertz')]
+#     #set Gompertz_beta to 28
+#     gompertz_inputs.loc[gompertz_inputs.Measure == 'Gompertz_beta', 'Value'] = 28
+#     #set Gompertz_alpha to 200
+#     gompertz_inputs.loc[gompertz_inputs.Measure == 'Gompertz_alpha', 'Value'] = 200
+
+#     #resave to user input with the measure as the sheet name
+#     for sheet in gompertz_inputs.Measure.unique():
+#         print('Saving sheet: {}'.format(sheet))
+#         gompertz_inputs[gompertz_inputs.Measure == sheet].to_excel('input_data/user_input_spreadsheet.xlsx', sheet_name=sheet, index=False)
+

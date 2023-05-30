@@ -11,6 +11,9 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import matplotlib.pyplot as plt
 plt.rcParams['figure.facecolor'] = 'w'
+
+save_html=True
+save_fig=False
 #%%
 
 #load data in
@@ -19,6 +22,42 @@ model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.forma
 gompertz_function_diagnostics_dataframe = pd.read_csv('intermediate_data/road_model/{}'.format(gompertz_function_diagnostics_dataframe_file_name))
 
 model_output_8th = pd.read_csv('intermediate_data/activity_energy_road_stocks.csv')
+#%%
+#load in growth estimates and related data:
+# macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)
+regression_based_growth_estimates = pd.read_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv')
+#Index(['economy', 'date', 'GDP_per_capita', 'Population', 'GDP',
+#    'GDP_times_capita', 'GDP_growth', 'Population_growth',
+#    'GDP_per_capita_growth', 'GDP_times_capita_growth', 'region', 'const',
+#    'gdp_per_capita_growth_coeff', 'gdp_times_capita_growth_coeff', 'r2',
+#    'energy_growth_est', 'activity_growth_est', 'activity_growth_8th',
+#    'activity_growth_8th_index', 'activity_growth_est_index',
+#    'energy_growth_est_index'],
+#   dtype='object')
+#%%
+################################################################################################################################################################
+#drop nas in regression_based_growth_estimates so we are calculating compound growth rates for the same time period as the 8th edition data
+regression_based_growth_estimates = regression_based_growth_estimates.dropna(subset=['activity_growth_8th', 'activity_growth_est', 'energy_growth_est'])
+
+#calcualte the growth rates compounded over time to comparer to the 8th edition data:
+regression_based_growth_estimates['activity_growth_est_index'] = regression_based_growth_estimates.groupby('economy')['activity_growth_est'].apply(lambda x: (1 + x).cumprod())
+regression_based_growth_estimates['energy_growth_est_index'] = regression_based_growth_estimates.groupby('economy')['energy_growth_est'].apply(lambda x: (1 + x).cumprod())
+regression_based_growth_estimates['GDP_times_capita_growth_index'] = regression_based_growth_estimates.groupby('economy')['GDP_times_capita_growth'].apply(lambda x: (1 + x).cumprod())
+regression_based_growth_estimates['GDP_per_capita_growth_index'] = regression_based_growth_estimates.groupby('economy')['GDP_per_capita_growth'].apply(lambda x: (1 + x).cumprod())
+
+#plot, with economys as facets, the 'activity_growth_8th_index', 'activity_growth_est_index', ''energy_growth_est_index' and 'GDP_times_capita_growth_index' anbd 'GDP_per_capita_growth_index'
+title = 'Growth estimates for each economy'
+regression_based_growth_estimates_long = pd.melt(regression_based_growth_estimates, id_vars=['economy', 'date'], value_vars=['activity_growth_8th_index', 'activity_growth_est_index', 'energy_growth_est_index', 'GDP_times_capita_growth_index', 'GDP_per_capita_growth_index'])
+#plot with plotly
+fig = px.line(regression_based_growth_estimates_long, x='date', y='value', color='variable', facet_col='economy', facet_col_wrap=3, title=title)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 #%%
 #FILTER FOR SCENARIO OF INTEREST
@@ -50,7 +89,14 @@ fig, ax = plt.subplots()
 for key, grp in model_output_detailed_vtype.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Energy', label=key)
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################################################################################################################################################
 #%%
@@ -63,7 +109,14 @@ fig, ax = plt.subplots()
 for key, grp in model_output_detailed_vtype.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Stocks', label=key)
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################################################################################################################################################
 #%%
@@ -77,7 +130,14 @@ fig, ax = plt.subplots()
 for key, grp in model_output_detailed_bevs.groupby(['Economy']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Stocks', label=key)
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 #%%
 ################################################################################################################################################################
@@ -95,7 +155,14 @@ for key, grp in model_output_detailed_sales.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Vehicle_sales_share', label=key)
     
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 #%%
 ################################################################################################################################################################
@@ -111,7 +178,14 @@ for key, grp in model_output_detailed_sales.groupby(['Drive']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Vehicle_sales_share', label=key)
 
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################################################################################################################################################
 
@@ -123,7 +197,14 @@ model_output_surplus = model_output_detailed.groupby(['Date'])['Surplus_stocks']
 
 plt.plot(model_output_surplus['Date'], model_output_surplus['Surplus_stocks'])
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################################################################################################################################################
 #%%
@@ -136,7 +217,14 @@ fig, ax = plt.subplots()
 for key, grp in model_output_energy.groupby(['Dataset']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Energy', label=key)
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 title = 'Total activity compared to the 8th edition'
 #sum activity for each dataset for each Date
@@ -146,7 +234,14 @@ fig, ax = plt.subplots()
 for key, grp in model_output_activity.groupby(['Dataset']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Activity', label=key)
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 title = 'Total stocks compared to the 8th edition'
 #sum stocks for each dataset for each Date
@@ -156,7 +251,14 @@ fig, ax = plt.subplots()
 for key, grp in model_output_stocks.groupby(['Dataset']):
     ax = grp.plot(ax=ax, kind='line', x='Date', y='Stocks', label=key)
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################################################################################################################################################
 #%%
@@ -177,7 +279,14 @@ for key, grp in model_output_activity_drive.groupby(['Drive']):
     i+=1
     ax = grp.plot(ax=ax, kind='line', x='Date', y='passenger_km', label=key,c=next(color))
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 
 #plot freight_km for freight transport type:
@@ -197,7 +306,14 @@ for key, grp in model_output_activity_drive.groupby(['Drive']):
     i+=1
     ax = grp.plot(ax=ax, kind='line', x='Date', y='freight_tonne_km', label=key,c=next(color))
 plt.title(title)
-plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 #%%
 ################################################################################################################################################################
@@ -219,8 +335,14 @@ title = 'Stocks per capita (y) and GDP_per_capita (x) for each economy and each 
 gompertz_function_diagnostics_dataframe_plot = gompertz_function_diagnostics_dataframe[['Economy','Date', 'Stocks_per_capita', 'GDP_per_capita','Expected_gdp_per_capita']].drop_duplicates()
 gompertz_function_diagnostics_dataframe_plot = pd.melt(gompertz_function_diagnostics_dataframe_plot, id_vars=['Economy','Date','Stocks_per_capita'], value_vars=['GDP_per_capita','Expected_gdp_per_capita'], var_name='Measure', value_name='GDP_per_capita')
 fig = px.scatter(gompertz_function_diagnostics_dataframe_plot, x="GDP_per_capita", y="Stocks_per_capita", facet_col="Economy", facet_col_wrap=7, color="Measure", title=title)
-#save the plot
-fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################
 #also plot stocks per capita (y) and GDP_per_capita (x)  vs Expected_GDP_per_capita (y) and Expected_stocks_per_capita (x) for each economy and scenario and each year. We will use grey lighter colors for the expected values
@@ -248,8 +370,14 @@ gompertz_function_diagnostics_dataframe_plot = gompertz_function_diagnostics_dat
 fig = px.line(gompertz_function_diagnostics_dataframe_plot, x="Date", y="Expected_stocks_per_capita_derivative", facet_col="Economy", facet_col_wrap=7, title=title)
 #add the derivative
 fig.add_scatter(x=gompertz_function_diagnostics_dataframe_plot['Date'], y=gompertz_function_diagnostics_dataframe_plot['Expected_stocks_per_capita_derivative_2'], mode='lines', line=dict(color='grey', dash='dash'), name='Expected_stocks_per_capita_derivative_2')
-#save
-fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################
 #plot stocks per cpita on one y axis and its derivative on the other
@@ -258,8 +386,14 @@ gompertz_function_diagnostics_dataframe_plot = gompertz_function_diagnostics_dat
 fig = px.line(gompertz_function_diagnostics_dataframe_plot, x="Date", y="Stocks_per_capita", facet_col="Economy", facet_col_wrap=7, title=title)
 #add the derivative
 fig.add_scatter(x=gompertz_function_diagnostics_dataframe_plot['Date'], y=gompertz_function_diagnostics_dataframe_plot['Expected_stocks_per_capita_derivative'], mode='lines', name='Expected_stocks_per_capita_derivative')
-#save
-fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 
 ################################
@@ -273,8 +407,14 @@ fig.add_scatter(x=gompertz_function_diagnostics_dataframe_plot['Date'], y=gomper
 fig.add_scatter(x=gompertz_function_diagnostics_dataframe_plot['Date'], y=gompertz_function_diagnostics_dataframe_plot['Expected_stocks_per_capita_derivative_2'], mode='lines', line=dict(color='grey', dash='dash'), name='Expected_stocks_per_capita_derivative_2')
 #add the stocks per capita 2
 fig.add_scatter(x=gompertz_function_diagnostics_dataframe_plot['Date'], y=gompertz_function_diagnostics_dataframe_plot['Expected_stocks_per_capita_2'], mode='lines', line=dict(color='grey', dash='dash'), name='Expected_stocks_per_capita_2')
-#save
-fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 ################################
 #PLOT activity growth vs activity growth adjusted
@@ -283,8 +423,14 @@ gompertz_function_diagnostics_dataframe_plot = gompertz_function_diagnostics_dat
 #melt
 gompertz_function_diagnostics_dataframe_plot = pd.melt(gompertz_function_diagnostics_dataframe_plot, id_vars=['Economy','Date'], value_vars=['Activity_growth','Activity_growth_adjusted'], var_name='Measure', value_name='Activity_growth')
 fig = px.line(gompertz_function_diagnostics_dataframe_plot, x="Date", y="Activity_growth", facet_col="Economy", facet_col_wrap=7, color='Measure', title=title)
-#save
-fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 ################################
 #and lastly plot mileage growth vs mileage growth adjusted (not plotting actual mileage because it is different for each vehicle type and drive type, but the growth is the same for all vehicle type and drive types)
 title = 'Mileage vs mileage adjusted over time for each economy'
@@ -292,11 +438,18 @@ gompertz_function_diagnostics_dataframe_plot = gompertz_function_diagnostics_dat
 #melt
 gompertz_function_diagnostics_dataframe_plot = pd.melt(gompertz_function_diagnostics_dataframe_plot, id_vars=['Economy','Date'], value_vars=['Mileage'], var_name='Measure', value_name='Mileage')
 fig = px.line(gompertz_function_diagnostics_dataframe_plot, x="Date", y="Mileage", facet_col="Economy", facet_col_wrap=7, color='Measure', title=title)
-#save
-fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 ################################
 
-
+#%%
+#plot
 # #first we must extract the data so we dont have duplciates (as the stocks per cpita and gdp per capita are the same for each vehicle type and drive type)
 # gompertz_function_diagnostics_dataframe_plot = gompertz_function_diagnostics_dataframe[['Economy','Date', 'Stocks_per_capita', 'GDP_per_capita']].drop_duplicates()
 # fig = px.scatter(gompertz_function_diagnostics_dataframe, x="GDP_per_capita", y="Stocks_per_capita", facet_col="Economy", facet_col_wrap=7, color="Economy", hover_name="Economy", trendline="ols", trendline_color_override="darkblue")
@@ -339,7 +492,14 @@ fig.write_html(f"./plotting_output/diagnostics/{title}.html", auto_open=AUTO_OPE
 #     ax = grp.plot(ax=ax, kind='line', x='Date', y='Travel_km_per_stock', label=key,c=next(color))
 
 # plt.title(title)
-# plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+# #save html
+if save_html:
+    fig.write_html('./plotting_output/diagnostics/html/{}.html'.format(title))
+#save fig
+if save_fig:
+    fig.write_image('./plotting_output/diagnostics/png/{}.png'.format(title))
+
+
 
 
 

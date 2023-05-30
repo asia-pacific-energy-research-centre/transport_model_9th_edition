@@ -18,16 +18,48 @@ new_transport_dataset = pd.read_csv('intermediate_data/{}_transport_data_system_
 #laod clean user input from intermediate file
 user_input = pd.read_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID))
 
+#load activity growth data and macro data
+# macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)
+growth = pd.read_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv')
+# growth.columns Index(['economy', 'date', 'GDP_per_capita', 'Population', 'GDP',
+#        'GDP_times_capita', 'GDP_growth', 'Population_growth',
+#        'GDP_per_capita_growth', 'GDP_times_capita_growth', 'region', 'const',
+#        'gdp_per_capita_growth_coeff', 'gdp_times_capita_growth_coeff', 'r2',
+#        'energy_growth_est', 'Activity_growth_est', 'Activity_growth_8th',
+#        'Activity_growth_8th_index'],
+#       dtype='object')
 #%%
 
 #connect user inputs with transport datassystem dataset
 
 #create Dataset column in user input and call it 'user_input'
 user_input['Dataset'] = 'user_input'
-#%%
-#join user inputs to transport dataset
-aggregated_model_data = pd.concat([new_transport_dataset, user_input], sort=False)
+#same for growth but call it 'growth_forecasts'
+growth['Dataset'] = 'growth_forecasts'
 
+#filter fvor only nans in value col and print what measures they are from. iof they are jsut ['Activity_growth_8th' 'Activity_growth_8th_index'] then ignore, else throw an error and fix the nans
+if growth.loc[growth['Value'].isna(), 'Measure'].unique().tolist() != ['Activity_growth_8th', 'Activity_growth_8th_index']:
+    nans= growth.loc[growth['Value'].isna(), 'Measure'].unique().tolist()
+    nans.remove('Activity_growth_8th')
+    nans.remove('Activity_growth_8th_index')
+    print('These measures contains nans iun the value column. They will be ignored in the model. Please check the data and fix the nans if you want to use them in the model. ' +nans)
+#%%
+#concat user inputs to transport dataset
+aggregated_model_data = pd.concat([new_transport_dataset, user_input], sort=False)
+#concat growth to transport dataset
+aggregated_model_data = pd.concat([aggregated_model_data, growth], sort=False)
+
+#%%
+#make sure that the data is in the right format. We will have date as int, value as float and all others as objects. if there si an error, then something is probably wrong with the data
+aggregated_model_data['Date'] = aggregated_model_data['Date'].astype(int)
+aggregated_model_data['Value'] = aggregated_model_data['Value'].astype(float)
+other_cols = aggregated_model_data.columns.tolist()
+other_cols.remove('Date')
+other_cols.remove('Value')
+aggregated_model_data[other_cols] = aggregated_model_data[other_cols].astype(str)
+
+#convert 'nan' to np.nan
+aggregated_model_data = aggregated_model_data.replace('nan', np.nan)
 #%%
 #convert units to similar magnitudes. We might need to change the units as well.
 #these are based off the units in measure_to_unit_concordance from config.py
@@ -36,37 +68,25 @@ measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/m
 # 	Pj	Energy	1.000000e+00	PJ
 # Magnitude_adjustment is needed to convert the numbers from their Unit to their Magnitude adjusted unit. 
 # eg. to convert form stocks to million stocks just itmes the vlaue by magnitude adjustment
-
+#%%
 #convert to dict
 unit_to_adj_unit_concordance_dict = measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjusted_unit']
 value_adjustment_concordance_dict = measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjustment']
 #just go through the concordance and convert the units and values
 for unit in unit_to_adj_unit_concordance_dict.keys():
-    #convert units
-    aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Unit'] = unit_to_adj_unit_concordance_dict[unit]
+    
     #convert values
     aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Value'] = aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Value'] * value_adjustment_concordance_dict[unit]
 
-
-# #%%
-
-# # #WEe wnat to keep our energy in Pj's, so we will convert km to billion km. We might want to convert stocks to millions as well
-# # aggregated_model_data
-
-# #will have to reference measure = passenger km, tonne km, etc. to do this
-# #also do efficiency which will change Pj per km to Pj per billion km
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='Activity', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='Activity', 'Value'] / 1e9
-# # aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Value'] / 1e9
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Value' ]/ 1e6
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] = aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Value'] * 1e9
-# #units
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='Passenger_km_or_freight_tonne_km', 'Unit'] = 'Billion_passenger_km_or_freight_tonne_km'
-# # aggregated_model_data.loc[aggregated_model_data['Measure']=='freight_tonne_km', 'Unit'] = 'billion_freight_tonne_km'
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit'] = 'Million_stocks'
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='New_vehicle_efficiency', 'Unit'] = 'Pj_per_billion_km'
-# #not sure if mileage will be used but writing here in case
-# aggregated_model_data.loc[aggregated_model_data['Measure']=='Mileage', 'Unit'] = 'Thousand_km_per_stock'
-
+    #convert units
+    aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Unit'] = unit_to_adj_unit_concordance_dict[unit]
+#%%
+#IMPORTANT ERROR CHECK FOR LINE 135 OF 1_RUN_ROAD_MODEL.PY
+#check that the units for stocks and populatin are in millions and thousands respectively
+if aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit'].unique().tolist() != ['Million_stocks']:
+    print('ERROR: The units for stocks are not in millions. Please fix the data')
+if aggregated_model_data.loc[aggregated_model_data['Measure']=='Population', 'Unit'].unique().tolist() != ['Population_thousands']:
+    print('ERROR: The units for population are not in thousands. Please fix the data')
 #%%
 #save
 aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID), index=False)
@@ -133,14 +153,14 @@ aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggre
 
 #     #non road:
 #     non_road_user_input_growth = non_road_efficiency_growth.copy()
-#     non_road_user_input_growth = non_road_user_input_growth.merge(activity_growth, on=['Economy', 'Year', 'Scenario'], how='left')
+#     non_road_user_input_growth = non_road_user_input_growth.merge(Activity_growth, on=['Economy', 'Year', 'Scenario'], how='left')
 
 #     #road:
 #     road_user_input_growth = Vehicle_sales_share.copy()
 #     road_user_input_growth = road_user_input_growth.merge(Turnover_Rate_growth, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive'], how='left')
 #     road_user_input_growth = road_user_input_growth.merge(New_vehicle_efficiency_growth, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year', 'Drive'], how='left')
 #     road_user_input_growth = road_user_input_growth.merge(OccupanceAndLoad_growth, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
-#     road_user_input_growth = road_user_input_growth.merge(activity_growth, on=['Economy','Scenario', 'Year'], how='left')
+#     road_user_input_growth = road_user_input_growth.merge(Activity_growth, on=['Economy','Scenario', 'Year'], how='left')
 
 # #%%
 # #NOTE WANT TO USE THIS AT THE END OF GREOOMING
@@ -176,7 +196,7 @@ aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggre
 #     Turnover_Rate_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/Turnover_Rate_growth.csv')
 #     New_vehicle_efficiency_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/New_vehicle_efficiency_growth.csv')
 #     non_road_efficiency_growth= pd.read_csv('intermediate_data/non_aggregated_input_data/non_road_efficiency_growth.csv')
-#     activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
+#     Activity_growth = pd.read_csv('intermediate_data/model_inputs/Activity_growth.csv')
 
 
 #format data

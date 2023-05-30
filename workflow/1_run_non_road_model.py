@@ -13,7 +13,7 @@ from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 #load all data except activity data (which is calcualteed separately to other calcualted inputs)
-activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
+growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
 #load all other data
 non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
 
@@ -75,8 +75,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #we will apply activity growth to the sum of activity for each transport type. Note that activity growth is assumed to be the same for all vehicle types of the same transport type.
     
     #join on activity growth
-    change_dataframe = change_dataframe.merge(activity_growth, on=['Economy', 'Scenario', 'Date','Transport Type'], how='left')
-
+    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Economy','Activity_growth_est']], on=['Economy', 'Date'], how='left')
     #calcualte sum of last Dates activity by transport type
     # activity_transport_type_sum = change_dataframe.copy()[['Economy', 'Scenario', 'Transport Type', 'Date', "Activity"]]
     # activity_transport_type_sum = activity_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Date']).sum()
@@ -84,7 +83,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     # change_dataframe = change_dataframe.merge(activity_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Date'], how='left')
     
     #apply activity growth to activity 
-    change_dataframe['Activity'] = (change_dataframe['Activity_growth'] * change_dataframe['Activity']) + change_dataframe['Activity']
+    change_dataframe['Activity'] = (change_dataframe['Activity_growth_est'] * change_dataframe['Activity']) + change_dataframe['Activity']
     
     #APPLY EFFICIENCY GROWTH TO ORIGINAL EFFICIENCY
     #note that this will then be split into different fuel types when we appply the fuel mix varaible later on.

@@ -40,7 +40,6 @@ exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
 if PLOT_INPUT_DATA:
     exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
 
-exec(open("./workflow/grooming_code/4_calculate_activity_growth.py").read())
 #%%
 exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
 
