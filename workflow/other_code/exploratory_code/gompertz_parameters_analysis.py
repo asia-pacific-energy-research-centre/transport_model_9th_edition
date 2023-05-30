@@ -79,7 +79,7 @@ if test_params:
     fig.write_html(f'plotting_output/input_exploration/gompertz/gompertz_curve_test_{gamma}.html', auto_open=True)
 #%%
 #https://www.mdpi.com/2071-1050/6/8/4877
-test_params = True
+test_params = False
 if test_params:
     from plotly.subplots import make_subplots
 
@@ -139,6 +139,55 @@ if test_params:
     # fig.update_layout(showlegend=False)
     # Show the plot
     fig.write_html(f'plotting_output/input_exploration/gompertz/gompertz_curve_test_{gamma}.html', auto_open=True)
+#%%
+
+#save data as pickle to be analysed seprartely )we want to see if we can estimate beter paramter vlaues to aovid stocks per cpita estiamtes being equal to the gamma value (theoretical amximum for stocks per capita)
+gompertz_parameters = pd.read_pickle('intermediate_data/analysis_single_use/gompertz_parameters_road_model.pkl')
+analyse_this = True
+if analyse_this:
+    #frist lets look at 01_AUS, and try find parameters that fit the data better
+    #get the data
+    gompertz_parameters = gompertz_parameters[gompertz_parameters['Economy'] == '01_AUS']
+    
+    from plotly.subplots import make_subplots
+
+    def gompertz_stocks(gdp_per_capita, gamma, beta, alpha):
+        return gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))
+
+    #grab parameter value and create a range that is plus or minus 200% of the value
+    min_gamma = gompertz_parameters['gamma'].values[0] * 0.5
+    max_gamma = gompertz_parameters['gamma'].values[0] * 1.5
+    step = (max_gamma - min_gamma)/10
+    gamma_values = np.arange(min_gamma, max_gamma, step).round(2)
+    min_beta = gompertz_parameters['beta'].values[0] * 0.5
+    max_beta = gompertz_parameters['beta'].values[0] * 1.5
+    step = (max_beta - min_beta)/5
+    beta_values = np.arange(min_beta, max_beta, step).round(2)#beta_values = np.arange(30, -30, -10)
+    min_alpha = gompertz_parameters['alpha'].values[0] * 0.5
+    max_alpha = gompertz_parameters['alpha'].values[0] * 1.5
+    step = (max_alpha - min_alpha)/5
+    alpha_values = np.arange(min_alpha, max_alpha, step).round(2)#alpha_values = np.arange(10, 1, -2)
+
+    # Create a subplot for each combination of gamma and beta values
+    fig = make_subplots(rows=len(beta_values), cols=len(alpha_values), subplot_titles=[f'beta={beta}, alpha={alpha}' for beta in beta_values for alpha in alpha_values])
+
+    # Iterate over all combinations of gamma, beta, and alpha values
+    for i, gamma in enumerate(gamma_values):
+        for j, beta in enumerate(beta_values):
+            for k, alpha in enumerate(alpha_values):
+                # Calculate vehicle ownership rates
+                vehicle_ownership_rates = gompertz_stocks(gdp_per_capita, gamma, beta, alpha)
+                
+                # Add a line to the appropriate subplot
+                fig.add_trace(go.Scatter(x=gdp_per_capita, y=vehicle_ownership_rates, mode='lines', name=f'gamma={gamma}'), row=j+1, col=k+1)
+
+    # Update layout
+    fig.update_layout(title_text=f"Vehicle Ownership Rates for Different Parameter Values")
+    #drop legend
+    # fig.update_layout(showlegend=False)
+    # Show the plot
+    fig.write_html(f'plotting_output/input_exploration/gompertz/gompertz_curve_test_{gamma}.html', auto_open=True)
+
 
 #%%
 gompertz_parameters['Expected_stocks_per_thousand_capita_derivative'] = gompertz_parameters.apply(lambda x: gompertz_stocks_derivative(x['Gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)

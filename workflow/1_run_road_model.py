@@ -141,6 +141,8 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #SETUP THE GOMPERTZ CURVE
     #define the function    
     def gompertz_stocks(gdp_per_capita, gamma, beta, alpha):
+        
+        return gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))
         #orioginal equation, just for reference
         # Here's a breakdown of the function:
 
@@ -153,7 +155,6 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
         # beta: This parameter is related to the displacement along the x-axis. In this context, it could be interpreted as a factor that shifts the vehicle ownership curve along the GDP per capita axis.
 
         # alpha: This parameter is related to the growth rate. It determines how quickly vehicle ownership rates increase as GDP per capita increases.
-        return gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))
     
     def gompertz_stocks_derivative(gdp_per_capita, gamma, beta, alpha):
         return alpha * beta * gamma * np.exp(alpha * np.exp(beta * gdp_per_capita) + beta * gdp_per_capita)
@@ -170,8 +171,8 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
         return gdp_per_capita
 
     #merge stocks per capita to the gomperts parameter dataframe
-    # gompertz_parameters = gompertz_parameters.merge(gompertz_change_dataframe[['Economy','Scenario', 'Transport Type', 'Date', 'Stocks_per_thousand_capita','Gdp_per_capita']], on=['Economy','Scenario', 'Transport Type', 'Date'], how='left') #what was this for?
-    gompertz_parameters = gompertz_change_dataframe.copy()#made this cause the above was weiird
+    gompertz_parameters = gompertz_parameters.merge(gompertz_change_dataframe[['Economy','Scenario', 'Transport Type', 'Date', 'Stocks_per_thousand_capita','Gdp_per_capita']], on=['Economy','Scenario', 'Transport Type', 'Date'], how='left') 
+    
     #apply the gompertz function to the dataframe to calcualte the expected stocks per capita . this is for testing and diagnostics only
     gompertz_parameters['Expected_stocks_per_thousand_capita'] = gompertz_parameters.apply(lambda x: gompertz_stocks(x['Gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
 
@@ -179,14 +180,33 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
 
     #apply the gompertz derivative function to the dataframe to calcualte the expected stocks per capita growwth rate
     gompertz_parameters['Expected_stocks_per_thousand_capita_derivative'] = gompertz_parameters.apply(lambda x: gompertz_stocks_derivative(x['Gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
+    break
+#%%
+    #plot Stocks_per_thousand_capita vs Expected_stocks_per_thousand_capita vs gompertz_gamma using plotly with facet as economy and x as date
+    #melt
+    gompertz_parameters_melt = pd.melt(gompertz_parameters, id_vars=['Economy','Scenario', 'Transport Type', 'Date'], value_vars=['Stocks_per_thousand_capita','Expected_stocks_per_thousand_capita','Gompertz_gamma'])
+    #remove Carbon Neutral and freight transport type
+    gompertz_parameters_melt = gompertz_parameters_melt[(gompertz_parameters_melt['Transport Type'] != 'freight') & (gompertz_parameters_melt['Scenario'] != 'Carbon Neutral')]
+    #keep these economys: '01_AUS', '02_BD', '03_CDA', '04_CHL', '05_PRC', '06_HKC',
+    #    '07_INA'
+    gompertz_parameters_melt = gompertz_parameters_melt[gompertz_parameters_melt.Economy.isin(['01_AUS', '02_BD', '03_CDA', '04_CHL', '05_PRC', '06_HKC','07_INA'])]
+    
+    import plotly.express as px
+    fig = px.scatter(gompertz_parameters_melt, x="Date", y="value", color="variable", facet_col="Economy", facet_col_wrap=3)
+    #save a html to plotting_output\input_exploration
+    fig.write_html('plotting_output/input_exploration/gompertz_parameters_road_model.html')
+
+    #save data as pickle to be analysed seprartely )we want to see if we can estimate beter paramter vlaues to aovid stocks per cpita estiamtes being equal to the gamma value (theoretical amximum for stocks per capita)
+    gompertz_parameters.to_pickle('/intermediate_data/analysis_single_use/gompertz_parameters_road_model.pkl')
+
+    #%%
     #we will also do this using an estimate of Gdp_per_capita using solve_for_gdp_per_capita(). this is for testing and diagnostics only
-    do_this = False
+    do_this = True
     if do_this:
         gompertz_parameters['Expected_gdp_per_capita'] = gompertz_parameters.apply(lambda x: solve_for_gdp_per_capita(x['Stocks_per_thousand_capita'], x['Gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
-        
-    #and then calculate another value for the expected stocks per capita and the derviative using the new estimate of Gdp_per_capita. this is for testing and diagnostics only
-    # gompertz_parameters['Expected_stocks_per_thousand_capita_2'] = gompertz_parameters.apply(lambda x: gompertz_stocks(x['Stocks_per_thousand_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)#todo. i think we need this to be calculated using a new function?
-    gompertz_parameters['Expected_stocks_per_thousand_capita_derivative_2'] = gompertz_parameters.apply(lambda x: gompertz_stocks_derivative(x['Expected_gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
+        #and then calculate another value for the expected stocks per capita and the derviative using the new estimate of Gdp_per_capita. this is for testing and diagnostics only
+        gompertz_parameters['Expected_stocks_per_thousand_capita_2'] = gompertz_parameters.apply(lambda x: gompertz_stocks(x['Expected_gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
+        gompertz_parameters['Expected_stocks_per_thousand_capita_derivative_2'] = gompertz_parameters.apply(lambda x: gompertz_stocks_derivative(x['Expected_gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
 
     #use the derivative to adjust the activity growth rate so the rate of change of stocks per capita impacts the activity growth rate
     #join the derivative to the change dataframe
@@ -194,8 +214,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
 
     #replace any nan values with 1. this is because we dont want to adjust the activity growth rate if we dont have a value for the derivative
     change_dataframe['Expected_stocks_per_thousand_capita_derivative'] = change_dataframe['Expected_stocks_per_thousand_capita_derivative'].fillna(1)
-    break
-#%%
+
     #calcualte the adjusted activity growth
     change_dataframe['Activity_growth_adjusted'] = change_dataframe['Activity_growth_est'] * change_dataframe['Expected_stocks_per_thousand_capita_derivative']
 
