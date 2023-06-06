@@ -37,7 +37,8 @@ user_input = user_input[user_input.Measure.isin(model_concordances_user_input_an
 
 #drop any rows in user input that are for the base year
 user_input = user_input[user_input.Date != BASE_YEAR]
-
+#repalce Carbon Neutral  with Target in Scenario col
+user_input.loc[user_input.Scenario == 'Carbon Neutral', 'Scenario'] = 'Target'
 #%%
 #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
 
@@ -79,15 +80,17 @@ else:
     missing_index_values1['Data_available'] = 'row_and_data_not_available'
     missing_index_values1['Value'] = np.nan
     #then append to transport_data_system_df
+    user_input = user_input.reset_index()
     user_input = pd.concat([missing_index_values1, user_input], sort=False)
     print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
+    user_input.set_index(INDEX_COLS, inplace=True)
 
 #%%
 if missing_index_values2.empty:
     pass#this is to be expected as the cocnordance should always have everything we need in it!
 else:
     #we want to make sure user is aware of this as we will be removing rows from the user input
-    
+    user_input.set_index(INDEX_COLS, inplace=True)
     #remove these rows from the user_input
     user_input.drop(missing_index_values2, inplace=True)
     #convert missing_index_values to df
@@ -103,9 +106,59 @@ else:
 
 #%%
 user_input = user_input.reset_index()
+#%%
+# # a= user_input.copy()
+# user_input = a.copy()
+#%%
+#we may be missing user inputs because the END_YEAR was extended. So just fill in missing values with the last available value when grouping by the index cols
+#so first insert all the missing years
+#make sure to print strong wanrings so the user is aware that they could be filling in missing data where it should be missing
+#also, jsut to be safe, only do thisstep if the missing data is for years greater than 2050
+if (user_input[user_input.Data_available == 'row_and_data_not_available'].Date.max() > 2050) or (user_input[user_input.Data_available == 'data_not_available'].Date.max() > 2050):
+    print('WARNING: You are filling in missing data for years greater than 2050. Please check that this is what you want to do.')
+    #check that where Value is NA that Data_available is row_and_data_not_available or data_not_available for all cases
+    if len(user_input[(user_input.Value.isna()) & ((user_input.Data_available != 'row_and_data_not_available') & (user_input.Data_available != 'data_not_available'))]) >0:
+        #raise error if this is not the case
+        raise ValueError('There are some rows where Value is NA but Data_available is not row_and_data_not_available or data_not_available. Please check this.')
+    #and check the opposite, i.e. that where Data_available is row_and_data_not_available or data_not_available that Value is NA
+    if len(user_input[(user_input.Value.notna()) & ((user_input.Data_available == 'row_and_data_not_available') | (user_input.Data_available == 'data_not_available'))]) >0:
+        #raise error if this is not the case
+        raise ValueError('There are some rows where Value is not NA but Data_available is row_and_data_not_available or data_not_available. Please check this.')
+    #create new df that contains dates that are less than 2050 and the values are NA
+    user_input_missing_values_dont_change = user_input.loc[(user_input.Date <= 2050) & (user_input.Value.isna())]
 
+    #create new df that contains dates that are greater than 2050 and the values are NA
+    user_input_missing_values_change = user_input.loc[~((user_input.Date <= 2050) & (user_input.Value.isna()))]
+
+    # first sort by date
+    user_input_missing_values_change.sort_values('Date', inplace=True)
+
+    # now ffill na on Value col when grouping by the index cols
+    user_input_missing_values_change['Value'] = user_input_missing_values_change.groupby(INDEX_COLS_no_date)['Value'].apply(lambda group: group.ffill())
+
+    # reset index
+    user_input_missing_values_change.reset_index(drop=True, inplace=True)
+
+    #now concat the two dfs
+    user_input_new = pd.concat([user_input_missing_values_dont_change, user_input_missing_values_change], sort=False)
+
+    #check for nas and throw error if so. might need to utilise the commented out code below (that i didnt finish gettting working) to do this
+    if len(user_input_new[user_input_new.Value.isna()]) >0:
+        raise ValueError('There are still some rows where Value is NA. Please check this.')
+    # #there will be soe cases where there are still nas because there are nas for every year in the group of INDEX_COLS_no_date. We will check for these cases and separate them for analysis. THen identify any extra cases where there are still nas in the Value col. these are problematic and we will raise an error
+    # user_input_new_groups_with_all_nas = user_input_new.groupby(INDEX_COLS_no_date).apply(lambda group: group.isna().all()).reset_index()
+
+    # #drop tehse rwos from the user_input_new so we can check for any other cases where there are still nas in the Value col:
+    # user_input_new = user_input_new.loc[~user_input_new_groups_with_all_nas[0]]
+    # #then identify the other cases where there are still nas in the Value col:
+    # user_input_new_groups_with_nas_in_value = user_input_new.groupby(INDEX_COLS_no_date).apply(lambda group: group.Value.isna().any()).reset_index()
+    
+#%%
+
+
+#%%
 #save the new_user_inputs
-user_input.to_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID), index=False)
+user_input_new.to_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID), index=False)
 
 
 #%%

@@ -168,7 +168,7 @@ if run_this:
 
     #create scen cols
     vehicle_sales_share_ref_long['Scenario'] = 'Reference'
-    vehicle_sales_share_cn_long['Scenario'] = 'Carbon Neutral'
+    vehicle_sales_share_cn_long['Scenario'] = 'Carbon Neutral'#todo. tnhis might vause issues as we change the scenario names.
 
     #concatenate
     vehicle_sales_share_long = pd.concat([vehicle_sales_share_ref_long, vehicle_sales_share_cn_long])

@@ -51,7 +51,7 @@ ANALYSE_CHANGE_DATAFRAME = True
 #%%
 #START MAIN PROCESS
 for year in range(BASE_YEAR+1, END_YEAR+1):
-    
+    breakpoint()
     print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
 
     #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
@@ -75,7 +75,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #we will apply activity growth to the sum of activity for each transport type. Note that activity growth is assumed to be the same for all vehicle types of the same transport type.
     
     #join on activity growth
-    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Economy','Activity_growth_est']], on=['Economy', 'Date'], how='left')
+    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Economy','Scenario','Transport Type','Activity_growth_est']], on=['Economy','Scenario', 'Transport Type','Date'], how='left')
     #calcualte sum of last Dates activity by transport type
     # activity_transport_type_sum = change_dataframe.copy()[['Economy', 'Scenario', 'Transport Type', 'Date', "Activity"]]
     # activity_transport_type_sum = activity_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Date']).sum()
@@ -83,7 +83,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     # change_dataframe = change_dataframe.merge(activity_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Date'], how='left')
     
     #apply activity growth to activity 
-    change_dataframe['Activity'] = (change_dataframe['Activity_growth_est'] * change_dataframe['Activity']) + change_dataframe['Activity']
+    change_dataframe['Activity'] = (change_dataframe['Activity_growth_est'] * change_dataframe['Activity'])
     
     #APPLY EFFICIENCY GROWTH TO ORIGINAL EFFICIENCY
     #note that this will then be split into different fuel types when we appply the fuel mix varaible later on.

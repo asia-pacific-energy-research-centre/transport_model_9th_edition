@@ -42,6 +42,7 @@ INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
        'Transport Type','Drive', 'Scenario', 'Unit', 'Frequency']
 
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
+gompertz_function_diagnostics_dataframe_file_name = 'gompertz_function_diagnostics_dataframe{}.csv'.format(FILE_DATE_ID)
 
 EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable
 
@@ -54,7 +55,7 @@ SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolis
 SCENARIO_OF_INTEREST = 'Reference'
 
 user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
-       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth']
+       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth', 'Mileage_growth','Gompertz_alpha', 'Gompertz_gamma', 'Gompertz_beta']
 user_input_measures_list_NON_ROAD = ['Non_road_intensity_improvement']
 
 base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']

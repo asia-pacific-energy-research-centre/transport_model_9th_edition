@@ -66,7 +66,11 @@ macro1 = macro1.dropna()
 macro1['energy_growth_est'] = macro1['const'] + macro1['gdp_per_capita_growth_coeff'] * macro1['GDP_per_capita_growth'] + macro1['gdp_times_capita_growth_coeff'] * macro1['GDP_times_capita_growth']
 #since we currently have no idea about intensity, we will assume that energy growth is the same as activity growth
 macro1['activity_growth_est'] = macro1['energy_growth_est']
-
+#%%
+#ADD ONE
+macro1['activity_growth_est'] = macro1['activity_growth_est'] + 1
+#also add one to activity_growth_8th.activity_growth_8th
+activity_growth_8th['activity_growth_8th'] = activity_growth_8th['activity_growth_8th'] + 1
 #%%
 #join activity_growth_8th on for diagnostics so they are from same date
 macro1 = pd.merge(macro1, activity_growth_8th, on=['economy', 'date'], how='left')
@@ -83,6 +87,24 @@ macro1 = macro1.melt(id_vars=['Economy', 'Date'], value_vars=['Gdp_per_capita', 
        'Gdp_per_capita_growth_coeff', 'Gdp_times_capita_growth_coeff', 'R2',
        'Energy_growth_est', 'Activity_growth_est', 'Activity_growth_8th',
        'Activity_growth_8th_index'], var_name='Measure', value_name='Value')
+
+#%%
+#split into 'Transport Type' by creating one df for each transport type in 'passenger' and 'freight'
+macro1_passenger = macro1.copy()
+macro1_passenger['Transport Type'] = 'passenger'
+macro1_freight = macro1.copy()
+macro1_freight['Transport Type'] = 'freight'
+#concat
+macro1 = pd.concat([macro1_passenger, macro1_freight])
+
+#%%
+#split macro into the required scenarios. perhaps later, if the macro differs by scenario we will do this somehwere ese:
+new_macro = pd.DataFrame()
+for scenario in SCENARIOS_LIST:
+    s_macro = macro1.copy()
+    s_macro['Scenario'] = scenario
+    new_macro = pd.concat([new_macro, s_macro])
+macro1 = new_macro.copy()
 #%%
 measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
 macro1 = pd.merge(macro1, measure_to_unit_concordance[['Unit', 'Measure']], on=['Measure'], how='left')

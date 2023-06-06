@@ -21,7 +21,12 @@ dont_overwrite_existing_graphs = False
 plot_png = True
 plot_html = True
 subfolder_name = 'all_economy_graphs'
-
+save_folder = f'plotting_output/{subfolder_name}/{FILE_DATE_ID}/'
+#CHECK THAT SAVE FOLDER EXISTS, IF NOT CREATE IT
+if not os.path.exists(save_folder):
+    os.makedirs(save_folder)
+    
+economies_to_filter_for = ['19_THA', '20_USA']
 
 #%%
 #plot all data in model_output_all:
@@ -109,7 +114,14 @@ model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road', 'Vehicle 
 
 #%%
 
-
+#sometimes we will only want to run this process for some economies, so we can pass in a list of economies to filter for
+if len(economies_to_filter_for) > 0:
+    #filter for economies on all dfs
+    model_output_all = model_output_all[model_output_all['Economy'].isin(economies_to_filter_for)]
+    model_output_detailed = model_output_detailed[model_output_detailed['Economy'].isin(economies_to_filter_for)]
+    model_output_8th = model_output_8th[model_output_8th['Economy'].isin(economies_to_filter_for)]
+    model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Economy'].isin(economies_to_filter_for)]
+    activity_growth = activity_growth[activity_growth['Economy'].isin(economies_to_filter_for)]
 
 
 #%%
@@ -252,7 +264,7 @@ def plot_line_by_economy(df, color_categories, y_column,title,line_dash_categori
 do_this = True
 if do_this:
     title = 'Energy use by drive type'
-    plot_line_by_economy(model_output_all, ['Drive'], 'Energy', title, save_folder='all_economy_graphs', AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS)
+    plot_line_by_economy(model_output_all, ['Drive'], 'Energy', title, save_folder=f'all_economy_graphs/{FILE_DATE_ID}/', AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS)
 
 
 ##################################################################

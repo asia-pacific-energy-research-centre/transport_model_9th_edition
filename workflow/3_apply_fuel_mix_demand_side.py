@@ -23,10 +23,35 @@ demand_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\demand_sid
 
 #load model concordances with fuels
 model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))
-
 #%%
+#to deal with historical data that may or may not have been included, jsut assume the same fuel mix as the base year for all previous years.
+demand_side_fuel_mixing_historical = demand_side_fuel_mixing[demand_side_fuel_mixing['Date'] == BASE_YEAR]
+# Get the unique years in model_output that are before the BASE_YEAR
+unique_years = model_output[model_output['Date'] < BASE_YEAR]['Date'].unique()
+
+# Initialize an empty DataFrame
+demand_side_fuel_mixing_historical_all_years = pd.DataFrame()
+
+# Loop over the unique years
+for year in unique_years:
+    # Copy the demand_side_fuel_mixing_historical DataFrame
+    df_copy = demand_side_fuel_mixing_historical.copy()
+    # Assign the current year to the 'Date' column
+    df_copy['Date'] = year
+    # concat the DataFrame copy to the overall DataFrame
+    demand_side_fuel_mixing_historical_all_years = pd.concat([demand_side_fuel_mixing_historical_all_years, df_copy])
+
+# Reset the index of the overall DataFrame
+demand_side_fuel_mixing_historical_all_years.reset_index(drop=True, inplace=True)
+
+#concatenate the historical fuel mixing with the demand_side_fuel_mixing
+demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing_historical_all_years, demand_side_fuel_mixing], axis=0)
+#%%
+
+
 #join the fuel mixing data to the model output. This will result in a new fuel column. Note that there can be multiple fuels per drive, so this could also create new rows for each drive. 
 df_with_fuels = model_output.merge(demand_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type','Drive', 'Date'], how='left')
+
 
 #%%
 #identify any nas in Demand_side_fuel_share column. If so make the user add them to other_code\create_user_inputs\create_demand_side_fuel_mix_input.py.

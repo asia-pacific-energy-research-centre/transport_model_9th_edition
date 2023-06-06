@@ -24,8 +24,8 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 ='DATE20230410' # 'DATE20230216'
-
+FILE_DATE_ID2 ='DATE20230531' # 'DATE20230216'
+# combined_data_DATE20230531
 transport_data_system_folder = '../transport_data_system'
 transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
 
@@ -63,8 +63,10 @@ transport_data_system_df = transport_data_system_df[transport_data_system_df['Sc
 #drop unneccessary columns: 'Dataset', 'Source', 'Fuel', 'Comment', 'Scope' if they are in there
 transport_data_system_df = transport_data_system_df.drop(columns=['Dataset', 'Source', 'Fuel', 'Comment', 'Scope'], errors='ignore')
 #%%
-#filter for the same years as are in the model concordances in the transport data system (should just be base Date)
-transport_data_system_df = transport_data_system_df[transport_data_system_df.Date.isin(model_concordances_measures.Date.unique())]
+USE_BASE_DATE_ONLY=False#testing if we can utilise years otehr than ust the base year. this cold be useful for better creation of growth curves and gompertz parameters
+if USE_BASE_DATE_ONLY:
+    #filter for the same years as are in the model concordances in the transport data system (should just be base Date)
+    transport_data_system_df = transport_data_system_df[transport_data_system_df.Date.isin(model_concordances_measures.Date.unique())]
 
 #filter for the same measures as are in the model concordances in the transport data system
 transport_data_system_df = transport_data_system_df[transport_data_system_df.Measure.isin(model_concordances_measures.Measure.unique())]
@@ -76,10 +78,12 @@ transport_data_system_df = transport_data_system_df[transport_data_system_df.Mea
 INDEX_COLS_NO_SCENARIO = INDEX_COLS.copy()
 INDEX_COLS_NO_SCENARIO.remove('Scenario')
 
+INDEX_COLS_NO_SCENARIO_no_date = INDEX_COLS_NO_SCENARIO.copy()
+INDEX_COLS_NO_SCENARIO_no_date.remove('Date')
+
 #set index
 transport_data_system_df.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
 model_concordances_measures.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
-
 
 #create empty df which is a copy of the transport_data_system_df to store the data we extract from the transport data system using an iterative loop
 new_transport_dataset = []
@@ -100,7 +104,6 @@ transport_data_system_df.loc[transport_data_system_df.Value.isna(), 'Data_availa
 # use the difference method to find the index values that are missing from the transport system dataset # this is a lot faster than looping through each index row in the concordance and checking if it is in the user_input
 # we will not print out what values are in the dataset but missing from the concordance as this is expected to be a lot of values (but we will remove them from the dataset as they are not needed for the model to run)
 missing_index_values1 = model_concordances_measures.index.difference(transport_data_system_df.index)
-missing_index_values2 = transport_data_system_df.index.difference(model_concordances_measures.index)
 
 if missing_index_values1.empty:
     print('All rows we need are present in the transport system dataset')
@@ -115,6 +118,17 @@ else:
     #then append to transport_data_system_df
     transport_data_system_df = pd.concat([missing_index_values1, transport_data_system_df], sort=False)
 
+if USE_BASE_DATE_ONLY:
+
+    missing_index_values2 = transport_data_system_df.index.difference(model_concordances_measures.index)
+else:
+    #set index so date isnt included, then find rows that shouldnt be in the data:
+    transport_data_system_df.reset_index(inplace=True)
+    transport_data_system_df.set_index(INDEX_COLS_NO_SCENARIO_no_date, inplace=True)
+    model_concordances_measures.reset_index(inplace=True)
+    model_concordances_measures.set_index(INDEX_COLS_NO_SCENARIO_no_date, inplace=True)
+    missing_index_values2 = transport_data_system_df.index.difference(model_concordances_measures.index)
+
 if missing_index_values2.empty:
     #this is unexpected so create an error
     # raise ValueError('All rows in the transport system dataset are present in the concordance. This is unexpected. Please check the code.')
@@ -125,6 +139,7 @@ else:
     #remove these rows from the user_input
     transport_data_system_df.drop(missing_index_values2, inplace=True)
 
+
 #%%
 #TEMP
 #if any of the missing values were for turnover rate then set it to 0.03
@@ -132,7 +147,9 @@ transport_data_system_df.loc[((transport_data_system_df.index.get_level_values('
 #%%
 
 
-
+#resrt index
+transport_data_system_df.reset_index(inplace=True)
+model_concordances_measures.reset_index(inplace=True)
 # #test what values in x dont equal the values in missing_index_values1
 # for col in x.columns:
 #     print(col)
@@ -159,6 +176,9 @@ for scenario in SCENARIOS_LIST:
         new_transport_data_system_df = new_transport_data_system_df.append(transport_data_system_df)
     
 #%%
+#TEMP DROP ANY DATA THAT IS FOR DATES AFTER THE BASE DATE. WE WILL FIGURE OUT HOW TO INCLUDE THEM IN THE FUTURE BUT FOR NOW IT WILL PROBS BE TOO COMPLICATED
+new_transport_data_system_df = new_transport_data_system_df[new_transport_data_system_df.Date <= BASE_YEAR]
+#%%
 #save the new transport dataset
-new_transport_data_system_df.to_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
+new_transport_data_system_df.to_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID), index=False)
 #%%

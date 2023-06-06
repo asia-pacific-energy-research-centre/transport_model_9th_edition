@@ -35,12 +35,13 @@ if USE_LATEST_OUTPUT_DATE_ID:
 #%%
 #state important modelling variables
 BASE_YEAR= 2017
-END_YEAR = 2050
-
+END_YEAR = 2100
+USE_LOGISTIC_FUNCTION=True
 #this is important for defining how the dataframes are used. Generally this shouldnt change unless a column name changes or the model is changed
 INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
        'Transport Type','Drive', 'Scenario', 'Unit', 'Frequency']
-
+INDEX_COLS_no_date = INDEX_COLS.copy()
+INDEX_COLS_no_date.remove('Date')
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 gompertz_function_diagnostics_dataframe_file_name = 'gompertz_function_diagnostics_dataframe{}.csv'.format(FILE_DATE_ID)
 
@@ -107,3 +108,4 @@ model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_deman
 
 #AND A model_concordances_all_file_name
 model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
+#%%

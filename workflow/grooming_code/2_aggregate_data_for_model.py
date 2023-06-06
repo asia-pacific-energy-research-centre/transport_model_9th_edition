@@ -21,7 +21,7 @@ user_input = pd.read_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'
 #load activity growth data and macro data
 # macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)
 growth = pd.read_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv')
-# growth.columns Index(['economy', 'date', 'GDP_per_capita', 'Population', 'GDP',
+# growth.columns Index(['economy', 'date',Transport type 'GDP_per_capita', 'Population', 'GDP',
 #        'GDP_times_capita', 'GDP_growth', 'Population_growth',
 #        'GDP_per_capita_growth', 'GDP_times_capita_growth', 'region', 'const',
 #        'gdp_per_capita_growth_coeff', 'gdp_times_capita_growth_coeff', 'r2',

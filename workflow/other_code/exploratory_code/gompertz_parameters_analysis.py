@@ -142,12 +142,12 @@ if test_params:
 #%%
 
 #save data as pickle to be analysed seprartely )we want to see if we can estimate beter paramter vlaues to aovid stocks per cpita estiamtes being equal to the gamma value (theoretical amximum for stocks per capita)
-gompertz_parameters = pd.read_pickle('intermediate_data/analysis_single_use/gompertz_parameters_road_model.pkl')
+gompertz_parameters = pd.read_pickle('intermediate_data/analysis_single_use/gompertz_change_dataframe_road_model.pkl')
 analyse_this = True
 if analyse_this:
     #frist lets look at 01_AUS, and try find parameters that fit the data better
-    #get the data
-    gompertz_parameters = gompertz_parameters[gompertz_parameters['Economy'] == '01_AUS']
+    #get the data. filter for reference and feight
+    gompertz_parameters = gompertz_parameters[(gompertz_parameters['Economy'] == '01_AUS') & (gompertz_parameters['Scenario'] == 'Reference') & (gompertz_parameters['Transport Type'] != 'freight')]
     
     from plotly.subplots import make_subplots
 
@@ -155,38 +155,258 @@ if analyse_this:
         return gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))
 
     #grab parameter value and create a range that is plus or minus 200% of the value
-    min_gamma = gompertz_parameters['gamma'].values[0] * 0.5
-    max_gamma = gompertz_parameters['gamma'].values[0] * 1.5
-    step = (max_gamma - min_gamma)/10
-    gamma_values = np.arange(min_gamma, max_gamma, step).round(2)
-    min_beta = gompertz_parameters['beta'].values[0] * 0.5
-    max_beta = gompertz_parameters['beta'].values[0] * 1.5
+    min_gamma = gompertz_parameters['Gompertz_gamma'].values[0] * 0.5
+    max_gamma = gompertz_parameters['Gompertz_gamma'].values[0] * 1.5
+    step = (max_gamma - min_gamma)/20
+    gamma_values = np.arange(min_gamma, max_gamma, step)
+    gamma_values = [gompertz_parameters['Gompertz_gamma'].values[0]]
+
+    min_beta = -0.0001035# gompertz_parameters['Gompertz_beta'].values[0] * 0.5
+    max_beta = -0.00001035#gompertz_parameters['Gompertz_beta'].values[0] * 10
     step = (max_beta - min_beta)/5
-    beta_values = np.arange(min_beta, max_beta, step).round(2)#beta_values = np.arange(30, -30, -10)
-    min_alpha = gompertz_parameters['alpha'].values[0] * 0.5
-    max_alpha = gompertz_parameters['alpha'].values[0] * 1.5
+    beta_values = np.arange(min_beta, max_beta, step)#beta_values = np.arange(30, -30, -10)
+    min_alpha = -100#gompertz_parameters['Gompertz_alpha'].values[0] * 0.01
+    max_alpha = -17.8499#gompertz_parameters['Gompertz_alpha'].values[0]
     step = (max_alpha - min_alpha)/5
-    alpha_values = np.arange(min_alpha, max_alpha, step).round(2)#alpha_values = np.arange(10, 1, -2)
+    alpha_values = np.arange(min_alpha, max_alpha, step)#alpha_values = np.arange(10, 1, -2)
+    ######################
+    #use the range of gdp per cpita from first to last year in gompertz_parameters
 
-    # Create a subplot for each combination of gamma and beta values
-    fig = make_subplots(rows=len(beta_values), cols=len(alpha_values), subplot_titles=[f'beta={beta}, alpha={alpha}' for beta in beta_values for alpha in alpha_values])
+    #melt to get Stocks_per_thousand_capita and Expected_stocks_per_thousand_capita in one col
+    gompertz_parameters_long = gompertz_parameters[['Economy', 'Date', 'Gdp_per_capita', 'Stocks_per_thousand_capita', 'Expected_stocks_per_thousand_capita','Gompertz_gamma']].drop_duplicates()
 
-    # Iterate over all combinations of gamma, beta, and alpha values
+    #set Stocks_per_thousand_capita to 3.427014e+02 cause thats the vlaue for first year and all other values are way too large
+    gompertz_parameters_long.loc[gompertz_parameters_long['Stocks_per_thousand_capita'] > 1000, 'Stocks_per_thousand_capita'] = 3.427014e+02
+
+    # gompertz_parameters_long = pd.melt(gompertz_parameters_long, id_vars=['Economy', 'Date', 'Gdp_per_capita'], value_vars=['Stocks_per_thousand_capita', 'Expected_stocks_per_thousand_capita'], var_name='Measure', value_name='Value')
+
+    # Iterate over all combinations of gamma, beta, and alpha values and compare the resutls to the originally estimated Stocks_per_thousand_capita and Expected_stocks_per_thousand_capita using different colors
     for i, gamma in enumerate(gamma_values):
-        for j, beta in enumerate(beta_values):
-            for k, alpha in enumerate(alpha_values):
-                # Calculate vehicle ownership rates
-                vehicle_ownership_rates = gompertz_stocks(gdp_per_capita, gamma, beta, alpha)
-                
-                # Add a line to the appropriate subplot
-                fig.add_trace(go.Scatter(x=gdp_per_capita, y=vehicle_ownership_rates, mode='lines', name=f'gamma={gamma}'), row=j+1, col=k+1)
+        gompertz_parameters_long['gamma'] = gamma
+            
+        # Create a subplot for each combination of gamma and beta values
+        fig = make_subplots(rows=len(beta_values), cols=len(alpha_values), subplot_titles=[f'beta={beta}, alpha={alpha}' for beta in beta_values for alpha in alpha_values])
 
-    # Update layout
-    fig.update_layout(title_text=f"Vehicle Ownership Rates for Different Parameter Values")
-    #drop legend
-    # fig.update_layout(showlegend=False)
-    # Show the plot
-    fig.write_html(f'plotting_output/input_exploration/gompertz/gompertz_curve_test_{gamma}.html', auto_open=True)
+        for j, beta in enumerate(beta_values):
+            gompertz_parameters_long['beta'] = beta
+            for k, alpha in enumerate(alpha_values):
+                gompertz_parameters_long['alpha'] = alpha
+                # Calculate vehicle ownership rates
+                            
+                gompertz_parameters_long['New_stocks_per_thousand_capita'] = gompertz_parameters_long.apply(lambda x: gompertz_stocks(x['Gdp_per_capita'], x['gamma'], x['beta'], x['alpha']), axis=1)
+                                
+                # Add a line to the appropriate subplot
+                fig.add_trace(go.Scatter(x=gompertz_parameters_long['Gdp_per_capita'], y=gompertz_parameters_long['New_stocks_per_thousand_capita'], name=f"New_stocks_per_thousand_capita", mode='markers'), row=j+1, col=k+1)
+                fig.add_trace(go.Scatter(x=gompertz_parameters_long['Gdp_per_capita'], y=gompertz_parameters_long['Stocks_per_thousand_capita'], name=f"Stocks_per_thousand_capita", mode='markers'), row=j+1, col=k+1)
+                fig.add_trace(go.Scatter(x=gompertz_parameters_long['Gdp_per_capita'], y=gompertz_parameters_long['Expected_stocks_per_thousand_capita'], name=f"Expected_stocks_per_thousand_capita", mode='markers'), row=j+1, col=k+1)
+                fig.add_trace(go.Scatter(x=gompertz_parameters_long['Gdp_per_capita'], y=gompertz_parameters_long['Gompertz_gamma'], name=f"Gompertz_gamma", mode='markers'), row=j+1, col=k+1)
+                fig.add_trace(go.Scatter(x=gompertz_parameters_long['Gdp_per_capita'], y=gompertz_parameters_long['gamma'], name=f"gamma", mode='markers'), row=j+1, col=k+1)
+
+        #specify color based on the name
+        fig.for_each_trace(lambda t: t.update(marker_color='red') if t.name == 'Stocks_per_thousand_capita' else ())
+        fig.for_each_trace(lambda t: t.update(marker_color='blue') if t.name == 'Expected_stocks_per_thousand_capita' else ())
+        fig.for_each_trace(lambda t: t.update(marker_color='green') if t.name == 'New_stocks_per_thousand_capita' else ())
+        fig.for_each_trace(lambda t: t.update(marker_color='black') if t.name == 'Gompertz_gamma' else ())
+        fig.for_each_trace(lambda t: t.update(marker_color='orange') if t.name == 'gamma' else ())
+
+        # Update layout
+        fig.update_layout(title_text=f"Vehicle Ownership Rates for Different Parameter Values")
+        #drop legend for all but the first plot
+        fig.update_layout(showlegend=True)
+        # Show the plot
+        fig.write_html(f'plotting_output/input_exploration/gompertz/01aus_gompertz_curve_test_{gamma}.html', auto_open=True)
+#%%
+
+
+
+gompertz_parameters = pd.read_pickle('intermediate_data/analysis_single_use/gompertz_change_dataframe_road_model.pkl')
+#get the data. filter for reference and feight
+gompertz_parameters = gompertz_parameters[(gompertz_parameters['Economy'] == '01_AUS') & (gompertz_parameters['Scenario'] == 'Reference') & (gompertz_parameters['Transport Type'] != 'freight')]
+def gompertz_stocks(gdp_per_capita, gamma, beta, alpha):
+    return gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))
+
+def log_func(x, a, b):
+    return a + b * np.log(x + 1)  # Add 1 to x to avoid taking the log of zero
+import numpy as np
+from scipy.optimize import curve_fit
+import plotly.graph_objects as go
+analyse_this = False
+if analyse_this:
+
+    #ok. lets design a function that will calcualte alpha and beta so that the gompertz curve fits the maximum and minimum values it needs for stocks per cpita. that is, for the years we ahve stocks and per capita gdp data for, we want to find the alpha and beta values that will give us the stocks per capita values we have for those years, for the gdp per cpita values we have for thise years. we can then use those alpha and beta values to calculate the stocks per capita for all other years, so that the stocks per cpita doesnt go above the gamma value, but also comes close to the gamma value.
+
+    #we will do this by first fitting a log curve to the values for:
+    #values that are pre-2018 (i.e. values we have available)
+    #values in 2050, so that the stocks_per_thousand_capita in 2050 is equal to Gomperz_gamma and the gdp_per_capita in 2050 is availble because it was projected for this.
+
+    # Define your GDP per capita and vehicle ownership rates data that is available (which is any data that is less than 2018 currently)
+    gdp_per_capita_data = gompertz_parameters[gompertz_parameters['Date']<=2018]['Gdp_per_capita'].values
+    vehicle_ownership_rates_data = gompertz_parameters[gompertz_parameters['Date']<=2018]['Stocks_per_thousand_capita'].values
+    #if vehicle_ownership_rates_data is not a list, make it a list
+    if type(vehicle_ownership_rates_data) != list:
+        vehicle_ownership_rates_data = vehicle_ownership_rates_data.tolist()
+        gdp_per_capita_data = gdp_per_capita_data.tolist()
+    #then add on values for 2050:
+    gdp_per_capita_data.append(gompertz_parameters[gompertz_parameters['Date']==2050]['Gdp_per_capita'].values[0])
+    vehicle_ownership_rates_data.append(gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_gamma'].values[0]-10)
+
+    # Define the gamma value
+    gamma = gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_gamma'].values[0]
+
+    # Initial guess for the parameters (a, b)
+    initial_guess_gompertz = [gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_alpha'].values[0], gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_beta'].values[0]]
+    initial_guess_gompertz = [-0.0001035, -100]
+    initial_guess_log = [1,1]
+
+    # Use curve_fit to find the best parameters
+    params_log, params_log_covariance = curve_fit(log_func, gdp_per_capita_data, vehicle_ownership_rates_data, p0=initial_guess_log)
+
+    # Print the best fit parameters
+    print("Best fit parameters: a = {}, b = {}".format(params_log[0], params_log[1]))
+    #cahnge  params_log[0], params_log[1]) to make the curve artifically curvier
+    params_log[0] = 1
+    params_log[1] = 1
+    # Generate data for the fitted function:
+    x_fit = gompertz_parameters['Gdp_per_capita']
+    gompertz_parameters['Fitted_log_stocks_per_thousand_capita'] = log_func(gompertz_parameters['Gdp_per_capita'], params_log[0], params_log[1])
+    y_fit = gompertz_parameters['Fitted_log_stocks_per_thousand_capita']
+
+    # Use curve_fit to find the best parameters
+    params, params_covariance = curve_fit(lambda x, beta, alpha: gompertz_stocks(x, gamma, beta, alpha), x_fit, y_fit, p0=initial_guess_gompertz)
+
+    # Print the best fit parameters
+    print("Best fit parameters: beta = {}, alpha = {}".format(params[0], params[1]))
+    
+    # #recreate best fit params: 
+    # params[0] = -0.0001035
+    # params[1] = -100
+
+    # Generate data for the fitted function
+    vehicle_ownership_rates_fit = gompertz_stocks(x_fit, gamma, params[0], params[1])
+
+    # Create a plot
+    fig = go.Figure()
+
+    # Add the original data to the plot
+    fig.add_trace(go.Scatter(x=gdp_per_capita_data, y=vehicle_ownership_rates_data, mode='markers', name='Original data'))
+
+    #add the log fit to the plot
+    fig.add_trace(go.Scatter(x=x_fit, y=y_fit, mode='lines', name='Log fit'))
+
+    # Add the fitted function to the plot
+    fig.add_trace(go.Scatter(x=x_fit, y=vehicle_ownership_rates_fit, mode='lines', name='Fitted function'))
+
+    #plot the gamma value as a horizontal line
+    fig.add_trace(go.Scatter(x=x_fit, y=[gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_gamma'].values[0]]*len(x_fit), mode='lines', name='Gamma value'))
+    # Set plot title and labels
+    fig.update_layout(title='Vehicle Ownership Rates',
+                    xaxis_title='GDP per Capita',
+                    yaxis_title='Vehicle Ownership Rates')
+
+    # save plot as html
+    fig.write_html(f'plotting_output/input_exploration/gompertz/01aus_gompertz_curve_log_fit.html', auto_open=True)
+
+
+#%%
+
+
+import numpy as np
+import plotly.graph_objects as go
+
+# Define the log function
+def log_func(x, a, b):
+    return a + b * np.log(x + 1)  # Add 1 to x to avoid taking the log of zero
+def gompertz_stocks(gdp_per_capita, gamma, beta, alpha):
+    return gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))
+
+# # Define your GDP per capita and vehicle ownership rates data
+# gdp_per_capita_data = np.array(gdp_per_capita_data)
+# vehicle_ownership_rates_data = np.array(vehicle_ownership_rates_data)
+
+# Define your GDP per capita and vehicle ownership rates data that is available (which is any data that is less than 2018 currently)
+gdp_per_capita_data = gompertz_parameters[gompertz_parameters['Date']<=2018]['Gdp_per_capita'].values
+vehicle_ownership_rates_data = np.array(500)#gompertz_parameters[gompertz_parameters['Date']<=2018]['Stocks_per_thousand_capita'].values
+#if vehicle_ownership_rates_data is not a list or array, make it a list
+
+#then add on target values to encourage the curve to start to flatten out later
+gdp_per_capita_data = np.append(gdp_per_capita_data, gompertz_parameters[gompertz_parameters['Date']==2050]['Gdp_per_capita'].values[0])
+vehicle_ownership_rates_data = np.append(vehicle_ownership_rates_data,gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_gamma'].values[0]-10)
+
+#make it an array again
+gdp_per_capita_data = np.array(gdp_per_capita_data)
+vehicle_ownership_rates_data = np.array(vehicle_ownership_rates_data)
+
+#######################################################
+# Define range of parameter values to test
+steps_per_parameter = 50
+precent_spread_of_parameters = 5  #500% spread
+#GOMPERTZ
+target_alpha = -100#value which 'looks' right for similar economies
+max_alpha = target_alpha + (target_alpha * precent_spread_of_parameters)  #100% increase
+min_alpha = target_alpha - (target_alpha * precent_spread_of_parameters)  #100% decrease
+step_alpha = (max_alpha - min_alpha)/steps_per_parameter
+alpha_values = np.arange(min_alpha, max_alpha, step_alpha)
+target_beta = -0.0001035#value which 'looks' right for similar economies
+max_beta = target_beta + (target_beta * precent_spread_of_parameters)  #100% increase
+min_beta = target_beta - (target_beta * precent_spread_of_parameters)  #100% decrease
+step_beta = (max_beta - min_beta)/steps_per_parameter
+beta_values = np.arange(min_beta, max_beta, step_beta)
+
+gamma = gompertz_parameters[gompertz_parameters['Date']==2018]['Gompertz_gamma'].values[0]
+
+#LOG
+target_a = 1#value which 'looks' right for similar economies
+max_a = target_a + (target_a * precent_spread_of_parameters)  #100% increase
+min_a = target_a - (target_a * precent_spread_of_parameters)  #100% decrease
+step_a = (max_a - min_a)/steps_per_parameter
+a_values = np.arange(min_a, max_a, step_a)
+target_b = 1#value which 'looks' right for similar economies
+max_b = target_b + (target_b * precent_spread_of_parameters)  #100% increase
+min_b = target_b - (target_b * precent_spread_of_parameters)  #100% decrease
+step_b = (max_b - min_b)/steps_per_parameter
+b_values = np.arange(min_b, max_b, step_b)
+#######################################################
+# Define the GDP per capita values for the fitted function
+gdp_per_capita_fit = gompertz_parameters['Gdp_per_capita'].values
+
+# Create a plot
+fig = go.Figure()
+
+# Add the original data to the plot
+fig.add_trace(go.Scatter(x=gdp_per_capita_data, y=vehicle_ownership_rates_data, mode='markers', name='Original data'))
+
+# Iterate over all combinations of a and b values
+for a in a_values:
+    for b in b_values:
+        # Calculate vehicle ownership rates for the fitted function
+        vehicle_ownership_rates_fit = log_func(gdp_per_capita_fit, a, b)
+        # Calculate vehicle ownership rates for the fitted function at the specific GDP per capita values
+        vehicle_ownership_rates_fit_specific = log_func(gdp_per_capita_data, a, b)
+        # Check if the current alpha/beta pair intercepts the two data points
+        if np.isclose(vehicle_ownership_rates_fit_specific, vehicle_ownership_rates_data,rtol=0.1).all():
+            # Add the fitted function to the plot
+            fig.add_trace(go.Scatter(x=gdp_per_capita_fit, y=vehicle_ownership_rates_fit, mode='lines', name=f'Fitted function: a={a}, b={b}'))
+
+#iterate over all combinations of alpha and beta values
+for alpha in alpha_values:
+    for beta in beta_values:
+        # Calculate vehicle ownership rates for the fitted function
+        vehicle_ownership_rates_fit = gompertz_stocks(gdp_per_capita_fit, gamma, beta, alpha)
+        # Calculate vehicle ownership rates for the fitted function at the specific GDP per capita values
+        vehicle_ownership_rates_fit_specific = gompertz_stocks(gdp_per_capita_data, gamma, beta, alpha)
+        # Check if the current alpha/beta pair intercepts the two data points
+        if np.isclose(vehicle_ownership_rates_fit_specific, vehicle_ownership_rates_data,rtol=0.1).all():
+            # Add the fitted function to the plot
+            fig.add_trace(go.Scatter(x=gdp_per_capita_fit, y=vehicle_ownership_rates_fit, mode='lines', name=f'Fitted function: alpha={alpha}, beta={beta}'))
+
+
+# Set plot title and labels
+fig.update_layout(title='Vehicle Ownership Rates',
+                xaxis_title='GDP per Capita',
+                yaxis_title='Vehicle Ownership Rates')
+
+# write the plot
+fig.write_html(f'plotting_output/input_exploration/gompertz/01aus_gompertz_curve_log_fit.html', auto_open=True)
 
 
 #%%

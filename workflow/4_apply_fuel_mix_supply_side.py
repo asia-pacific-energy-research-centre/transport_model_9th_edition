@@ -17,6 +17,30 @@ supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_sid
 model_output = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(model_output_file_name))
 
 #%%
+#to deal with historical data that may or may not have been included, jsut assume the same fuel mix as the base year for all previous years.
+supply_side_fuel_mixing_historical = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] == BASE_YEAR]
+# Get the unique years in model_output that are before the BASE_YEAR
+unique_years = model_output[model_output['Date'] < BASE_YEAR]['Date'].unique()
+
+# Initialize an empty DataFrame
+supply_side_fuel_mixing_historical_all_years = pd.DataFrame()
+
+# Loop over the unique years
+for year in unique_years:
+    # Copy the supply_side_fuel_mixing_historical DataFrame
+    df_copy = supply_side_fuel_mixing_historical.copy()
+    # Assign the current year to the 'Date' column
+    df_copy['Date'] = year
+    # concat the DataFrame copy to the overall DataFrame
+    supply_side_fuel_mixing_historical_all_years = pd.concat([supply_side_fuel_mixing_historical_all_years, df_copy])
+
+# Reset the index of the overall DataFrame
+supply_side_fuel_mixing_historical_all_years.reset_index(drop=True, inplace=True)
+
+#concatenate the historical fuel mixing with the supply_side_fuel_mixing
+supply_side_fuel_mixing = pd.concat([supply_side_fuel_mixing_historical_all_years, supply_side_fuel_mixing], axis=0)
+#%%
+#%%
 #merge the supply side fuel mixing data on the fuel column. This will result in a new supply side fuel column which reflects the splitting of the fuel into many types. We will replace the value in the fuel column with the value in the supply side fuel column, and times the energy value by the share. and Where the suply side fuel column contains no value (an NA) then the fuel and its energy use will be unchanged.
 
 df_with_fuels = model_output.merge(supply_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date'], how='left')

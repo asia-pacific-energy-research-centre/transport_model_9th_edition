@@ -9,7 +9,8 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
-
+import gompertz_parameters_estimation_function
+import logistic_parameters_estimation_function
 #%%
 #load data
 transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
@@ -65,6 +66,50 @@ non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] == 0), 'Stock
 #%%
 # road_model_input_wide_new = road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_ROAD + user_input_measures_list_ROAD + calculated_measures_ROAD]
 # non_road_model_input_wide_new = non_road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_NON_ROAD + user_input_measures_list_NON_ROAD + calculated_measures_NON_ROAD]
+
+#%%
+#do estiamtion of the parameters for gomperz curve for the road stocks:
+#separate gompertz inputs
+gompertz_parameters = road_model_input_wide[['Economy','Scenario','Date', 'Transport Type'] + [col for col in road_model_input_wide.columns if 'Gompertz_' in col]].drop_duplicates().dropna()
+road_model_data = road_model_input_wide[['Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive', 'Scenario','Stocks']].drop_duplicates()
+macro_data = growth_forecasts[['Date','Scenario', 'Economy', 'Gdp_per_capita','Population']].drop_duplicates()
+#join the two datasets on Date and economy
+road_model_data = road_model_data.merge(macro_data, on=['Date', 'Scenario','Economy'], how='left')
+road_model_data = road_model_data.merge(gompertz_parameters, on=['Date', 'Economy', 'Scenario', 'Transport Type'], how='left')
+save_to_pickle = True
+if save_to_pickle:
+    road_model_data.to_pickle('intermediate_data/archive/road_model_data_{}.pkl'.format(FILE_DATE_ID))
+#%%
+estimate_gompertz_parameters = False
+if estimate_gompertz_parameters:
+    if USE_LOGISTIC_FUNCTION:
+        gompertz_parameters = logistic_parameters_estimation_function.logistic_fitting_function_handler(road_model_data, BASE_YEAR = 2020,future_dates=[2045, 2050], future_dates_prop_diff_from_gamma=[0.1, 0.09], INTERPOLATE_DATA = True,show_plots=False,matplotlib_bool=True, plotly_bool=False)
+    else:
+        #now attempt estimation 
+        gompertz_parameters = gompertz_parameters_estimation_function.gompertz_fitting_function_handler(road_model_data,BASE_YEAR+3,future_dates=[2045, 2050], future_dates_prop_diff_from_gamma=[0.1, 0.09], INTERPOLATE_DATA = True, show_plots=False,matplotlib_bool=True, plotly_bool=False)
+
+    gompertz_parameters['Transport Type'] = 'passenger'
+
+    #save params to pickle
+    gompertz_parameters.to_pickle('intermediate_data/archive/gompertz_parameters_TEST.pkl')
+    #drop the gompertz parameters from the main dataset
+    road_model_input_wide.drop([col for col in road_model_input_wide.columns if 'Gompertz_' in col], axis=1, inplace=True)
+    #join the gompertz parameters back to the main dataset
+    road_model_input_wide = road_model_input_wide.merge(gompertz_parameters, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'], how='left')
+else:
+    #maybe we ont use these so jsut load some old ones and join them to the main dataset
+    gompertz_parameters = pd.read_pickle('intermediate_data/archive/gompertz_parameters_TEST.pkl')
+    #drop the gompertz parameters from the main dataset
+    road_model_input_wide.drop([col for col in road_model_input_wide.columns if 'Gompertz_' in col], axis=1, inplace=True)
+    #join the gompertz parameters back to the main dataset
+    road_model_input_wide = road_model_input_wide.merge(gompertz_parameters, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'], how='left')
+
+#%%
+
+# #join population and gdp per cpita to road model input
+# gdp_cap = growth_forecasts[['Date', 'Economy', 'Transport Type', 'Population', 'Gdp_per_capita']].drop_duplicates()
+
+# road_model_input_wide =  pd.merge(road_model_input_wide, gdp_cap, how='left', on=['Date', 'Transport Type', 'Economy'])
 
 #%%
 #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.

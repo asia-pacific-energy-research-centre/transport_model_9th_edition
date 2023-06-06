@@ -18,8 +18,11 @@ if run:
 
 #%%
 import datetime
-
+import sys
 #set global variables
+sys.path.append("./workflow/grooming_code")
+sys.path.append("./workflow")
+
 file_date = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 FILE_DATE_ID = '_DATE{}'.format(file_date)
 FILE_DATE_ID = ''#comment me out if you want the output and archived input data to be saved with a specific date id 
@@ -32,16 +35,19 @@ CREATE_MODEL_CONCORDANCES = True
 if CREATE_MODEL_CONCORDANCES:
     exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
 #%%
-exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
-#%%
-exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
-#%%
-exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
-if PLOT_INPUT_DATA:
-    exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
+PREPARE_DATA = True
+if PREPARE_DATA:
+    exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
+    
+    exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
 
-#%%
-exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
+    exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
+    
+    exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
+    if PLOT_INPUT_DATA:
+        exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
+    
+    exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
 
 #%%
 exec(open("./workflow/1_run_non_road_model.py").read())
@@ -57,12 +63,13 @@ ANALYSE_OUTPUT = True
 if ANALYSE_OUTPUT:
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())
-    # exec(open("other_code/analysis_code/compare_8th_to_9th_by_drive.py").read())
-    exec(open("other_code/plotting/plot_diagnostics.py").read())
-    plot_all = False
+    # exec(open("other_code/analysis_code/compare_8th_to_9th_by_drive.py"v  .read())
+    exec(open("./workflow/other_code/plotting/plot_diagnostics.py").read())
+    
+    exec(open("./workflow/other_code/plotting/analyse_experimental.py").read())
+    plot_all = True
     if plot_all:
-        exec(open("other_code/plotting/all_economy_graphs.py").read())
-        exec(open("other_code/plotting/analyse_experimental.py").read())
+        exec(open("./workflow/other_code/plotting/all_economy_graphs.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:

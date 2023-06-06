@@ -58,7 +58,7 @@ fig.update_xaxes(range=[0, 1])
 fig.update_yaxes(range=[0, 1])
 
 plotly.offline.plot(fig, filename='./plotting_output/experimental/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+# #fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
 
 #%%
 #lets take a look at this for Vehicle_sales_share instead of stocks
@@ -89,7 +89,7 @@ fig.update_xaxes(range=[0, 1])
 fig.update_yaxes(range=[0, 1])
 
 plotly.offline.plot(fig, filename='./plotting_output/experimental/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
+# #fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
 
 #%%
 #how about a graph which combines the two above so we can see the relationship between the sales and stock shares
@@ -99,57 +99,61 @@ fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=200
 ################################################################################
 
 #%%
-#plot sum of activity and activity growth mean for each Date for each economy
-title = 'Activity and activity growth'
-change_dataframe_aggregation_act = change_dataframe_aggregation.groupby(['Date','Economy'])['Activity'].sum().reset_index()
-change_dataframe_aggregation_ag = change_dataframe_aggregation.groupby(['Date','Economy'])['Activity_growth'].mean().reset_index()
+#dont have change_dataframe_aggregation so we will skip this for now
+change_dataframe_aggregation = None
+if change_dataframe_aggregation is not None:
+        
+    #plot sum of activity and activity growth mean for each Date for each economy
+    title = 'Activity and activity growth'
+    change_dataframe_aggregation_act = change_dataframe_aggregation.groupby(['Date','Economy'])['Activity'].sum().reset_index()
+    change_dataframe_aggregation_ag = change_dataframe_aggregation.groupby(['Date','Economy'])['Activity_growth'].mean().reset_index()
 
 
-#join the dataframes
-change_dataframe_aggregation_act_ag = change_dataframe_aggregation_act.merge(change_dataframe_aggregation_ag, on=['Date','Economy'])
+    #join the dataframes
+    change_dataframe_aggregation_act_ag = change_dataframe_aggregation_act.merge(change_dataframe_aggregation_ag, on=['Date','Economy'])
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
 
-#create subplots specs list as a set of 3 lists with 7 dictionaries in each that are just {"secondary_y": True} to create 3 rows of 7 subplots each
-subplots_specs = [[{"secondary_y": True} for i in range(7)] for j in range(3)] 
-subplot_titles = change_dataframe_aggregation_act_ag['Economy'].unique().tolist()
-fig = make_subplots(rows=3, cols=7,
-                    specs=subplots_specs,
-                    subplot_titles=subplot_titles)
+    #create subplots specs list as a set of 3 lists with 7 dictionaries in each that are just {"secondary_y": True} to create 3 rows of 7 subplots each
+    subplots_specs = [[{"secondary_y": True} for i in range(7)] for j in range(3)] 
+    subplot_titles = change_dataframe_aggregation_act_ag['Economy'].unique().tolist()
+    fig = make_subplots(rows=3, cols=7,
+                        specs=subplots_specs,
+                        subplot_titles=subplot_titles)
 
-col_number=0
-row_number = 1
-legend_set = False
+    col_number=0
+    row_number = 1
+    legend_set = False
 
-for economy in change_dataframe_aggregation_act_ag['Economy'].unique():
-    #filter for economy
-    change_dataframe_aggregation_act_ag_e = change_dataframe_aggregation_act_ag[change_dataframe_aggregation_act_ag['Economy']==economy]
+    for economy in change_dataframe_aggregation_act_ag['Economy'].unique():
+        #filter for economy
+        change_dataframe_aggregation_act_ag_e = change_dataframe_aggregation_act_ag[change_dataframe_aggregation_act_ag['Economy']==economy]
 
-    #set row and column number
-    col_number +=1
-    if col_number > 7:
-        col_number = 1
-        row_number += 1
+        #set row and column number
+        col_number +=1
+        if col_number > 7:
+            col_number = 1
+            row_number += 1
 
-    if (col_number == 1) & (row_number == 1):#set the legend for the first subplot, and tehrefore all of the subplots
+        if (col_number == 1) & (row_number == 1):#set the legend for the first subplot, and tehrefore all of the subplots
 
-        #create subplot for this economy
-        legend_name = 'Activity'
-        fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity'],  legendgroup=legend_name, name=legend_name, line=dict(color='blue', width=2, )), row=row_number, col=col_number, secondary_y=False)
+            #create subplot for this economy
+            legend_name = 'Activity'
+            fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity'],  legendgroup=legend_name, name=legend_name, line=dict(color='blue', width=2, )), row=row_number, col=col_number, secondary_y=False)
 
-        legend_name = 'Activity_growth'
-        fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity_growth'], legendgroup=legend_name, name=legend_name, line=dict(color='red', dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
-    else:#legend is already set, so just add the traces with showlegend=False
-        #create subplot for this economy
-        legend_name = 'Activity'
-        fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity'],  legendgroup=legend_name, name=legend_name,showlegend=False, line=dict(color='blue', width=2, )), row=row_number, col=col_number, secondary_y=False)
+            legend_name = 'Activity_growth'
+            fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity_growth'], legendgroup=legend_name, name=legend_name, line=dict(color='red', dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
+        else:#legend is already set, so just add the traces with showlegend=False
+            #create subplot for this economy
+            legend_name = 'Activity'
+            fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity'],  legendgroup=legend_name, name=legend_name,showlegend=False, line=dict(color='blue', width=2, )), row=row_number, col=col_number, secondary_y=False)
 
-        legend_name = 'Activity_growth'
-        fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity_growth'], legendgroup=legend_name, name=legend_name, showlegend=False, line=dict(color='red', dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
+            legend_name = 'Activity_growth'
+            fig.add_trace(go.Scatter(x=change_dataframe_aggregation_act_ag_e['Date'], y=change_dataframe_aggregation_act_ag_e['Activity_growth'], legendgroup=legend_name, name=legend_name, showlegend=False, line=dict(color='red', dash='dot', width=2)), row=row_number, col=col_number, secondary_y=True)
 
-plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
+    plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+    #fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=1500)
 
 
 
@@ -179,7 +183,7 @@ for transport_type in model_output_detailed_medium_road['Transport Type'].unique
 
         fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
         plotly.offline.plot(fig, filename='./plotting_output/for_others/' + title + '_' + vehicle + '_' + transport_type + '.html',auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-        fig.write_image("./plotting_output/static/" + title + '_' + vehicle + '_' + transport_type + '.png', scale=1, width=2000, height=1500)
+        #fig.write_image("./plotting_output/static/" + title + '_' + vehicle + '_' + transport_type + '.png', scale=1, width=2000, height=1500)
 
 
 
@@ -202,8 +206,8 @@ title = 'Efficiency of new vehicles by drive type vs efficiency of current stock
 fig = px.line(model_output_detailed_eff_df, x="Date", y="Efficiency", color="Drive_Transport_Vehicle", line_dash='Measure', facet_col="Economy", facet_col_wrap=7, title=title)
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 
-plotly.offline.plot(fig, filename='./plotting_output/plot_input_data/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-fig.write_image("./plotting_output/plot_input_data/static/" + title + '.png', scale=1, width=2000, height=800)
+plotly.offline.plot(fig, filename='./plotting_output/input_exploration/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#fig.write_image("./plotting_output/input_exploration/static/" + title + '.png', scale=1, width=2000, height=800)
 
 #%%
 #plot the base Date efficiency values for new vehicles by drive type, transport type and vehicle type, vs the efficiency of the current stocks in use
@@ -222,8 +226,8 @@ title = 'Box plot Efficiency of new vehicles by drive type vs efficiency of curr
 fig = px.box(model_output_detailed_eff_df, x="Drive", y="Efficiency", color="Measure", facet_col="Transport_Vehicle_Type", facet_col_wrap=6, title=title)
 fig.update_traces(quartilemethod="exclusive") # or "inclusive", or "linear" by default
 
-plotly.offline.plot(fig, filename='./plotting_output/plot_input_data/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-fig.write_image("./plotting_output/plot_input_data/static/" + title + '.png', scale=1, width=2000, height=1500)
+plotly.offline.plot(fig, filename='./plotting_output/input_exploration/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+#fig.write_image("./plotting_output/input_exploration/static/" + title + '.png', scale=1, width=2000, height=1500)
 #%%
 
 #############################################################################################################################################################
@@ -239,7 +243,8 @@ model_output_detailed_bevs = model_output_detailed_bevs.groupby(['Date', 'Econom
 #plot
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_bevs.groupby(['Economy']):
-    ax = grp.plot(ax=ax, kind='line', x='Date', y='Stocks', label=key)
+    ax.plot(grp['Date'], grp['Stocks'], label=key)
+
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 
@@ -256,7 +261,9 @@ model_output_detailed_sales = model_output_detailed_sales.groupby(['Date', 'Driv
 #plot
 fig, ax = plt.subplots()
 for key, grp in model_output_detailed_sales.groupby(['Drive']):
-    ax = grp.plot(ax=ax, kind='line', x='Date', y='Vehicle_sales_share', label=key)
-    
+    ax.plot(grp['Date'], grp['Vehicle_sales_share'], label=key)
+
+
 plt.title(title)
 plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
+#%%

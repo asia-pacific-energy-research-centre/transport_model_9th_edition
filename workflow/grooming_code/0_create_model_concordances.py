@@ -83,13 +83,8 @@ model_concordances_fuels_NO_BIOFUELS.to_csv('config/concordances_and_config_data
 ########################################################################################################################################################################
 #%%
 #now for each measure create a copy of the model concordance for that medium and the base year only and add the measure to the copy (where non road is all non road mediums)
-base_year_model_concordances_ROAD = model_concordances[(model_concordances['Medium'] == 'road') & (model_concordances['Date'] == BASE_YEAR)]
-base_year_model_concordances_NON_ROAD = model_concordances[(model_concordances['Medium'] != 'road') & (model_concordances['Date'] == BASE_YEAR)]
-#remove scenarios column
-base_year_model_concordances_ROAD.drop(columns=['Scenario'], inplace=True)
-base_year_model_concordances_ROAD.drop_duplicates(inplace=True)
-base_year_model_concordances_NON_ROAD.drop(columns=['Scenario'], inplace=True)
-base_year_model_concordances_NON_ROAD.drop_duplicates(inplace=True)
+base_year_model_concordances_ROAD = model_concordances.loc[(model_concordances['Medium'] == 'road') & (model_concordances['Date'] == BASE_YEAR)].drop(columns=['Scenario']).drop_duplicates()
+base_year_model_concordances_NON_ROAD = model_concordances.loc[(model_concordances['Medium'] != 'road') & (model_concordances['Date'] == BASE_YEAR)].drop(columns=['Scenario']).drop_duplicates()
 
 #create empty dataframes
 base_year_non_road_measures = pd.DataFrame()
