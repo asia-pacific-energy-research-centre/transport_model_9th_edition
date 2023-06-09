@@ -16,8 +16,7 @@ import numpy as np
 #%%
 
 
-def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block):
-        
+def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block, testing = False):
     print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
     
     #extract the user inputs dataframes from the dictionary
@@ -26,7 +25,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     Turnover_rate_growth = user_inputs_df_dict['Turnover_rate_growth']
     New_vehicle_efficiency_growth = user_inputs_df_dict['New_vehicle_efficiency_growth']
     Mileage_growth = user_inputs_df_dict['Mileage_growth']
-    gompertz_parameters = user_inputs_df_dict['gompertz_parameters']
+    # gompertz_parameters = user_inputs_df_dict['gompertz_parameters']
 
     #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
     change_dataframe = previous_year_main_dataframe.copy()
@@ -40,6 +39,14 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         
     #NOTE that there is still the fuel mixing operation that is not in this file of code. 
 
+    #######################################################################
+    #do some quick checks on data:
+    
+    #check if activity matches sum of activity when you calcualte it as (change_dataframe['Activity']/( change_dataframe['Mileage'] * change_dataframe['Occupancy_or_load']))
+    test_data_frame = change_dataframe.copy()
+    test_data_frame['Activity_check'] = test_data_frame['Mileage'] * test_data_frame['Occupancy_or_load'] * test_data_frame['Stocks']
+    if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']):
+        raise ValueError('ERROR: Activity does not match sum of activity when you calcualte it as (change_dataframe[\'Activity\']/( change_dataframe[\'Mileage\'] * change_dataframe[\'Occupancy_or_load\']))') 
     #######################################################################
 
     #First do adjustments:
@@ -66,114 +73,14 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #calculate stock turnover plus surplus
     change_dataframe['Stock_turnover_and_surplus_total'] = change_dataframe['Stock_turnover'] + change_dataframe['Surplus_stocks'] 
 
-
-    #Now we will apply activity growth to original activity summed by transport type to find new activity to be satisfied by new veh
-    # icles according to the stock dist.
+    #if 'Activity_growth', 'Gdp_per_capita', 'Population' is in df, drop em
+    change_dataframe = change_dataframe.drop(['Activity_growth', 'Gdp_per_capita','Gdp', 'Population'], axis=1, errors='ignore')
     #join on activity growth
-    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Transport Type', 'Economy','Scenario','Gdp','Activity_growth_est', 'Gdp_per_capita', 'Population']], on=['Economy', 'Date', 'Scenario','Transport Type'], how='left')#note that pop and gdp per capita are loaded on earlier.
+    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Transport Type', 'Economy','Scenario','Gdp','Activity_growth', 'Gdp_per_capita', 'Population']], on=['Economy', 'Date', 'Scenario','Transport Type'], how='left')#note that pop and gdp per capita are loaded on earlier.
     #######################################################################
 
     #Calcualtions
 
-    #######################################################################    
-    # #USE GOMPERTZ or LOGISTIC CURVE TO CALCUALTE EXPECTED GROWTH IN STOCKS PER CAPITA GIVEN THE CURRENT STOCKS PER CAPITA AND GDP PER CAPITA
-
-    #please note that while this is under development we will refer to the paramaters as gamma, alpha and beta, where they refer in turn to the following for both the lgistic and gompertz curve:
-    #gamma = the maximum value of the function
-    #alpha = the value of the function when x=0
-    #beta = the growth rate of the function
-
-    #also, things will be referred to as 'gompertz' but this is also the logistic curve. The gompertz curve is a special case of the logistic curve.
-    GOMPERTZ_CALCULATION=False
-    if GOMPERTZ_CALCULATION:
-        gompertz_change_dataframe = change_dataframe.copy()
-        #drop drive cols
-        gompertz_change_dataframe = gompertz_change_dataframe.drop([ 'Drive'], axis=1)
-        #sum stocsk by economy, scenario, transport type, and year
-        gompertz_change_dataframe_stocks = gompertz_change_dataframe.groupby(['Economy', 'Scenario', 'Transport Type','Vehicle Type', 'Date'])['Stocks'].sum().reset_index()
-        #join the stocks sum to gompertz_change_dataframe
-        gompertz_change_dataframe = gompertz_change_dataframe.merge(gompertz_change_dataframe_stocks, on=['Economy', 'Scenario', 'Transport Type','Vehicle Type', 'Date'], how='left', suffixes=('_old', ''))
-        #keep only the cols we need:
-        gompertz_change_dataframe = gompertz_change_dataframe[['Economy', 'Scenario', 'Transport Type','Vehicle Type', 'Date', 'Stocks', 'Gdp_per_capita','Population', 'Gdp']].drop_duplicates()
-
-        #now we have a dataframe with the sum of stocks by economy, scenario, transport type, and year. We can use this to calcualte stocks per capita and gdp per capita anbd then use the gompertz curve to calcualte the expected stocks per capita given the current stocks per capita. We can then use this to adjust the activity growth rate and mileage growth rate.
-
-        #calculate stocks per capita (stocks are currently in millions, gdp in millions, population in thousands, as determined by workflow\grooming_code\2_aggregate_data_for_model.py line 79)
-        gompertz_change_dataframe['Thousand_stocks_per_capita'] = gompertz_change_dataframe['Stocks'] / gompertz_change_dataframe['Population']
-
-        gompertz_change_dataframe['Stocks_per_thousand_capita'] = gompertz_change_dataframe['Thousand_stocks_per_capita'] * 1000000#note that i remove d a zero. dont know if right thing to do
-        gompertz_change_dataframe['Gdp_per_capita'] = gompertz_change_dataframe['Gdp_per_capita']
-
-        #PLEASE NOTE THAT ANY CHANGES TO UNITS ELSWHERE IN THE CODE MAY BREAK THIS LINE AS STOCKS NEED TO BE IN MILLIONS AND POPULATION IN THOUSANDS FOR THIS TO WORK. THERE IS A CHECK IN 2_aggregate_data_for_model TO CHECK FOR THIS
-
-        #merge stocks per capita to the gomperts parameter dataframe
-        gompertz_change_dataframe = gompertz_change_dataframe[['Economy','Scenario','Vehicle Type', 'Transport Type', 'Date', 'Stocks_per_thousand_capita','Gdp_per_capita', 'Gompertz_gamma']].merge(gompertz_parameters, on=['Economy','Scenario', 'Transport Type', 'Vehicle Type','Date'], how='left') 
-        
-        #apply the gompertz/logisitc function to the dataframe to calcualte the expected stocks per capita . this is for testing and diagnostics only
-        if USE_LOGISTIC_FUNCTION:
-            gompertz_change_dataframe['Expected_stocks_per_thousand_capita'] = gompertz_change_dataframe.apply(lambda x: functions.logistic_stocks(x['Gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
-        else:
-            gompertz_change_dataframe['Expected_stocks_per_thousand_capita'] = gompertz_change_dataframe.apply(lambda x: functions.gompertz_stocks(x['Gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
-
-        #we want to know the rate of change of the curve for the current level of stocks per capita. However this means that we need to solve for GDP per capita at the current level of stocks per capita. 
-        #But this is a bit difficult because the gompertz curve is not invertible. So we will use a numerical method to solve for the GDP per capita at the current level of stocks per capita.
-        #We can then use this to calcualte the derivative of the gompertz curve at the current level of stocks per capita. This is the expected growth rate of stocks per capita. We can then use this to adjust the growth rate of activity and mileage.
-
-        #######################################################################
-        #TEMP. CREATE ldv_derivative DATAFRAME because we only want to clauclte the curve for ldvs currently (ddata concerns)
-        ldv_derivative = gompertz_change_dataframe.loc[gompertz_change_dataframe['Vehicle Type'] == 'ldv']   
-        #drop 01_AUS, 02_BD and 03_CDA from the dataframe beause they have weird results
-        ldv_derivative = ldv_derivative.loc[~ldv_derivative['Economy'].isin(['01_AUS', '02_BD', '03_CDA'])]
-        if USE_LOGISTIC_FUNCTION:
-            ldv_derivative['Expected_gdp_per_capita'] = ldv_derivative.apply(functions.solve_logistic_for_gdp_per_capita, axis=1)
-            ldv_derivative['Expected_stocks_per_thousand_capita_derivative'] = ldv_derivative.apply(lambda x: functions.logistic_derivative(x['Expected_gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
-
-            ldv_derivative['Expected_stocks_per_thousand_capita_growth'] = (ldv_derivative['Expected_stocks_per_thousand_capita_derivative'] / ldv_derivative['Stocks_per_thousand_capita'])+1
-
-        else:
-            ldv_derivative['Expected_gdp_per_capita'] = ldv_derivative.apply(functions.solve_gompertz_for_gdp_per_capita, axis=1)
-            ldv_derivative['Expected_stocks_per_thousand_capita_derivative'] = ldv_derivative.apply(lambda x: functions.gompertz_stocks_derivative(x['Expected_gdp_per_capita'], x['Gompertz_gamma'], x['Gompertz_beta'], x['Gompertz_alpha']), axis=1)
-            ldv_derivative['Expected_stocks_per_thousand_capita_growth'] = (ldv_derivative['Expected_stocks_per_thousand_capita_derivative'] / ldv_derivative['Stocks_per_thousand_capita'])+1
-        #pass ldv_derivative back to gompertz_change_dataframe as the value for all passenger vehicle types
-        gompertz_change_dataframe = gompertz_change_dataframe.merge(ldv_derivative[['Economy', 'Scenario', 'Transport Type','Date', 'Expected_stocks_per_thousand_capita_derivative', 'Stocks_per_thousand_capita']], on=['Economy', 'Scenario', 'Transport Type', 'Date'], how='left')
-
-        #####################
-        #use the Expected_stocks_per_thousand_capita_growth to adjust the activity growth rate so the rate of change of stocks per capita impacts the activity growth rate
-        #join the Expected_stocks_per_thousand_capita_growth to the change dataframe
-        change_dataframe = change_dataframe.merge(gompertz_change_dataframe[['Economy','Scenario', 'Transport Type', 'Date', 'Vehicle Type','Expected_stocks_per_thousand_capita_growth','Expected_stocks_per_thousand_capita_derivative']].drop_duplicates(), on=['Economy','Scenario', 'Transport Type', 'Date', 'Vehicle Type'], how='left')
-
-        #replace any nan values with 1. this is because we dont want to adjust the activity growth rate if we dont have a value for the derivative
-        change_dataframe['Expected_stocks_per_thousand_capita_growth'] = change_dataframe['Expected_stocks_per_thousand_capita_growth'].fillna(1)
-
-        change_dataframe['Activity_growth_adjusted'] = change_dataframe['Activity_growth_est'] * change_dataframe['Expected_stocks_per_thousand_capita_growth']
-
-        #also use this to adjust the growth in mileage.
-        change_dataframe = change_dataframe.merge(Mileage_growth, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Date'], how='left')
-        ADJUST_MILEAGE_GROWTH = False#i think we might want to increase mileage growth more as the stocks per capita increases. this is because the average income will increase as the stocks per capita increases. this means that people will be able to afford to drive more. So maybe its an inverse?
-        if ADJUST_MILEAGE_GROWTH:
-            USE_ONLY_NEGATIVE_DERIVATIVES = False
-            if USE_ONLY_NEGATIVE_DERIVATIVES:
-                #IF derivative is negative, use it to adjust the activity growth rate, else times by 1
-                change_dataframe['Mileage_growth_adjusted'] = change_dataframe.apply(lambda x: x['Mileage_growth'] * x['Expected_stocks_per_thousand_capita_growth'] if x['Expected_stocks_per_thousand_capita_growth'] < 0 else x['Mileage_growth'] * 1, axis=1)
-            else:
-                change_dataframe['Mileage_growth_adjusted'] = change_dataframe['Mileage_growth'] * change_dataframe['Expected_stocks_per_thousand_capita_growth']
-
-            #adjust mileage now
-            change_dataframe['Mileage'] = change_dataframe['Mileage'] * change_dataframe['Mileage_growth_adjusted']
-        else:
-            change_dataframe['Mileage_growth_adjusted'] = change_dataframe['Mileage_growth']
-        ############################
-
-        gompertz_function_diagnostics_dataframe_new = gompertz_change_dataframe.merge(change_dataframe, on=['Economy', 'Scenario','Transport Type','Vehicle Type', 'Date'], how='left', suffixes=('', '_y'))
-        gompertz_function_diagnostics_dataframe_new = gompertz_function_diagnostics_dataframe_new[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Stocks_per_thousand_capita',  'Gdp_per_capita','Gompertz_gamma','Gompertz_alpha', 'Gompertz_beta','Expected_stocks_per_thousand_capita_derivative','Expected_stocks_per_thousand_capita_growth', 'Activity_growth_adjusted', 'Activity_growth_est','Mileage_growth_adjusted', 'Mileage_growth', 'Mileage']].drop_duplicates()#, 'Expected_stocks_per_thousand_capita','Expected_stocks_per_thousand_capita_2', 'Expected_stocks_per_thousand_capita_derivative_2','Expected_gdp_per_capita'
-        #if there are cols with _y, drop them
-        gompertz_function_diagnostics_dataframe_new = gompertz_function_diagnostics_dataframe_new.loc[:,~gompertz_function_diagnostics_dataframe_new.columns.str.endswith('_y')]
-
-        gompertz_function_diagnostics_dataframe = pd.concat([gompertz_function_diagnostics_dataframe, gompertz_function_diagnostics_dataframe_new]).drop_duplicates()
-
-        # This and the parameters used are all based on research from the paper MODELLING GAMMA COEFFICIENT IN THE GOMPERTZ CURVE TO DETERMINE THE VARIABILITY OF VEHICLE OWNERSHIP SATURATION by M Mavin De Silva, A S Kumarage, K P Dilini and T Amala 
-    else:        
-        change_dataframe['Activity_growth_adjusted'] = change_dataframe['Activity_growth_est']
     ########################################################################
 
     #CALCUALTE ACTIVITY WORTH OF STOCK TURNOVER AND SURPLUS
@@ -197,20 +104,24 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #we will apply activity growth to the sum of activity for each transport type to find the activity worth of new sales from activity growth. Note that activity growth is assumed to be the same for all vehicle types of the same transport type (and probably for all transport types in early stages of this models development!)
     #We will also calcualte total turnover and surplus activity for the transport type to be satisfied by new stock sales, based on the new sales dist.
 
-    #calcualte sum of activity (by default is summed by transport type but will keep original code to make it easier to change later)
-    change_dataframe['Transport_type_sum_of_activity'] = change_dataframe.groupby(['Economy', 'Scenario', 'Transport Type', 'Date'])['Activity'].transform('sum')
+    # Calculate sum of activity
+    grouped = change_dataframe.groupby(['Economy', 'Scenario', 'Transport Type', 'Date'])
+    change_dataframe['Transport_type_sum_of_activity'] = grouped['Activity'].transform('sum')
 
-    #calc
-    change_dataframe['Transport_type_sum_of_activity_growth'] = (change_dataframe['Activity_growth_adjusted'] * change_dataframe['Transport_type_sum_of_activity'])
+    # Calculate growth
+    change_dataframe['Transport_type_sum_of_activity_growth'] = change_dataframe['Activity_growth'] * change_dataframe['Transport_type_sum_of_activity'] - change_dataframe['Transport_type_sum_of_activity']
 
-    #Activity worth of extra stocks needed
-    #if the growth in activity plus last years activity is greater than the activity worth of leftover stocks then this will be postiive
-    change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_needed'] =  np.where(change_dataframe['Transport_type_sum_of_activity_worth_of_stocks_after_turnover_and_surplus_total'] - change_dataframe['Transport_type_sum_of_activity'] - change_dataframe['Transport_type_sum_of_activity_growth'] < 0, - (change_dataframe['Transport_type_sum_of_activity_worth_of_stocks_after_turnover_and_surplus_total'] - change_dataframe['Transport_type_sum_of_activity'] - change_dataframe['Transport_type_sum_of_activity_growth']) ,0)#note the use of miunus for calcualting it
+    # Calculate the shortfall or excess of stocks based on the growth
+    stock_after_turnover_and_surplus = change_dataframe['Transport_type_sum_of_activity_worth_of_stocks_after_turnover_and_surplus_total']
+    sum_of_activity = change_dataframe['Transport_type_sum_of_activity']
+    activity_growth = change_dataframe['Transport_type_sum_of_activity_growth']
 
-    #Activity worth of extra stocks remaining
-    #if the growth in activity plus last years activity is less than the activity worth of leftover stocks then this will be postiive
-    change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_remaining'] =  np.where(change_dataframe['Transport_type_sum_of_activity_worth_of_stocks_after_turnover_and_surplus_total'] - change_dataframe['Transport_type_sum_of_activity'] - change_dataframe['Transport_type_sum_of_activity_growth'] > 0, change_dataframe['Transport_type_sum_of_activity_worth_of_stocks_after_turnover_and_surplus_total'] - change_dataframe['Transport_type_sum_of_activity'] - change_dataframe['Transport_type_sum_of_activity_growth'] ,0)
+    difference = stock_after_turnover_and_surplus - sum_of_activity - activity_growth
 
+    change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_needed'] = np.where(difference < 0, -difference, 0)
+    change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_remaining'] = np.where(difference > 0, difference, 0)
+
+    ###############
     #% of transport type stocks worth of activity not used (transport type)
     change_dataframe['Percent_of_transport_type_stocks_worth_of_activity_not_used'] = change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_remaining'] / change_dataframe['Transport_type_sum_of_activity_worth_of_stocks_after_turnover_and_surplus_total']
     #replace na's where there is 0/0 above
@@ -292,17 +203,19 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #if numerator and denominator are 0, then energy ends up as nan, so we will set this to 0
     change_dataframe.loc[(change_dataframe['Travel_km'] == 0) & (change_dataframe['Efficiency'] == 0), 'Energy'] = 0
 
-
-
     #######################################################################
 
     #finalisation processes
 
     #######################################################################
+        
+    #calcualte stocks per capita as its a useful metric
+    change_dataframe['Thousand_stocks_per_capita'] = change_dataframe['Stocks']/change_dataframe['Population']
+    change_dataframe['Stocks_per_thousand_capita'] = change_dataframe['Thousand_stocks_per_capita'] * 1000000
 
     #Now start cleaning up the changes dataframe to create the dataframe for the new year.
     addition_to_main_dataframe = change_dataframe.copy()
-    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency']]
+    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]
     
     #add new year to the main dataframe.
     main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])
@@ -332,6 +245,22 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
             low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
             main_dataframe.to_csv(low_ram_file_name, index=False)
             low_ram_computer_files_list.append(low_ram_file_name)
+    else:
+        
+        if testing:
+            a = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth']].drop_duplicates(), on=['Economy','Date'], how='left')
+            a = a[['Activity','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive','Scenario']]
+            #     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
+            a = a[(a['Economy']=='20_USA') & (a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger') & (a['Drive'] == 'bev') & (a['Scenario'] == 'Target')].drop_duplicates()
+            breakpoint()
+    #     #plot the sum of activity of 20_USA  for transport ype = passenger, with the activity growth on the right axis. 
+    #     import plotly.express as px
+    #     fig = px.line(a, x="Date", y="Activity", color='Drive', title='Activity of 20_USA for transport type = passenger')
+    #     #and include the activity growth on the right axis
+    #     fig.add_scatter(x=a['Date'].drop_duplicates(), y=a['Activity_growth'].drop_duplicates(), mode='lines', name='Activity growth', yaxis='y2')
+    #     fig.update_layout(yaxis=dict(title='Activity'), yaxis2=dict(title='Activity growth', overlaying='y', side='right'))
+    #     #write to html
+    #     fig.write_html(f"20_USA_activity_{year}.html")
 
     return main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, previous_10_year_block
     
@@ -339,8 +268,9 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
         
     #separate user inputs into different dataframes
-    gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_alpha', 'Gompertz_beta', 'Gompertz_gamma']].drop_duplicates().dropna()#note we keep gamma in main df,.
-
+    gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna()#note we keep gamma in main df,. 'Gompertz_alpha', 'Gompertz_beta',
+    #add values for BASE YEAR. THey can be the values from the first year of the model
+    gompertz_parameters = pd.concat([gompertz_parameters, gompertz_parameters[gompertz_parameters['Date']==BASE_YEAR+1].replace(BASE_YEAR+1, BASE_YEAR)], ignore_index=True)
     Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates()
     Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates()
     Turnover_rate_growth = road_model_input[['Economy','Scenario','Vehicle Type', 'Transport Type', 'Drive', 'Date', 'Turnover_rate_growth']].drop_duplicates()
@@ -352,7 +282,7 @@ def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
     user_inputs_df_dict = {'Vehicle_sales_share':Vehicle_sales_share, 'Occupancy_or_load_growth':Occupancy_or_load_growth, 'Turnover_rate_growth':Turnover_rate_growth, 'New_vehicle_efficiency_growth':New_vehicle_efficiency_growth, 'Mileage_growth':Mileage_growth, 'gompertz_parameters':gompertz_parameters}
 
     #drop those cols
-    road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'Turnover_rate_growth', 'New_vehicle_efficiency_growth','Mileage_growth', 'Gompertz_alpha', 'Gompertz_beta', 'Gompertz_gamma'], axis=1)
+    road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'Turnover_rate_growth', 'New_vehicle_efficiency_growth','Mileage_growth',  'Gompertz_gamma'], axis=1)#'Gompertz_alpha', 'Gompertz_beta',
 
     #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
     previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == BASE_YEAR,:]
@@ -400,6 +330,8 @@ def join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_c
             #remove file 
             os.remove(file_i)
             main_dataframe = pd.concat([main_dataframe,low_ram_dataframe])
+
+        # main_dataframe.to_csv(new_output_file, index=False)
         print('The main dataframe has been written to {}'.format(new_output_file))
     else:
         print('The computer is not low ram, saving the main dataframe to a csv.')
@@ -432,7 +364,9 @@ def join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_c
 def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_bool=False, plotly_bool=False):
     """Take in output of stocks,occupancy, travel_km, activity and mileage from running road model on a gdp per cpita based growth rate. Then fit a logistic curve to the stocks data with the gamma value from each economy provided. 
     Then with this curve, extract the expected activity per year based on the expected stocks per year and the expected mileage per year. Then recalculate the growth rate over time based on this. We will then use this to rerun the road model with the new growth rate.
-    This will be done for each economy and vehicle type in passenger vehicles. Perhaps the simplest case will be to calcualte it for only the ldv's and then use the same growth rate for the other vehicle types in passenger transport. 
+    This will be done for each economy and vehicle type in passenger vehicles. 
+    
+    Perhaps the simplest case will be to calcualte it for only the ldv's and then use the same growth rate for the other vehicle types in passenger transport. 
     This will be done for each scenario too because movement between vehicle types might change the growth rate."""
     #grab only passenger data 
     model_data = model_data.loc[(model_data['Transport Type'] == 'passenger')]
@@ -465,9 +399,9 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
     activity_growth_estimates = model_data_logistic_predictions[['Date', 'Economy', 'Scenario', 'Activity']].drop_duplicates().groupby(['Date', 'Economy', 'Scenario'])['Activity'].sum().reset_index()
 
     activity_growth_estimates.sort_values(['Economy', 'Scenario', 'Date'], inplace=True)
-    activity_growth_estimates['Activity_growth_est'] = activity_growth_estimates.groupby(['Economy', 'Scenario'])['Activity'].pct_change()+1
+    activity_growth_estimates['Activity_growth'] = activity_growth_estimates.groupby(['Economy', 'Scenario'])['Activity'].pct_change()+1
     #replace nan with 1
-    activity_growth_estimates['Activity_growth_est'] = activity_growth_estimates['Activity_growth_est'].fillna(1)
+    activity_growth_estimates['Activity_growth'] = activity_growth_estimates['Activity_growth'].fillna(1)
 
     #if matplotlib_bool or plotly_bool:
     if matplotlib_bool or plotly_bool:
@@ -499,7 +433,7 @@ def create_new_dataframe_with_logistic_predictions(model_data):
     model_data_logistic_predictions['Activity'] = model_data_logistic_predictions.apply(lambda row: row['Travel_km'] * row['Occupancy_or_load'], axis=1)
     return model_data_logistic_predictions
 
-def find_parameters_for_logistic_function(model_data, show_plots, matplotlib_bool, plotly_bool, proportion_below_gamma= 0.1):
+def find_parameters_for_logistic_function(model_data, show_plots, matplotlib_bool, plotly_bool, proportion_below_gamma= 0.05):
     
     #loop through economies and vehicle types
     #create empty dataframe to store results
@@ -628,57 +562,6 @@ def plot_logistic_fit(date, stocks_per_capita, gdp_per_capita, gamma, growth_rat
             fig.write_image(f'plotting_output/input_exploration/gompertz/log_fit_time_{economy_vtype_scenario}.png')
         fig.write_html(f'plotting_output/input_exploration/gompertz/logistic_fit_time_{economy_vtype_scenario}.html')
         
-
-    if matplotlib_bool:
-        
-        if not show_plots:
-            plt.ioff()
-        # Create a new figure
-        plt.figure()
-
-        # Plot the original data
-        plt.scatter(date, stocks_per_capita, label='data')
-
-        # Plot the fitted function
-        plt.plot(date, logistic_function(gdp_per_capita, gamma, growth_rate, midpoint), label='fit')
-
-        # Plot the gamma value
-        plt.plot(date, [gamma]*len(date), label='gamma')
-
-        # Add labels and title
-        plt.xlabel('Year')
-        plt.ylabel('Stocks per capita')
-        plt.title(f'logistic fit for {economy_vtype_scenario}')
-
-        # Add a legend
-        plt.legend()
-
-        #save to png
-        plt.savefig(f'plotting_output/input_exploration/gompertz/logistic_fit_time_{economy_vtype_scenario}.png')
-
-        #and plot the same but wth gdp per capita in x
-        plt.figure()
-
-        # Plot the original data
-        plt.scatter(gdp_per_capita, stocks_per_capita, label='data')
-        
-        # Plot the fitted function
-        plt.plot(gdp_per_capita, logistic_function(gdp_per_capita, gamma, growth_rate, midpoint), label='fit')
-
-        # Plot the gamma value
-        plt.plot(gdp_per_capita, [gamma]*len(gdp_per_capita), label='gamma')
-
-        # Add labels and title
-        plt.xlabel('Gdp per capita')
-        plt.ylabel('Stocks per capita')
-        plt.title(f'logistic fit for {economy_vtype_scenario}')
-
-        # Add a legend
-        plt.legend()
-
-        plt.savefig(f'plotting_output/input_exploration/gompertz/logistic_fit_gdp_per_capita_{economy_vtype_scenario}.png')
-
-
 def plot_logistic_function_all_economies(model_data_logistic_predictions, activity_growth_estimates, parameters_estimates, model_data, show_plots, matplotlib_bool, plotly_bool):
     #we will plot the results of the logistic function fit. To cut down on the number of plots we will facet by economy and onily plot the first scenario
     #we will also plot the gamma value for each economy as a horizontal line if the data is on stock per capita
@@ -748,8 +631,8 @@ def plot_logistic_function_all_economies(model_data_logistic_predictions, activi
         all_data_activity = pd.merge(all_data, all_data_activity_sum[['Economy', 'Date', 'Activity_growth_est_previous']], on=['Economy', 'Date'], how='left')
 
         #melt
-        all_data_activity_growth = all_data_activity[['Economy','Date','Vehicle Type', 'Gdp_per_capita', 'Activity_growth_est', 'Activity_growth_est_previous']]
-        all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Vehicle Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth_est', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
+        all_data_activity_growth = all_data_activity[['Economy','Date','Vehicle Type', 'Gdp_per_capita', 'Activity_growth', 'Activity_growth_est_previous']]
+        all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Vehicle Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
         fig = px.line(all_data_activity_growth, x='Date', y='Activity_growth_value', color='Vehicle Type',line_dash='Activity_growth', facet_col='Economy', facet_col_wrap=3, title='Comparitive activity growth', markers=True)
 
         #write to html
@@ -813,8 +696,8 @@ def plot_logistic_function_by_economy(model_data_logistic_predictions, activity_
             all_data_activity = pd.merge(all_data_economy, all_data_activity_sum[['Economy', 'Date', 'Activity_growth_est_previous']], on=['Economy', 'Date'], how='left')
 
             #melt
-            all_data_activity_growth = all_data_activity[['Economy','Date','Vehicle Type', 'Gdp_per_capita', 'Activity_growth_est', 'Activity_growth_est_previous']]
-            all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Vehicle Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth_est', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
+            all_data_activity_growth = all_data_activity[['Economy','Date','Vehicle Type', 'Gdp_per_capita', 'Activity_growth', 'Activity_growth_est_previous']]
+            all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Vehicle Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
             fig = px.line(all_data_activity_growth, x='Date', y='Activity_growth_value', color='Vehicle Type',line_dash='Activity_growth', title='Comparitive activity growth', markers=True)
 
             #write to html

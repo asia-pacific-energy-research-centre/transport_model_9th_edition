@@ -105,5 +105,5 @@ model_concordances_user_input_and_growth_rates_file_name = 'model_concordances_u
 model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_supply_side_fuel_mixing{}.csv'.format(model_concordances_version)
 model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing{}.csv'.format(model_concordances_version)
 
-#AND A model_concordances_all_file_name
-model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
+# #AND A model_concordances_all_file_name
+# model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)

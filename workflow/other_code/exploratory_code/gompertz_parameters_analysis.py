@@ -495,7 +495,7 @@ if run_this_section == True:
     break
     #%%
     #calcualte the adjusted activity growth
-    change_dataframe['Activity_growth_adjusted'] = change_dataframe['Activity_growth_est'] * change_dataframe['Expected_stocks_per_thousand_capita_derivative']
+    change_dataframe['Activity_growth_adjusted'] = change_dataframe['Activity_growth'] * change_dataframe['Expected_stocks_per_thousand_capita_derivative']
 
     #also use this to adjust the growth in mileage. im a little unsure about this but i think it is most correct given the circumstances. We need a form of mileage growth to reflect growth in mileage in developing economys especailly. and you can expect that growth in mileage will follow similar trends to growth in stocks per capita (except perhaps at the begining of the S curve... but then again low gdp implies bad roads). so we will use the same adjustment factor as for activity growth to adjust the mileage growth rate (which, of course, will be much lower than the activity growth rate)
     change_dataframe = change_dataframe.merge(Mileage_growth, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Date'], how='left')

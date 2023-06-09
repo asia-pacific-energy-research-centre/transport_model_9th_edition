@@ -22,22 +22,30 @@ import sys
 #set global variables
 sys.path.append("./workflow/grooming_code")
 sys.path.append("./workflow")
+sys.path.append("./config/utilities")
+file_date_dummy = datetime.datetime.now().strftime("%Y%m%d")
+FILE_DATE_ID_dummy = '_{}'.format(file_date_dummy)#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
 
-file_date = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-FILE_DATE_ID = '_DATE{}'.format(file_date)
-FILE_DATE_ID = ''#comment me out if you want the output and archived input data to be saved with a specific date id 
-print('Model run for {} starting'.format(file_date))
-print('\n FILE_DATE_ID is set to {}'.format(FILE_DATE_ID))
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+
+# FILE_DATE_ID = ''#comment me out if you want the output and archived input data to be saved with a specific date id 
+print('Model run for {} starting'.format(file_date_dummy))
+print('\n FILE_DATE_ID is set to {}'.format(FILE_DATE_ID_dummy))
 
 PLOT_INPUT_DATA = False
 CREATE_MODEL_CONCORDANCES = True
+#set up archive folder:
+import archiving_scripts
+archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID)
+
 #%%
 if CREATE_MODEL_CONCORDANCES:
-    exec(open("./workflow/grooming_code/0_create_model_concordances.py").read())
+    import concordance_scripts
+    concordance_scripts.create_all_concordances()
 #%%
 PREPARE_DATA = True
 if PREPARE_DATA:
-    exec(open("./workflow/grooming_code/1_clean_user_input.py").read())
+    exec(open("./workflow/grooming_code/1_create_and_clean_user_input.py").read())
     
     exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
 
@@ -64,15 +72,15 @@ if ANALYSE_OUTPUT:
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_medium.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_fuel.py").read())
     # exec(open("other_code/analysis_code/compare_8th_to_9th_by_drive.py"v  .read())
-    exec(open("./workflow/other_code/plotting/plot_diagnostics.py").read())
+    exec(open("./workflow/plotting/plot_diagnostics.py").read())
     
-    exec(open("./workflow/other_code/plotting/analyse_experimental.py").read())
+    exec(open("./workflow/plotting/analyse_experimental.py").read())
     plot_all = True
     if plot_all:
-        exec(open("./workflow/other_code/plotting/all_economy_graphs.py").read())
+        exec(open("./workflow/plotting/all_economy_graphs.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:
-    exec(open('./config/utilities/archiving_script.py').read())
+    archiving_scripts.archive_lots_of_files(archiving_folder)
 
 #%%

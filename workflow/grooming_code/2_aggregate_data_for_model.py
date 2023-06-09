@@ -25,11 +25,15 @@ growth = pd.read_csv('intermediate_data/model_inputs/regression_based_growth_est
 #        'GDP_times_capita', 'GDP_growth', 'Population_growth',
 #        'GDP_per_capita_growth', 'GDP_times_capita_growth', 'region', 'const',
 #        'gdp_per_capita_growth_coeff', 'gdp_times_capita_growth_coeff', 'r2',
-#        'energy_growth_est', 'Activity_growth_est', 'Activity_growth_8th',
+#        'energy_growth_est', 'Activity_growth', 'Activity_growth_8th',
 #        'Activity_growth_8th_index'],
 #       dtype='object')
 #%%
-
+#find where user_input[user_input.Measure=='Vehicle_sales_share'] has transport type = passenger and date = 2019
+# a = user_input.loc[(user_input['Measure']=='Vehicle_sales_share') & (user_input['Transport Type']=='passenger') & (user_input['Date']==2019) & (user_input['Economy']=='01_AUS')]
+# if a.Value.sum() != 1:
+#     raise ValueError('The sum of the vehicle sales share for passenger vehicles in 2019 is not 1. Please check the user input data and fix this.')
+#%%
 #connect user inputs with transport datassystem dataset
 
 #create Dataset column in user input and call it 'user_input'
@@ -88,6 +92,21 @@ if aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit']
 if aggregated_model_data.loc[aggregated_model_data['Measure']=='Population', 'Unit'].unique().tolist() != ['Population_thousands']:
     print('ERROR: The units for population are not in thousands. Please fix the data')
 #%%
+#For years previous to the base year we may have only some measures and not others. Later on we will be trying to calcaulte values from these and this could reasult in errors. So we will fill in the missing measures with earliest availble data. THis should be okay because the values will only be those like mileage, 
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
+################################################################################
 #save
 aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID), index=False)
 

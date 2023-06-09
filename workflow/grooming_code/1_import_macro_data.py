@@ -65,10 +65,10 @@ macro1 = macro1.dropna()
 #calcuilate energy growth rate using teh coefficients for const	gdp_per_capita_growth	gdp_times_capita_growth
 macro1['energy_growth_est'] = macro1['const'] + macro1['gdp_per_capita_growth_coeff'] * macro1['GDP_per_capita_growth'] + macro1['gdp_times_capita_growth_coeff'] * macro1['GDP_times_capita_growth']
 #since we currently have no idea about intensity, we will assume that energy growth is the same as activity growth
-macro1['activity_growth_est'] = macro1['energy_growth_est']
+macro1['Activity_growth'] = macro1['energy_growth_est']
 #%%
 #ADD ONE
-macro1['activity_growth_est'] = macro1['activity_growth_est'] + 1
+macro1['Activity_growth'] = macro1['Activity_growth'] + 1
 #also add one to activity_growth_8th.activity_growth_8th
 activity_growth_8th['activity_growth_8th'] = activity_growth_8th['activity_growth_8th'] + 1
 #%%
@@ -85,7 +85,7 @@ macro1 = macro1.melt(id_vars=['Economy', 'Date'], value_vars=['Gdp_per_capita', 
        'Gdp_times_capita', 'Gdp_growth', 'Population_growth',
        'Gdp_per_capita_growth', 'Gdp_times_capita_growth', 'Const',
        'Gdp_per_capita_growth_coeff', 'Gdp_times_capita_growth_coeff', 'R2',
-       'Energy_growth_est', 'Activity_growth_est', 'Activity_growth_8th',
+       'Energy_growth_est', 'Activity_growth', 'Activity_growth_8th',
        'Activity_growth_8th_index'], var_name='Measure', value_name='Value')
 
 #%%

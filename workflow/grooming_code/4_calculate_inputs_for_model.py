@@ -9,8 +9,7 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
-import gompertz_parameters_estimation_function
-import logistic_parameters_estimation_function
+# FILE_DATE_ID = '_20230606'
 #%%
 #load data
 transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
@@ -45,6 +44,7 @@ road_model_input_wide = road_model_input.pivot(index=INDEX_COLS_NO_MEASURE, colu
 non_road_model_input_wide = non_road_model_input.pivot(index=INDEX_COLS_NO_MEASURE, columns='Measure', values='Value').reset_index()
 growth_forecasts = growth_forecasts.pivot(index=INDEX_COLS_NO_MEASURE, columns='Measure', values='Value').reset_index()
 ################################################################################
+
 #%%
 #CALCUALTE TRAVEL KM 
 road_model_input_wide['Travel_km'] = road_model_input_wide['Activity']/road_model_input_wide['Occupancy_or_load']#TRAVEL KM is not provided by transport data system atm
@@ -63,47 +63,47 @@ road_model_input_wide['Surplus_stocks'] = 0
 #this is an adjsutment to the road stocks data from 8th edition by setting stocks to 1 for all non road vehicles that have a value >0 for Energy
 non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] > 0), 'Stocks'] = 1
 non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] == 0), 'Stocks'] = 0
-#%%
-# road_model_input_wide_new = road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_ROAD + user_input_measures_list_ROAD + calculated_measures_ROAD]
-# non_road_model_input_wide_new = non_road_model_input_wide[INDEX_COLS_NO_MEASURE + base_year_measures_list_NON_ROAD + user_input_measures_list_NON_ROAD + calculated_measures_NON_ROAD]
+
 
 #%%
-#do estiamtion of the parameters for gomperz curve for the road stocks:
-#separate gompertz inputs
-gompertz_parameters = road_model_input_wide[['Economy','Scenario','Date', 'Transport Type'] + [col for col in road_model_input_wide.columns if 'Gompertz_' in col]].drop_duplicates().dropna()
-road_model_data = road_model_input_wide[['Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive', 'Scenario','Stocks']].drop_duplicates()
-macro_data = growth_forecasts[['Date','Scenario', 'Economy', 'Gdp_per_capita','Population']].drop_duplicates()
-#join the two datasets on Date and economy
-road_model_data = road_model_data.merge(macro_data, on=['Date', 'Scenario','Economy'], how='left')
-road_model_data = road_model_data.merge(gompertz_parameters, on=['Date', 'Economy', 'Scenario', 'Transport Type'], how='left')
-save_to_pickle = True
-if save_to_pickle:
-    road_model_data.to_pickle('intermediate_data/archive/road_model_data_{}.pkl'.format(FILE_DATE_ID))
-#%%
-estimate_gompertz_parameters = False
-if estimate_gompertz_parameters:
-    if USE_LOGISTIC_FUNCTION:
-        gompertz_parameters = logistic_parameters_estimation_function.logistic_fitting_function_handler(road_model_data, BASE_YEAR = 2020,future_dates=[2045, 2050], future_dates_prop_diff_from_gamma=[0.1, 0.09], INTERPOLATE_DATA = True,show_plots=False,matplotlib_bool=True, plotly_bool=False)
-    else:
-        #now attempt estimation 
-        gompertz_parameters = gompertz_parameters_estimation_function.gompertz_fitting_function_handler(road_model_data,BASE_YEAR+3,future_dates=[2045, 2050], future_dates_prop_diff_from_gamma=[0.1, 0.09], INTERPOLATE_DATA = True, show_plots=False,matplotlib_bool=True, plotly_bool=False)
+test = False
+if test:
+    #check that road stocks and activity match each other when usign  (change_dataframe['Activity']/( change_dataframe['Mileage'] * change_dataframe['Occupancy_or_load'])). 
+    #if they arent then plot the average difference for each vehicle type and drve type. (ignore economy or scenario). THen later on we can decide how we fix it:
+    test_road_model_input_wide = road_model_input_wide.copy()
+    test_road_model_input_wide['Activity_check'] = test_road_model_input_wide['Mileage'] * test_road_model_input_wide['Occupancy_or_load'] * test_road_model_input_wide['Stocks']
+    test_road_model_input_wide['Activity_check_diff'] = test_road_model_input_wide['Activity_check'] - test_road_model_input_wide['Activity']
+    test_road_model_input_wide['Activity_check_diff_abs'] = test_road_model_input_wide['Activity_check_diff'].abs()
+    #calcaulte average difference for each vehicle type and drive type and plot it
+    test_road_model_input_wide['Activity_check_diff_abs_mean'] = test_road_model_input_wide['Activity_check_diff_abs'].groupby([test_road_model_input_wide['Vehicle Type'], test_road_model_input_wide['Drive']]).transform('mean')
+    #drop duplicates
+    test_road_model_input_wide = test_road_model_input_wide.drop_duplicates(subset=['Vehicle Type', 'Drive'])
 
-    gompertz_parameters['Transport Type'] = 'passenger'
+    #plot using plotly
+    import plotly.express as px
+    fig = px.bar(test_road_model_input_wide, x="Vehicle Type", y="Activity_check_diff_abs_mean", color="Drive", barmode="group")
+    fig.show()
 
-    #save params to pickle
-    gompertz_parameters.to_pickle('intermediate_data/archive/gompertz_parameters_TEST.pkl')
-    #drop the gompertz parameters from the main dataset
-    road_model_input_wide.drop([col for col in road_model_input_wide.columns if 'Gompertz_' in col], axis=1, inplace=True)
-    #join the gompertz parameters back to the main dataset
-    road_model_input_wide = road_model_input_wide.merge(gompertz_parameters, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'], how='left')
-else:
-    #maybe we ont use these so jsut load some old ones and join them to the main dataset
-    gompertz_parameters = pd.read_pickle('intermediate_data/archive/gompertz_parameters_TEST.pkl')
-    #drop the gompertz parameters from the main dataset
-    road_model_input_wide.drop([col for col in road_model_input_wide.columns if 'Gompertz_' in col], axis=1, inplace=True)
-    #join the gompertz parameters back to the main dataset
-    road_model_input_wide = road_model_input_wide.merge(gompertz_parameters, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'], how='left')
+    print('If the bar is postive then it means the activity is lower than the calculated activity from stocks, mileage and occupancy. Essentially Stocks are too high. ')
+    #test if efficiency * Energy = activity
+    test_road_model_input_wide['Energy_check'] = test_road_model_input_wide['Activity'] / test_road_model_input_wide['Efficiency']
+    test_road_model_input_wide['Energy_check_diff'] = test_road_model_input_wide['Energy_check'] - test_road_model_input_wide['Energy']
+    test_road_model_input_wide['Energy_check_diff_abs'] = test_road_model_input_wide['Energy_check_diff'].abs()
+    #calcaulte average difference for each vehicle type and drive type and plot it
+    test_road_model_input_wide['Energy_check_diff_abs_mean'] = test_road_model_input_wide['Energy_check_diff_abs'].groupby([test_road_model_input_wide['Vehicle Type'], test_road_model_input_wide['Drive']]).transform('mean')
+    #drop duplicates
+    test_road_model_input_wide = test_road_model_input_wide.drop_duplicates(subset=['Vehicle Type', 'Drive'])
 
+    #plot using plotly
+    import plotly.express as px
+    fig = px.bar(test_road_model_input_wide, x="Vehicle Type", y="Energy_check_diff_abs_mean", color="Drive", barmode="group")
+    fig.show()
+    print('If the bar is postive then it means the energy is lower than the calculated energy from activity and efficiency. Essentially efficiency is too low or the activity is too high')
+
+#RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
+road_model_input_wide['Activity'] = road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'] * road_model_input_wide['Stocks']
+road_model_input_wide['Energy'] = road_model_input_wide['Activity'] / road_model_input_wide['Efficiency']
+#PLEASE NOTE THAT THIS NAY END UP RESULTING IN WACKY NUMBERS.ITS A QUICK FIX FOR NOW
 #%%
 
 # #join population and gdp per cpita to road model input

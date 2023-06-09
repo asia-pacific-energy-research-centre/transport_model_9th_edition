@@ -64,10 +64,10 @@ def gompertz_fitting_function_handler(model_data):
                 #filter for economy and vehicle type
                 model_data_economy_vehicle_type = model_data[(model_data['Economy']==economy) & (model_data['Vehicle Type']==vehicle_type) & (model_data['Scenario']==scenario)]
                 #filter for cols we need:
-                model_output_detailed_aus_ldv = model_output_detailed_aus_ldv[['Date', 'Stocks', 'Gdp_per_capita','Population', 'Gompertz_gamma', 'Gompertz_alpha', 'Gompertz_beta']].drop_duplicates()
+                model_output_detailed_aus_ldv = model_output_detailed_aus_ldv[['Date', 'Stocks', 'Gdp_per_capita','Population', 'Gompertz_gamma']].drop_duplicates()#, 'Gompertz_alpha', 'Gompertz_beta'
                 #sum up by Drive, with any NAs set to 0
                 model_output_detailed_aus_ldv['Stocks'] = model_output_detailed_aus_ldv['Stocks'].fillna(0)
-                model_output_detailed_aus_ldv = model_output_detailed_aus_ldv.groupby(['Date', 'Gdp_per_capita','Population', 'Gompertz_gamma', 'Gompertz_alpha', 'Gompertz_beta']).agg({'Stocks':'sum'}).reset_index()
+                model_output_detailed_aus_ldv = model_output_detailed_aus_ldv.groupby(['Date', 'Gdp_per_capita','Population', 'Gompertz_gamma']).agg({'Stocks':'sum'}).reset_index()#, 'Gompertz_alpha', 'Gompertz_beta'
                 #calcualte stocks per capita
                 model_output_detailed_aus_ldv['Thousand_stocks_per_capita'] = model_output_detailed_aus_ldv['Stocks']/model_output_detailed_aus_ldv['Population']
                 #convert to correct uits:

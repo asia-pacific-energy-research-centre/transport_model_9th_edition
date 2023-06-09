@@ -51,7 +51,6 @@ ANALYSE_CHANGE_DATAFRAME = True
 #%%
 #START MAIN PROCESS
 for year in range(BASE_YEAR+1, END_YEAR+1):
-    breakpoint()
     print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
 
     #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
@@ -74,8 +73,10 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #ACTIVITY GROWTH
     #we will apply activity growth to the sum of activity for each transport type. Note that activity growth is assumed to be the same for all vehicle types of the same transport type.
     
+    #if 'Activity_growth', 'Gdp_per_capita', 'Population' is in df, drop em
+    change_dataframe = change_dataframe.drop(['Activity_growth', 'Gdp_per_capita','Gdp', 'Population'], axis=1, errors='ignore')
     #join on activity growth
-    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Economy','Scenario','Transport Type','Activity_growth_est']], on=['Economy','Scenario', 'Transport Type','Date'], how='left')
+    change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Economy','Scenario','Transport Type','Activity_growth', 'Gdp_per_capita','Gdp', 'Population']], on=['Economy','Scenario', 'Transport Type','Date'], how='left')
     #calcualte sum of last Dates activity by transport type
     # activity_transport_type_sum = change_dataframe.copy()[['Economy', 'Scenario', 'Transport Type', 'Date', "Activity"]]
     # activity_transport_type_sum = activity_transport_type_sum.groupby(['Economy', 'Scenario', 'Transport Type', 'Date']).sum()
@@ -83,7 +84,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     # change_dataframe = change_dataframe.merge(activity_transport_type_sum, on=['Economy', 'Scenario', 'Transport Type', 'Date'], how='left')
     
     #apply activity growth to activity 
-    change_dataframe['Activity'] = (change_dataframe['Activity_growth_est'] * change_dataframe['Activity'])
+    change_dataframe['Activity'] = (change_dataframe['Activity_growth'] * change_dataframe['Activity'])
     
     #APPLY EFFICIENCY GROWTH TO ORIGINAL EFFICIENCY
     #note that this will then be split into different fuel types when we appply the fuel mix varaible later on.
@@ -107,7 +108,7 @@ for year in range(BASE_YEAR+1, END_YEAR+1):
     #Now start cleaning up the changes dataframe to create the dataframe for the new Date.
     addition_to_main_dataframe = change_dataframe.copy() 
     
-    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive','Medium',  'Activity', 'Stocks', 'Intensity', 'Energy']]
+    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date', 'Drive','Medium',  'Activity', 'Stocks', 'Intensity', 'Energy', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]
     
     #add new year to the main dataframe.
     main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])
@@ -161,6 +162,8 @@ if low_ram_computer == True:
         low_ram_dataframe.to_csv(new_output_file,mode='a', header=not os.path.exists(new_output_file),index=False)
         #remove file 
         os.remove(file_i)
+    
+    # main_dataframe.to_csv(new_output_file, index=False)
     print('The main dataframe has been written to {}'.format(new_output_file))
 else:
     print('The computer is not low ram, saving the main dataframe to a csv.')
@@ -187,6 +190,8 @@ if analyse:
     fig, ax = plt.subplots()
     for medium in df['Medium'].unique():
         df[df['Medium']==medium].plot(x='Date',y='Activity',kind='line', ax=ax, label=medium)
+    #give tite;
+    plt.title('Activity for 19_THA')
     # df.groupby(['Date']).mean().reset_index().plot(x='Date',y='Activity_growth',kind='bar',secondary_y=True, ax=ax)
     
 

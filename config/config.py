@@ -16,12 +16,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 #can activate below to remove caveat warnings. but for now keep it there till confident:
 # pd.options.mode.chained_assignment = None  # default='warn'
 #%%
+#STATE VARIABLES USER MAY CHANGE OFTEN:
+NEW_SALES_SHARES = True
+
+
+#%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
+
+
 try:
     if FILE_DATE_ID:
        pass
 except NameError:
-    FILE_DATE_ID = ''
+    # FILE_DATE_ID = ''
+    file_date = datetime.datetime.now().strftime("%Y%m%d")
+    FILE_DATE_ID = '_{}'.format(file_date)#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
    
 #%%
 USE_LATEST_OUTPUT_DATE_ID = False#True
@@ -42,7 +51,9 @@ INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
        'Transport Type','Drive', 'Scenario', 'Unit', 'Frequency']
 INDEX_COLS_no_date = INDEX_COLS.copy()
 INDEX_COLS_no_date.remove('Date')
+
 model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
+
 gompertz_function_diagnostics_dataframe_file_name = 'gompertz_function_diagnostics_dataframe{}.csv'.format(FILE_DATE_ID)
 
 EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable
@@ -56,7 +67,7 @@ SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolis
 SCENARIO_OF_INTEREST = 'Reference'
 
 user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
-       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth', 'Mileage_growth','Gompertz_alpha', 'Gompertz_gamma', 'Gompertz_beta']
+       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth', 'Mileage_growth','Gompertz_gamma']#, 'Gompertz_beta''Gompertz_alpha', 
 user_input_measures_list_NON_ROAD = ['Non_road_intensity_improvement']
 
 base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
@@ -107,5 +118,5 @@ model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_suppl
 model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing{}.csv'.format(model_concordances_version)
 
 #AND A model_concordances_all_file_name
-model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
+# model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
 #%%

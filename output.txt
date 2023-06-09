@@ -1,0 +1,755 @@
+<string>:231: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+<string>:232: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+<string>:137: FutureWarning: Not prepending group keys to the result index of transform-like apply. In the future, the group keys will be included in the index, regardless of whether the applied function returns a like-indexed object.
+To preserve the previous behavior, use
+
+	>>> .groupby(..., group_keys=False)
+
+To adopt the future behavior and silence this warning, use 
+
+	>>> .groupby(..., group_keys=True)
+<string>:35: FutureWarning: Not prepending group keys to the result index of transform-like apply. In the future, the group keys will be included in the index, regardless of whether the applied function returns a like-indexed object.
+To preserve the previous behavior, use
+
+	>>> .groupby(..., group_keys=False)
+
+To adopt the future behavior and silence this warning, use 
+
+	>>> .groupby(..., group_keys=True)
+d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\core\internals\blocks.py:2323: RuntimeWarning: invalid value encountered in cast
+  values = values.astype(str)
+<string>:176: FutureWarning: The frame.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+<string>:23: DtypeWarning: Columns (6) have mixed types. Specify dtype option on import or set low_memory=False.
+d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\core\internals\blocks.py:2323: RuntimeWarning: invalid value encountered in cast
+  values = values.astype(str)
+<string>:16: DtypeWarning: Columns (2,3,5,6,7,9) have mixed types. Specify dtype option on import or set low_memory=False.
+d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\core\internals\blocks.py:2323: RuntimeWarning: invalid value encountered in cast
+  values = values.astype(str)
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  data_to_change['Stocks_per_thousand_capita'] = [gamma - (gamma * proportion_below_gamma) + ((gamma * proportion_below_gamma) / len(data_to_change['Stocks_per_thousand_capita'])) * i for i in range(len(data_to_change['Stocks_per_thousand_capita']))]#todo check this is correct
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:548: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:691: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:693: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:769: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+D:\APERC\transport_model_9th_edition\./workflow\functions.py:771: SettingWithCopyWarning:
+
+
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+
+d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\core\internals\blocks.py:2323: RuntimeWarning:
+
+invalid value encountered in cast
+
+Model run for 20230606_1435 starting
+
+ FILE_DATE_ID is set to _20230606_1435
+Importing user input sheet: Non_road_intensity_improvement
+Importing user input sheet: Gompertz_alpha
+Importing user input sheet: Gompertz_beta
+Importing user input sheet: Gompertz_gamma
+Importing user input sheet: Turnover_rate_growth
+Importing user input sheet: Mileage_growth
+Importing user input sheet: New_vehicle_efficiency_growth
+Importing user input sheet: Occupancy_or_load_growth
+Importing user input sheet: Vehicle_sales_share
+Measures in user input that are not in the model concordances: []
+Missing rows in our user input dataset when we compare it to the concordance:         Date Economy  ...              Data_available Value
+0       2051  01_AUS  ...  row_and_data_not_available   NaN
+1       2051  01_AUS  ...  row_and_data_not_available   NaN
+2       2051  01_AUS  ...  row_and_data_not_available   NaN
+3       2051  01_AUS  ...  row_and_data_not_available   NaN
+4       2051  01_AUS  ...  row_and_data_not_available   NaN
+...      ...     ...  ...                         ...   ...
+165895  2100   21_VN  ...  row_and_data_not_available   NaN
+165896  2100   21_VN  ...  row_and_data_not_available   NaN
+165897  2100   21_VN  ...  row_and_data_not_available   NaN
+165898  2100   21_VN  ...  row_and_data_not_available   NaN
+165899  2100   21_VN  ...  row_and_data_not_available   NaN
+
+[165900 rows x 12 columns]
+WARNING: You are filling in missing data for years greater than 2050. Please check that this is what you want to do.
+Missing rows in our user transport system dataset when we compare it to the concordance: MultiIndex([(2017, '01_AUS',      'Activity', 'bus', 'road', 'passenger', ...),
+            (2017, '01_AUS',      'Activity', 'bus', 'road', 'passenger', ...),
+            (2017, '01_AUS',      'Activity', 'bus', 'road', 'passenger', ...),
+            (2017, '01_AUS',      'Activity',  'ht', 'road',   'freight', ...),
+            (2017, '01_AUS',      'Activity',  'ht', 'road',   'freight', ...),
+            (2017, '01_AUS',      'Activity',  'ht', 'road',   'freight', ...),
+            (2017, '01_AUS',      'Activity', 'ldv', 'road', 'passenger', ...),
+            (2017, '01_AUS',    'Efficiency', 'bus', 'road', 'passenger', ...),
+            (2017, '01_AUS',    'Efficiency',  'ht', 'road',   'freight', ...),
+            (2017, '01_AUS',    'Efficiency',  'ht', 'road',   'freight', ...),
+            ...
+            (2017,  '21_VN',        'Stocks', 'all', 'ship', 'passenger', ...),
+            (2017,  '21_VN',        'Stocks', 'bus', 'road', 'passenger', ...),
+            (2017,  '21_VN',        'Stocks', 'bus', 'road', 'passenger', ...),
+            (2017,  '21_VN',        'Stocks', 'bus', 'road', 'passenger', ...),
+            (2017,  '21_VN',        'Stocks',  'ht', 'road',   'freight', ...),
+            (2017,  '21_VN',        'Stocks',  'ht', 'road',   'freight', ...),
+            (2017,  '21_VN',        'Stocks',  'ht', 'road',   'freight', ...),
+            (2017,  '21_VN',        'Stocks', 'ldv', 'road', 'passenger', ...),
+            (2017,  '21_VN',        'Stocks', 'ldv', 'road', 'passenger', ...),
+            (2017,  '21_VN', 'Turnover_rate',  'ht', 'road',   'freight', ...)],
+           names=['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive', 'Unit', 'Frequency'], length=756)
+Up to year 2018. The loop will run until year 2100
+Up to year 2019. The loop will run until year 2100
+Up to year 2020. The loop will run until year 2100
+Up to year 2021. The loop will run until year 2100
+Up to year 2022. The loop will run until year 2100
+Up to year 2023. The loop will run until year 2100
+Up to year 2024. The loop will run until year 2100
+Up to year 2025. The loop will run until year 2100
+Up to year 2026. The loop will run until year 2100
+Up to year 2027. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2027, saving interemediate results to csv.
+Up to year 2028. The loop will run until year 2100
+Up to year 2029. The loop will run until year 2100
+Up to year 2030. The loop will run until year 2100
+Up to year 2031. The loop will run until year 2100
+Up to year 2032. The loop will run until year 2100
+Up to year 2033. The loop will run until year 2100
+Up to year 2034. The loop will run until year 2100
+Up to year 2035. The loop will run until year 2100
+Up to year 2036. The loop will run until year 2100
+Up to year 2037. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2037, saving interemediate results to csv.
+Up to year 2038. The loop will run until year 2100
+Up to year 2039. The loop will run until year 2100
+Up to year 2040. The loop will run until year 2100
+Up to year 2041. The loop will run until year 2100
+Up to year 2042. The loop will run until year 2100
+Up to year 2043. The loop will run until year 2100
+Up to year 2044. The loop will run until year 2100
+Up to year 2045. The loop will run until year 2100
+Up to year 2046. The loop will run until year 2100
+Up to year 2047. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2047, saving interemediate results to csv.
+Up to year 2048. The loop will run until year 2100
+Up to year 2049. The loop will run until year 2100
+Up to year 2050. The loop will run until year 2100
+Up to year 2051. The loop will run until year 2100
+Up to year 2052. The loop will run until year 2100
+Up to year 2053. The loop will run until year 2100
+Up to year 2054. The loop will run until year 2100
+Up to year 2055. The loop will run until year 2100
+Up to year 2056. The loop will run until year 2100
+Up to year 2057. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2057, saving interemediate results to csv.
+Up to year 2058. The loop will run until year 2100
+Up to year 2059. The loop will run until year 2100
+Up to year 2060. The loop will run until year 2100
+Up to year 2061. The loop will run until year 2100
+Up to year 2062. The loop will run until year 2100
+Up to year 2063. The loop will run until year 2100
+Up to year 2064. The loop will run until year 2100
+Up to year 2065. The loop will run until year 2100
+Up to year 2066. The loop will run until year 2100
+Up to year 2067. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2067, saving interemediate results to csv.
+Up to year 2068. The loop will run until year 2100
+Up to year 2069. The loop will run until year 2100
+Up to year 2070. The loop will run until year 2100
+Up to year 2071. The loop will run until year 2100
+Up to year 2072. The loop will run until year 2100
+Up to year 2073. The loop will run until year 2100
+Up to year 2074. The loop will run until year 2100
+Up to year 2075. The loop will run until year 2100
+Up to year 2076. The loop will run until year 2100
+Up to year 2077. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2077, saving interemediate results to csv.
+Up to year 2078. The loop will run until year 2100
+Up to year 2079. The loop will run until year 2100
+Up to year 2080. The loop will run until year 2100
+Up to year 2081. The loop will run until year 2100
+Up to year 2082. The loop will run until year 2100
+Up to year 2083. The loop will run until year 2100
+Up to year 2084. The loop will run until year 2100
+Up to year 2085. The loop will run until year 2100
+Up to year 2086. The loop will run until year 2100
+Up to year 2087. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2087, saving interemediate results to csv.
+Up to year 2088. The loop will run until year 2100
+Up to year 2089. The loop will run until year 2100
+Up to year 2090. The loop will run until year 2100
+Up to year 2091. The loop will run until year 2100
+Up to year 2092. The loop will run until year 2100
+Up to year 2093. The loop will run until year 2100
+Up to year 2094. The loop will run until year 2100
+Up to year 2095. The loop will run until year 2100
+d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\core\internals\blocks.py:2323: RuntimeWarning:
+
+invalid value encountered in cast
+
+d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\core\internals\blocks.py:2323: RuntimeWarning:
+
+invalid value encountered in cast
+
+Up to year 2096. The loop will run until year 2100
+Up to year 2097. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2097, saving interemediate results to csv.
+Up to year 2098. The loop will run until year 2100
+Up to year 2099. The loop will run until year 2100
+Up to year 2100. The loop will run until year 2100
+The year is at the end of the simulation, saving intermediate results to csv.
+The computer is low ram, stitching together the main dataframe from the 10 year block files.
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2017_to_2027.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2027_to_2037.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2037_to_2047.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2047_to_2057.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2057_to_2067.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2067_to_2077.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2077_to_2087.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2087_to_2097.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2097_to_2100.csv
+The main dataframe has been written to intermediate_data/non_road_model/model_output_years_2017_to_2100_20230606_1435.csv
+gamma:  800
+growth_rate:  1.5 midpoint:  33.22569020617888
+gamma:  800
+growth_rate:  1.5 midpoint:  33.22569020617888
+gamma:  800
+growth_rate:  1.5 midpoint:  39.69889288219517
+gamma:  800
+growth_rate:  1.5 midpoint:  39.69889288219517
+gamma:  800
+growth_rate:  1.5 midpoint:  30.669455318891085
+gamma:  800
+growth_rate:  1.5 midpoint:  30.669455318891085
+gamma:  800
+growth_rate:  0.5561306494183035 midpoint:  24.586313720917946
+gamma:  800
+growth_rate:  0.5561306468455952 midpoint:  24.58631371714317
+gamma:  800
+growth_rate:  0.35145227956848857 midpoint:  18.213717157195426
+gamma:  800
+growth_rate:  0.351452279920814 midpoint:  18.213717160662696
+gamma:  800
+growth_rate:  0.1551144267091769 midpoint:  72.13194962722156
+gamma:  800
+growth_rate:  0.15511442671384915 midpoint:  72.13194962683103
+gamma:  800
+growth_rate:  2.9999999999999907 midpoint:  11.42640883372327
+gamma:  800
+growth_rate:  2.9999999999999907 midpoint:  11.426408833919405
+gamma:  800
+growth_rate:  0.06890570027413856 midpoint:  36.1377307490758
+gamma:  800
+growth_rate:  0.06890570043136864 midpoint:  36.13773078377524
+gamma:  800
+growth_rate:  0.34638674585816803 midpoint:  42.156094840697676
+gamma:  800
+growth_rate:  0.3463867453955422 midpoint:  42.15609483573732
+gamma:  800
+growth_rate:  1.1076763758573502 midpoint:  25.62361328519596
+gamma:  800
+growth_rate:  1.1076763670358298 midpoint:  25.623613278605752
+gamma:  800
+growth_rate:  0.7519886708678706 midpoint:  19.950297845000797
+gamma:  800
+growth_rate:  0.7519886731697499 midpoint:  19.95029784677023
+gamma:  800
+growth_rate:  0.22619781335262024 midpoint:  35.04555267735013
+gamma:  800
+growth_rate:  0.22619780607743387 midpoint:  35.04555239808004
+gamma:  800
+growth_rate:  0.6392103729400033 midpoint:  0.6668377765066605
+gamma:  800
+growth_rate:  0.639209977384396 midpoint:  0.6668358378469974
+gamma:  800
+growth_rate:  1.102530102618341 midpoint:  13.692830164804043
+gamma:  800
+growth_rate:  1.102530110965571 midpoint:  13.692830165242233
+gamma:  800
+growth_rate:  1.2461147259837357 midpoint:  7.401926632403003
+gamma:  800
+growth_rate:  1.2461147259837357 midpoint:  7.401926632403003
+gamma:  800
+growth_rate:  2.106515539783083 midpoint:  26.556231804165392
+gamma:  800
+growth_rate:  2.1065155462809546 midpoint:  26.556231801410473
+gamma:  800
+growth_rate:  0.09283737516729625 midpoint:  107.22465297413395
+gamma:  800
+growth_rate:  0.09283737518126939 midpoint:  107.22465297492343
+gamma:  800
+growth_rate:  0.23587172984174945 midpoint:  50.46173615506445
+gamma:  800
+growth_rate:  0.23587172860777372 midpoint:  50.46173614363598
+gamma:  800
+growth_rate:  0.5009808706580392 midpoint:  18.025026033987366
+gamma:  800
+growth_rate:  0.5009808715417139 midpoint:  18.025026035245066
+gamma:  800
+growth_rate:  0.10708276709200758 midpoint:  44.636116770115464
+gamma:  800
+growth_rate:  0.10708276684779273 midpoint:  44.63611670836747
+gamma:  800
+growth_rate:  1.1229627617623785 midpoint:  10.590949036854525
+gamma:  800
+growth_rate:  1.1229627576189523 midpoint:  10.590949037242499
+Up to year 2018. The loop will run until year 2100
+Up to year 2019. The loop will run until year 2100
+Up to year 2020. The loop will run until year 2100
+Up to year 2021. The loop will run until year 2100
+Up to year 2022. The loop will run until year 2100
+Up to year 2023. The loop will run until year 2100
+Up to year 2024. The loop will run until year 2100
+Up to year 2025. The loop will run until year 2100
+Up to year 2026. The loop will run until year 2100
+Up to year 2027. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2027, saving interemediate results to csv.
+Up to year 2028. The loop will run until year 2100
+Up to year 2029. The loop will run until year 2100
+Up to year 2030. The loop will run until year 2100
+Up to year 2031. The loop will run until year 2100
+Up to year 2032. The loop will run until year 2100
+Up to year 2033. The loop will run until year 2100
+Up to year 2034. The loop will run until year 2100
+Up to year 2035. The loop will run until year 2100
+Up to year 2036. The loop will run until year 2100
+Up to year 2037. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2037, saving interemediate results to csv.
+Up to year 2038. The loop will run until year 2100
+Up to year 2039. The loop will run until year 2100
+Up to year 2040. The loop will run until year 2100
+Up to year 2041. The loop will run until year 2100
+Up to year 2042. The loop will run until year 2100
+Up to year 2043. The loop will run until year 2100
+Up to year 2044. The loop will run until year 2100
+Up to year 2045. The loop will run until year 2100
+Up to year 2046. The loop will run until year 2100
+Up to year 2047. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2047, saving interemediate results to csv.
+Up to year 2048. The loop will run until year 2100
+Up to year 2049. The loop will run until year 2100
+Up to year 2050. The loop will run until year 2100
+Up to year 2051. The loop will run until year 2100
+Up to year 2052. The loop will run until year 2100
+Up to year 2053. The loop will run until year 2100
+Up to year 2054. The loop will run until year 2100
+Up to year 2055. The loop will run until year 2100
+Up to year 2056. The loop will run until year 2100
+Up to year 2057. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2057, saving interemediate results to csv.
+Up to year 2058. The loop will run until year 2100
+Up to year 2059. The loop will run until year 2100
+Up to year 2060. The loop will run until year 2100
+Up to year 2061. The loop will run until year 2100
+Up to year 2062. The loop will run until year 2100
+Up to year 2063. The loop will run until year 2100
+Up to year 2064. The loop will run until year 2100
+Up to year 2065. The loop will run until year 2100
+Up to year 2066. The loop will run until year 2100
+Up to year 2067. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2067, saving interemediate results to csv.
+Up to year 2068. The loop will run until year 2100
+Up to year 2069. The loop will run until year 2100
+Up to year 2070. The loop will run until year 2100
+Up to year 2071. The loop will run until year 2100
+Up to year 2072. The loop will run until year 2100
+Up to year 2073. The loop will run until year 2100
+Up to year 2074. The loop will run until year 2100
+Up to year 2075. The loop will run until year 2100
+Up to year 2076. The loop will run until year 2100
+Up to year 2077. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2077, saving interemediate results to csv.
+Up to year 2078. The loop will run until year 2100
+Up to year 2079. The loop will run until year 2100
+Up to year 2080. The loop will run until year 2100
+Up to year 2081. The loop will run until year 2100
+Up to year 2082. The loop will run until year 2100
+Up to year 2083. The loop will run until year 2100
+Up to year 2084. The loop will run until year 2100
+Up to year 2085. The loop will run until year 2100
+Up to year 2086. The loop will run until year 2100
+Up to year 2087. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2087, saving interemediate results to csv.
+Up to year 2088. The loop will run until year 2100
+Up to year 2089. The loop will run until year 2100
+Up to year 2090. The loop will run until year 2100
+Up to year 2091. The loop will run until year 2100
+Up to year 2092. The loop will run until year 2100
+Up to year 2093. The loop will run until year 2100
+Up to year 2094. The loop will run until year 2100
+Up to year 2095. The loop will run until year 2100
+Up to year 2096. The loop will run until year 2100
+Up to year 2097. The loop will run until year 2100
+The year is at the end of a ten year block, in year 2097, saving interemediate results to csv.
+Up to year 2098. The loop will run until year 2100
+Up to year 2099. The loop will run until year 2100
+Up to year 2100. The loop will run until year 2100
+The year is at the end of the simulation, saving intermediate results to csv.
+The computer is low ram, stitching together the main dataframe from the 10 year block files.
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2017_to_2027.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2027_to_2037.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2037_to_2047.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2047_to_2057.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2057_to_2067.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2067_to_2077.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2077_to_2087.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2087_to_2097.csv
+Reading file intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_2097_to_2100.csv
+The main dataframe has been written to intermediate_data/road_model/model_output_years_2017_to_2100.csv
+Traceback (most recent call last):
+  File "D:\APERC\transport_model_9th_edition\integrate.py", line 56, in <module>
+    exec(open("./workflow/2_concatenate_model_output.py").read())
+  File "<string>", line 17, in <module>
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\util\_decorators.py", line 211, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\util\_decorators.py", line 331, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\io\parsers\readers.py", line 950, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\io\parsers\readers.py", line 605, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\io\parsers\readers.py", line 1442, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\io\parsers\readers.py", line 1735, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "d:\APERC\transport_data_system\env_jupyter\Lib\site-packages\pandas\io\common.py", line 856, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'intermediate_data/road_model/model_output_years_2017_to_2100_20230606_1435.csv'

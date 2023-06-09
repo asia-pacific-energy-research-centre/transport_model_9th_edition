@@ -24,7 +24,7 @@ model_concordances_measures = pd.read_csv('config/concordances_and_config_data/c
 
 #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
 # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-FILE_DATE_ID2 ='DATE20230531' # 'DATE20230216'
+FILE_DATE_ID2 ='DATE20230608' # 'DATE20230216'
 # combined_data_DATE20230531
 transport_data_system_folder = '../transport_data_system'
 transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))
@@ -109,6 +109,51 @@ if missing_index_values1.empty:
     print('All rows we need are present in the transport system dataset')
 else:
     print('Missing rows in our user transport system dataset when we compare it to the concordance:', missing_index_values1)
+    #there are some cases where we are just missing data because those specific transport modes arent availavble yet for that economy, eg. bev ht. Thois is ok, since weset them to 0. But then for the measures:, 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage', we will need them available and not 0, so we will need to check for these cases and raise an error if they are missing
+    missing_important_values = pd.DataFrame(index=missing_index_values1)
+    missing_important_values = missing_important_values.reset_index()
+    missing_important_values = missing_important_values.loc[missing_important_values['Measure'].isin(['Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage'])]
+
+    if not missing_important_values.empty:
+        a = missing_important_values.reset_index()[['Measure', 'Vehicle Type', 
+       'Transport Type', 'Drive']].drop_duplicates()
+        #create df which has some replacements we know we can make:
+        #first identify if there are any of these combinations in transport_data_system_df:
+        b = transport_data_system_df.copy().reset_index()[['Economy', 'Date', 'Measure', 'Vehicle Type', 
+       'Transport Type', 'Drive', 'Value']].drop_duplicates()
+       #set index and then find the rows that are in a and b for that index
+        a.set_index(['Measure', 'Vehicle Type', 
+       'Transport Type', 'Drive'], inplace=True)
+        b.set_index(['Measure', 'Vehicle Type', 
+       'Transport Type', 'Drive'], inplace=True)
+        #find the rows that are in both a and b
+        values_can_replace_with = a.index.intersection(b.index)
+        #now we have the rows that are in both a and b, we can use this to replace the missing rows in a with the values from b
+        if len(values_can_replace_with) > 0:
+            print('Missing important values in the transport system dataset. They can be replaced with the following values:', b.loc[values_can_replace_with])
+        # else:
+        #     #we can still fill them with similar values. for values where drive is cng or lpg, we can fill all values for the same vehicle type and transport type with the means of values where drive is ice
+        #     #first find the rows where drive is cng or lpg
+        #     cng_lpg = missing_important_values.loc[missing_important_values['Drive'].isin(['cng', 'lpg'])]
+        #     #then find the rows where drive is ice
+        #     ice = missing_important_values.loc[missing_important_values['Drive'] == 'ice']
+        #save a to a csv so we can see what values are missing and fill them in in the trans[port datasyetem
+        save_this = True
+        if save_this:
+           a.to_csv('intermediate_data/archive/missing_important_values.csv')
+        USE_REPLACEMENTS = False
+        if USE_REPLACEMENTS:
+            #for now jsut replace them with the mean for the same vehicle type:
+            #first find the mean for each vehicle type by measure and then replace the missing values with these means
+            b = transport_data_system_df.copy().reset_index()[['Measure', 'Vehicle Type', 'Value']].drop_duplicates()
+            #filter for only the measures we need 
+            b = b.loc[b['Measure'].isin(['Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage'])]
+            b.set_index(['Measure', 'Vehicle Type'], inplace=True)
+            b = b.groupby(['Measure', 'Vehicle Type']).mean()
+            b = b.reset_index()
+            replacement_values =b.copy() 
+            #create row_and_data_not_available column
+            replacement_values['Data_available'] = 'row_and_data_not_available'
 
     #now we need to add these rows to the transport_data_system_df
     #first create a df with the missing index values
@@ -117,6 +162,16 @@ else:
     missing_index_values1['Value'] = 0
     #then append to transport_data_system_df
     transport_data_system_df = pd.concat([missing_index_values1, transport_data_system_df], sort=False)
+    if USE_REPLACEMENTS:
+        #join on the replacement_values
+        transport_data_system_df = pd.merge(transport_data_system_df.reset_index(), replacement_values, how='left', on=['Data_available','Measure', 'Vehicle Type'], suffixes=('', '_y'))
+        #fill in the missing values with the replacement values where data_available is row_and_data_not_available  and value_y is not null or 0
+
+        transport_data_system_df['Value'] = np.where((transport_data_system_df['Data_available'] == 'row_and_data_not_available') & (transport_data_system_df['Value_y'].notnull())& (transport_data_system_df['Value_y']!=0), transport_data_system_df['Value_y'], transport_data_system_df['Value'])
+        #we can leave row_and_data_not_available as is. drop the value_y column
+        transport_data_system_df.drop(columns=['Value_y'], inplace=True)
+        transport_data_system_df.set_index(INDEX_COLS_NO_SCENARIO_no_date, inplace=True)
+#%%
 
 if USE_BASE_DATE_ONLY:
 
