@@ -18,7 +18,7 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 #%%
 #STATE VARIABLES USER MAY CHANGE OFTEN:
 NEW_SALES_SHARES = True
-
+NEW_FUEL_MIXING_DATA = True
 
 #%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py

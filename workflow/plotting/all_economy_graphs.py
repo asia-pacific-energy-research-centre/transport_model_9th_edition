@@ -14,7 +14,7 @@ import plotly.express as px
 pd.options.plotting.backend = "plotly"#set pandas backend to plotly plotting instead of matplotlib
 import plotly.io as pio
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-
+import time
 import itertools
 AUTO_OPEN_PLOTLY_GRAPHS = False
 dont_overwrite_existing_graphs = False
@@ -26,17 +26,18 @@ default_save_folder = f'plotting_output/{subfolder_name}/{FILE_DATE_ID}/'
 if not os.path.exists(default_save_folder):
     os.makedirs(default_save_folder)
     
-economies_to_filter_for = ['19_THA', '20_USA']
+economies_to_filter_for =[]# ['19_THA', '20_USA']
 
 #%%
 #plot all data in model_output_all:
-value_cols = [['passenger_km','freight_tonne_km', 'Energy', 'Stocks',
+value_cols = ['passenger_km','freight_tonne_km', 'Energy', 'Stocks',
        'Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency',
        'Travel_km', 'Efficiency', 'Mileage', 'Surplus_stocks',
-       'Vehicle_sales_share', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population', 'Stocks_per_thousand_capita']]
+       'Vehicle_sales_share',  'Gdp_per_capita','Gdp', 'Population', 'Stocks_per_thousand_capita']
 #some value cols are not summable because they are factors. so specify them for when we group by economy, then we can calculate the mean of them
-non_summable_value_cols = ['Activity_growth', 'Gdp_per_capita','Gdp', 'Population','Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage','Vehicle_sales_share']
+non_summable_value_cols = ['Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage','Vehicle_sales_share']
 categorical_cols = ['Vehicle Type', 'Medium', 'Transport Type', 'Drive']
+macro_cols = ['Gdp_per_capita','Gdp', 'Population', 'Activity_growth']
 
 #%%
 #create units dict for each value col so that wehn we plot them we can label them correctly
@@ -218,7 +219,7 @@ def plot_line(df, y_column, color, line_dash, facet_col_wrap, facet_col, hover_n
     fig.update_layout(yaxis_title=y_axis_title, xaxis_title=x_axis_title)
     #save the graph
     if plot_html:
-        plotly.offline.plot(fig, filename=f'./{save_folder}' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
+        plotly.offline.plot(fig, filename=f'./{save_folder}/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
     if plot_png:
         fig.write_image(f"./{save_folder}/static/" + title + '.png', scale=1, width=width, height=height)
 
@@ -278,8 +279,8 @@ def plot_line_by_economy(df, color_categories, y_column,title,line_dash_categori
     df = df[df[y_column] != '']
 
     #checkl that the folders wqe save to exist
-    if not os.path.exists(f'./{save_folder}'):
-        os.makedirs(f'./{save_folder}')
+    if not os.path.exists(f'./{save_folder}/'):
+        os.makedirs(f'./{save_folder}/')
     #create static folder too
     if not os.path.exists(f'./{save_folder}/static'):
         os.makedirs(f'./{save_folder}/static')
@@ -374,6 +375,10 @@ def calc_mean_or_sum(df, value_cols, non_summable_value_cols):
 do_this = True
 if do_this:
     model_output_detailed = calc_mean_or_sum(model_output_detailed, value_cols, non_summable_value_cols)
+
+###########
+#%%
+
 ###########
 #%%
 #PLOT model_output_detailed BY ECONOMY
@@ -524,47 +529,102 @@ if do_this:
 ###########################plot 'act growth'############
 ##################################################################
 
-#plot activity growth for the economy to help understand trend:
-dataframe_name = 'activity_growth'
-#since the activity is just a proportion change each Date we will need to start with an index of 1 and then multiply by the activity growth each Date to get a line that is more interpretable
-#sort in order of date
-activity_growth = activity_growth.sort_values(by='Date')
-#group by economy and date and find cumulative product of activity growth.
-#first, add 1 to all activity growths
-activity_growth['Activity_growth'] = activity_growth['Activity_growth'] + 1
+# #plot activity growth for the economy to help understand trend:
+# dataframe_name = 'activity_growth'
+# #since the activity is just a proportion change each Date we will need to start with an index of 1 and then multiply by the activity growth each Date to get a line that is more interpretable
+# #sort in order of date
+# activity_growth = activity_growth.sort_values(by='Date')
+# #group by economy and date and find cumulative product of activity growth.
+# #first, add 1 to all activity growths
+# activity_growth['Activity_growth'] = activity_growth['Activity_growth'] + 1
 
-#then 
-activity_growth['cumulative_activity_growth'] = activity_growth.groupby(['Economy'])['Activity_growth'].cumprod()
+# #then 
+# activity_growth['cumulative_activity_growth'] = activity_growth.groupby(['Economy'])['Activity_growth'].cumprod()
 
-#remove the first Date because it doesnt reflect any activity growth
-activity_growth = activity_growth[activity_growth['Date'] != activity_growth['Date'].min()]
-# UP TO HERE> IT DIDNT WORK BECAUSE ACTIFVITY GROWTH IS SAVING WITH index AND activity growth cols. NEED TO FIX THIS
+# #remove the first Date because it doesnt reflect any activity growth
+# activity_growth = activity_growth[activity_growth['Date'] != activity_growth['Date'].min()]
+# # UP TO HERE> IT DIDNT WORK BECAUSE ACTIFVITY GROWTH IS SAVING WITH index AND activity growth cols. NEED TO FIX THIS
+# start = start_timer(dataframe_name)
+# #for each economy plot a single graph and then plot all on one graph
+# for economy_x in activity_growth['Economy'].unique():
+#     value_col = 'cumulative_activity_growth'
+#     title = f'Activity growth for {economy_x}'
+#     save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
+                                
+#     #filter for that ecovnomy only and then plot
+#     activity_growth_econ = activity_growth[activity_growth['Economy'] == economy_x]
+#     plot_line_by_economy(activity_growth_econ, color_categories= ['Economy'], y_column=value_col, title=title,  save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col=None,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
+#     print(f'plotting {value_col}')
+
+# #plot all in on egraph
+
+# title = f'Activity growth for all economies'
+# save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}'
+# value_col = 'cumulative_activity_growth'
+# plot_line_by_economy(activity_growth, color_categories= ['Economy'], y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col=None,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
+# print(f'plotting {value_col}')
+
+# end_timer(start, dataframe_name)
+#%%
+#todo, this might be better than above now. except cum growth could be good?
+dataframe_name = 'macro'
+#seperate individual macro observations so the graphs dont show sums or avgs of them. To do this, seperate a df for economy only and then drop all cols except economy date, and trasnsport type. Then drop all duplciates. Then plot
+macro_cols.remove('Activity_growth')
+macro = model_output_detailed[['Economy', 'Date']+macro_cols].drop_duplicates()
+#now plot 
+
 start = start_timer(dataframe_name)
 #for each economy plot a single graph and then plot all on one graph
-for economy_x in activity_growth['Economy'].unique():
-    value_col = 'cumulative_activity_growth'
-    title = f'Activity growth for {economy_x}'
-    save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
-                                
-    #filter for that ecovnomy only and then plot
-    activity_growth_econ = activity_growth[activity_growth['Economy'] == economy_x]
-    plot_line_by_economy(activity_growth_econ, color_categories= ['Economy'], y_column=value_col, title=title,  save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col=None,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
-    print(f'plotting {value_col}')
-
-#plot all in on egraph
-
-title = f'Activity growth for all economies'
-save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}'
-value_col = 'cumulative_activity_growth'
-plot_line_by_economy(activity_growth, color_categories= ['Economy'], y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col=None,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
-print(f'plotting {value_col}')
+for economy_x in macro['Economy'].unique():
+    for measure in macro_cols:
+        value_col = measure
+        title = f'{measure} for {economy_x}'
+        save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
+                                    
+        #filter for that ecovnomy only and then plot
+        macro_econ = macro[macro['Economy'] == economy_x]
+        plot_line_by_economy(macro_econ, color_categories= ['Economy'], y_column=value_col, title=title,  save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col=None,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
+        print(f'plotting {value_col}')
 
 end_timer(start, dataframe_name)
 #%%
+dataframe_name = 'activity_growth'
+activity_growth = model_output_detailed.copy()[['Economy', 'Date','Medium' , 'Transport Type', 'Activity_growth']].drop_duplicates()
+#drop economy=all
+activity_growth = activity_growth[activity_growth['Economy'] != 'all']
+activity_growth['Activity_growth'] = activity_growth['Activity_growth'] + 1
+activity_growth['cumulative_activity_growth'] = activity_growth.groupby(['Economy','Transport Type'])['Activity_growth'].cumprod()
+activity_growth = activity_growth[activity_growth['Date'] != activity_growth['Date'].min()]
 
+start = start_timer(dataframe_name)
+#for each economy plot a single graph and then plot all on one graph
+for value_col in ['cumulative_activity_growth', 'Activity_growth']:
+    for economy_x in activity_growth['Economy'].unique():
+        
+        title = f'{value_col} for {economy_x}'
+        save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
+                                    
+        #filter for that ecovnomy only and then plot
+        activity_growth_econ = activity_growth[activity_growth['Economy'] == economy_x]
+        plot_line_by_economy(activity_growth_econ, color_categories= ['Economy', 'Medium'], y_column=value_col, title=title,  save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col='Transport Type',dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
+        print(f'plotting {value_col}')
+# 'Medium' , 'Transport Type'
+#plot all in on egraph
+#%%
 
+#filter for road medium omnly to reduce clutter
+activity_growth = activity_growth[activity_growth['Medium'] == 'road']
 
+for value_col in ['cumulative_activity_growth', 'Activity_growth']:
+    title = f'{value_col}  for all economies'
+    save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}'
 
+    plot_line_by_economy(activity_growth, color_categories= ['Economy'], y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col='Transport Type',dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
+    print(f'plotting {value_col}')
+
+    end_timer(start, dataframe_name)
+
+#%%
 #get all useful graphs and put them in one folder
 useful_graphs = []
 

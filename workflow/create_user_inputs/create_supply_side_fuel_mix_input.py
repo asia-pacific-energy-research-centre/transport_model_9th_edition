@@ -2,15 +2,17 @@
 
 #this will merge a fuel sharing dataframe onto the model output, by the fuel column, and apply the shares by doing that. There will be a new fuel column after this
 
-
 #%%
+
 #set working directory as one folder back so that config works
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
-
+import sys
+sys.path.append("./config/utilities")
+import archiving_scripts
 #%%
 #create fake user input for demand side fuel mixes using model concordances
 def create_supply_side_fuel_mixing_input():
@@ -20,15 +22,15 @@ def create_supply_side_fuel_mixing_input():
     #take in demand side fuel mixes
     demand_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')
 
-    #%%
+    
     INDEX_COLS_no_measure = INDEX_COLS.copy()
     INDEX_COLS_no_measure.remove('Measure')
     INDEX_COLS_no_measure.remove('Unit')
 
     supply_side_fuel_mixing = demand_side_fuel_mixing.copy()
     #drop Demand_side_fuel_share column
-    supply_side_fuel_mixing = supply_side_fuel_mixing.drop(columns=['Demand_side_fuel_share'])
-    #%%
+    supply_side_fuel_mixing = supply_side_fuel_mixing.drop(columns=['Demand_side_fuel_share']).drop_duplicates()
+    
     #startwith the model concordances with fuel types, filter for each fuel type, and split it into biofuel and fuel type. have to do each fuel type separately depnding on the resulting biofuel mix.
     #split all 07_petroleum_products into a mix of biofuels and petroleum products. Note that 07_petroleum_products is currently being used to represent general oil use in ice engines. This just 
 
@@ -57,7 +59,7 @@ def create_supply_side_fuel_mixing_input():
     #now melt so we have a tall dataframe
     supply_side_fuel_mixing_avgas_melt = pd.melt(supply_side_fuel_mixing_avgas, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
 
-    #%%
+    
     #CONCATENATE all
     supply_side_fuel_mixing_all = pd.concat([supply_side_fuel_mixing_petrol_melt, supply_side_fuel_mixing_diesel_melt, supply_side_fuel_mixing_jet_fuel_melt, supply_side_fuel_mixing_avgas_melt])
 
@@ -68,7 +70,10 @@ def create_supply_side_fuel_mixing_input():
     # #save the variables we used to calculate the data by savinbg the 'input_data/vehicle_sales_share_inputs.xlsx' file
     # shutil.copy('input_data/vehicle_sales_share_inputs.xlsx', archiving_folder + '/vehicle_sales_share_inputs.xlsx')
 
-    #%%
+    breakpoint()
     #save as user input csv
     supply_side_fuel_mixing_all.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv', index=False)
-    #%%
+    
+#%%
+# create_supply_side_fuel_mixing_input()
+#%%

@@ -18,8 +18,9 @@ pd.options.plotting.backend = "matplotlib"
 import plotly.io as pio
 pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 
+import archiving_scripts
 #%%
-def create_vehicle_sales_share_input():
+def create_vehicle_sales_share_input(INDEX_COLS):
 
     #load data
     new_sales_shares = pd.read_csv('input_data/from_8th/reformatted/vehicle_stocks_change_share_normalised.csv')

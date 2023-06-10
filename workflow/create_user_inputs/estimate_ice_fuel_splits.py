@@ -34,7 +34,11 @@ def estimate_ice_fuel_splits(demand_side_fuel_mixing):
     #filter for ice drive types and then drop drive col
     # print(model_output_with_fuels['Drive'].unique())#['bev' 'g' 'cng' 'd' 'lpg' 'phevg' 'phevd' 'fcev' nan]
     model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Drive'].isin([ 'g', 'd', 'phevg', 'phevd', 'ice', 'phev'])]# 'cng', 'lpg',
-    model_output_with_fuels = model_output_with_fuels.drop(columns=['Drive'])
+    model_output_with_fuels = model_output_with_fuels.drop(columns=['Drive']).drop_duplicates()
+    #we're missing data for 2017 for road mediums in here for some reason, so we'll add it back in by copying 2018., since this is a short term function no bigggery
+    model_output_with_fuels_2017 = model_output_with_fuels[model_output_with_fuels['Date']==2018]
+    model_output_with_fuels_2017['Date'] = 2017
+    model_output_with_fuels = pd.concat([model_output_with_fuels, model_output_with_fuels_2017])
     #sum by cols except energy
     cols = model_output_with_fuels.columns.tolist()
     cols.remove('Energy')
@@ -57,28 +61,31 @@ def estimate_ice_fuel_splits(demand_side_fuel_mixing):
     model_output_with_fuels = model_output_with_fuels.fillna(0)
 
     #calcualte proprotion of each fuel type used for each unique vehicle type, transport type, economy, year combination. We will do this by getting every col that isnt 'Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium' and claculating its proportuoin of the total energy used for that row. the total energy used for that row is the sum of all the cls that arent 'Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium'
-    model_output_with_fuels.set_index(cols, inplace=True)
-    model_output_with_fuels['Total_energy'] = model_output_with_fuels.sum(axis=1)
-    model_output_with_fuels = model_output_with_fuels.div(model_output_with_fuels['Total_energy'], axis=0)
+    fuel_cols= [col for col in model_output_with_fuels.columns.tolist() if col not in cols]
+    model_output_with_fuels['Total_energy'] = model_output_with_fuels[fuel_cols].sum(axis=1)
+    #now divide each fuel col by the total energy col
+    for col in fuel_cols:
+        model_output_with_fuels[col] = model_output_with_fuels[col].div(model_output_with_fuels['Total_energy'])
     #drop total energy col
     model_output_with_fuels = model_output_with_fuels.drop(columns=['Total_energy'])
     #replace nas with 0
     model_output_with_fuels = model_output_with_fuels.fillna(0)
     #reset index
-    model_output_with_fuels = model_output_with_fuels.reset_index()
+    # model_output_with_fuels = model_output_with_fuels.reset_index()
     #melt back into long format
     model_output_with_fuels = model_output_with_fuels.melt(id_vars=cols, var_name='Fuel', value_name='Energy_proportion')
 
 
-    #calcualte the average proportion when we remove date and scenario col
+    #calcualte the average proportion of the energy proportion when we remove date and scenario col
     #drop date and scenario cols
     model_output_with_fuels = model_output_with_fuels.drop(columns=['Scenario'])#'Date',
     cols = model_output_with_fuels.columns.tolist()
+    cols.remove('Energy_proportion')
     model_output_with_fuels = model_output_with_fuels.groupby(cols).mean().reset_index()
 
     #now we have a df with the proportion of each fuel type used for each unique vehicle type, transport type, economy, year combination. We will do some analysis using boxplots to see if there are any outliers, then calc the averages and so on.
     #use plotly boxplots:
-    plot = True
+    plot = False
     if plot:
         import plotly.express as px
         #we will create a facet for every transport type vehicle type combination
@@ -89,7 +96,7 @@ def estimate_ice_fuel_splits(demand_side_fuel_mixing):
         model_output_with_fuels_plot['Vehicle Type'] = model_output_with_fuels_plot['Vehicle Type']+ ' ' + model_output_with_fuels_plot['Transport Type']
         fig = px.box(model_output_with_fuels_plot, x="Fuel", y="Energy_proportion", facet_col="Vehicle Type",facet_col_wrap=2, hover_data=model_output_with_fuels_plot.columns, points="all")
         #save the plot to html
-        fig.write_html("plotting_output/input_exploration/ice_fuel_splits/ice_fuel_splits_boxplots.html", auto_open=True)
+        fig.write_html("plotting_output/input_exploration/ice_fuel_splits/ice_fuel_splits_boxplots.html", auto_open=False)
 
     #looks okay to me.
 
@@ -116,25 +123,28 @@ def estimate_ice_fuel_splits(demand_side_fuel_mixing):
 
     #for each Scenario in demand_side_fuel_mixing, just copy the model_output_with_fuels df and add the scenario to the scenario col
     #then concat onto demand_side_fuel_mixing
+    ice_demand_side_fuel_mixing = pd.DataFrame()
     for scenario in demand_side_fuel_mixing['Scenario'].unique():
         model_output_with_fuels_scenario = model_output_with_fuels.copy()
         model_output_with_fuels_scenario['Scenario'] = scenario
         #concat onto demand_side_fuel_mixing
-        demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, model_output_with_fuels_scenario], axis=0, ignore_index=True)
+        ice_demand_side_fuel_mixing = pd.concat([ice_demand_side_fuel_mixing, model_output_with_fuels_scenario], axis=0, ignore_index=True)
 
     #we may be missing years beyond 2050. so grab the data for 2050 and copy it for the years beyond 2050:
-    data_2050 = demand_side_fuel_mixing.copy()
+    data_2050 = ice_demand_side_fuel_mixing.copy()
     data_2050 = data_2050[data_2050['Date'] == 2050]
-    demand_side_fuel_mixing_beyond_2050 = pd.DataFrame()
+    ice_demand_side_fuel_mixing_beyond_2050 = pd.DataFrame()
     for year in range(2051, END_YEAR+1):
+        if year in ice_demand_side_fuel_mixing['Date'].unique():
+            continue 
         data_2050['Date'] = year
-        demand_side_fuel_mixing_beyond_2050 = pd.concat([demand_side_fuel_mixing_beyond_2050, data_2050], axis=0, ignore_index=True)
-    #concat onto demand_side_fuel_mixing
-    demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, demand_side_fuel_mixing_beyond_2050], axis=0, ignore_index=True)
+        ice_demand_side_fuel_mixing_beyond_2050 = pd.concat([ice_demand_side_fuel_mixing_beyond_2050, data_2050], axis=0, ignore_index=True)
+    #concat onto ice_demand_side_fuel_mixing
+    ice_demand_side_fuel_mixing = pd.concat([ice_demand_side_fuel_mixing, ice_demand_side_fuel_mixing_beyond_2050], axis=0, ignore_index=True)
 
-    # #concat onto demand_side_fuel_mixing
+    # #concat onto ice_demand_side_fuel_mixing
     # demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, model_output_with_fuels], axis=0, ignore_index=True)
 
-    return demand_side_fuel_mixing
+    return ice_demand_side_fuel_mixing
     #save in intermediate_data\model_inputs as a csv
     # demand_side_fuel_mixing.to_csv("intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv", index=False)

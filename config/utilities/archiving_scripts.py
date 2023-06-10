@@ -18,13 +18,13 @@ def create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID):
     #create folder
     #if file data id is '' then just save the data to foler 'latest_test_run' as we assume this run isnt important enough to save the data in a unique folder
     if FILE_DATE_ID == '':
-        folder_name = 'latest_test_run'
+        archive_folder_name = 'input_data/previous_run_archive/latest_test_run'
     else:
-        folder_name = FILE_DATE_ID
+        archive_folder_name = 'input_data/previous_run_archive/' + FILE_DATE_ID
         #if folder odesnt exist already
-        if not os.path.exists('input_data/previous_run_archive/'+folder_name):
-            os.mkdir('input_data/previous_run_archive/{}'.format(FILE_DATE_ID))
-    return folder_name
+        if not os.path.exists(archive_folder_name):
+            os.mkdir(archive_folder_name)
+    return archive_folder_name
 #%%
 def archive_lots_of_files(archive_folder_name):
     #load data that we want to archive 
@@ -51,30 +51,30 @@ def archive_lots_of_files(archive_folder_name):
 
     #%%
 
-    #save it all to a foler with name folder_name
-    #save file to folder in input_data/previous_run_archive/{}.foramt(folder_name)
+    #save it all to a foler with name archive_folder_name
+    #save file to folder in {}.foramt(archive_folder_name)
 
     #save files
-    non_road_model_input.to_csv('input_data/previous_run_archive/{}/non_road_model_input.csv'.format(folder_name), index=False)
-    road_model_input.to_csv('input_data/previous_run_archive/{}/road_model_input.csv'.format(folder_name))
+    non_road_model_input.to_csv('{}/non_road_model_input.csv'.format(archive_folder_name), index=False)
+    road_model_input.to_csv('{}/road_model_input.csv'.format(archive_folder_name))
 
-    activity_growth.to_csv('input_data/previous_run_archive/{}/activity_growth.csv'.format(folder_name))
+    activity_growth.to_csv('{}/activity_growth.csv'.format(archive_folder_name))
 
     #save fuel mixing data
-    demand_side_fuel_mixing.to_csv('input_data/previous_run_archive/{}/demand_side_fuel_mixing.csv'.format(folder_name))
-    supply_side_fuel_mixing.to_csv('input_data/previous_run_archive/{}/supply_side_fuel_mixing.csv'.format(folder_name))
+    demand_side_fuel_mixing.to_csv('{}/demand_side_fuel_mixing.csv'.format(archive_folder_name))
+    supply_side_fuel_mixing.to_csv('{}/supply_side_fuel_mixing.csv'.format(archive_folder_name))
 
     #save output data
-    model_output_detailed.to_csv('input_data/previous_run_archive/{}/model_output_detailed.csv'.format(folder_name))
+    model_output_detailed.to_csv('{}/model_output_detailed.csv'.format(archive_folder_name))
 
-    model_output_non_detailed.to_csv('input_data/previous_run_archive/{}/model_output_non_detailed.csv'.format(folder_name))
+    model_output_non_detailed.to_csv('{}/model_output_non_detailed.csv'.format(archive_folder_name))
 
-    model_output_all_with_fuels.to_csv('input_data/previous_run_archive/{}/model_output_all_with_fuels.csv'.format(folder_name))
+    model_output_all_with_fuels.to_csv('{}/model_output_all_with_fuels.csv'.format(archive_folder_name))
 
 
     #%%
     #save config file to folder
-    shutil.copyfile('config/config.py', 'input_data/previous_run_archive/{}/config.py'.format(folder_name))
+    shutil.copyfile('config/config.py', '{}/config.py'.format(archive_folder_name))
 
     #save all concordances data in concordances_and_config_data/computer_generated_concordances to folder
     #first get all files in folder
@@ -82,9 +82,9 @@ def archive_lots_of_files(archive_folder_name):
     for file in config_files:
         #if file contains FILE_DATE_ID then copy it to folder
         if FILE_DATE_ID in file:
-            shutil.copyfile('config/concordances_and_config_data/computer_generated_concordances/{}'.format(file), 'input_data/previous_run_archive/{}/{}'.format(folder_name,file))
+            shutil.copyfile('config/concordances_and_config_data/computer_generated_concordances/{}'.format(file), '{}/{}'.format(archive_folder_name,file))
         
     #copy diagnostics graphs to the folder
-    shutil.copytree('plotting_output/diagnostics/', 'input_data/previous_run_archive/{}/diagnostics/'.format(folder_name),dirs_exist_ok=True)
+    shutil.copytree('plotting_output/diagnostics/', '{}/diagnostics/'.format(archive_folder_name),dirs_exist_ok=True)
     #%%
     #done

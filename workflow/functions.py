@@ -64,8 +64,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #ERROR CHECK double check that turnover rate isnt greater than 1 (in which case the growth rate is too high)
     if change_dataframe['Turnover_rate'].max() > 1:
-        print('ERROR: Turnover rate is greater than 1. This is not possible. Please check the Turnover rate growth data. Breaking the loop.')
-        return 
+        raise ValueError('ERROR: Turnover rate is greater than 1. This means that the turnover rate growth rate is too high. Turnover rate cannot be greater than 1.')
+        # return 
 
     #calcualte stock turnover as stocks from last year * turnover rate.
     change_dataframe['Stock_turnover'] = - change_dataframe['Stocks'] * change_dataframe['Turnover_rate']
@@ -75,6 +75,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #if 'Activity_growth', 'Gdp_per_capita', 'Population' is in df, drop em
     change_dataframe = change_dataframe.drop(['Activity_growth', 'Gdp_per_capita','Gdp', 'Population'], axis=1, errors='ignore')
+    # breakpoint()
+    # print('check if there aRE any nans in activity grwoth. t seems there are fro freight but i cant find any patterns')
     #join on activity growth
     change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Transport Type', 'Economy','Scenario','Gdp','Activity_growth', 'Gdp_per_capita', 'Population']], on=['Economy', 'Date', 'Scenario','Transport Type'], how='left')#note that pop and gdp per capita are loaded on earlier.
     #######################################################################
@@ -217,6 +219,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     addition_to_main_dataframe = change_dataframe.copy()
     addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]
     
+
+    # breakpoint()
     #add new year to the main dataframe.
     main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])
     previous_year_main_dataframe = addition_to_main_dataframe.copy()
@@ -248,10 +252,10 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     else:
         
         if testing:
-            a = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth']].drop_duplicates(), on=['Economy','Date'], how='left')
-            a = a[['Activity','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive','Scenario']]
-            #     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
-            a = a[(a['Economy']=='20_USA') & (a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger') & (a['Drive'] == 'bev') & (a['Scenario'] == 'Target')].drop_duplicates()
+            # a = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth']].drop_duplicates(), on=['Economy','Date'], how='left')
+            # a = a[['Activity','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive','Scenario']]
+            # #     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
+            # a = a[(a['Economy']=='20_USA') & (a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger') & (a['Drive'] == 'bev') & (a['Scenario'] == 'Target')].drop_duplicates()
             breakpoint()
     #     #plot the sum of activity of 20_USA  for transport ype = passenger, with the activity growth on the right axis. 
     #     import plotly.express as px
@@ -370,7 +374,7 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
     This will be done for each scenario too because movement between vehicle types might change the growth rate."""
     #grab only passenger data 
     model_data = model_data.loc[(model_data['Transport Type'] == 'passenger')]
-    
+    #breakpoint()
     #EXTRACT PARAMETERS FOR LOGISTIC FUNCTION:
     parameters_estimates = find_parameters_for_logistic_function(model_data, show_plots, matplotlib_bool, plotly_bool)
 
@@ -469,7 +473,6 @@ def find_parameters_for_logistic_function(model_data, show_plots, matplotlib_boo
                 model_data_economy_scenario_vtype['Thousand_stocks_per_capita'] = model_data_economy_scenario_vtype['Stocks']/model_data_economy_scenario_vtype['Population']
                 #convert to more readable units. We will convert back later if we need to #todo do we need to?
                 model_data_economy_scenario_vtype['Stocks_per_thousand_capita'] = model_data_economy_scenario_vtype['Thousand_stocks_per_capita'] * 1000000
-                model_data_economy_scenario_vtype['Gdp_per_capita'] = model_data_economy_scenario_vtype['Gdp_per_capita'] #dont think we need to convert this.
 
                 #find date where stocks per cpaita passes gamma, then find a proportion below that and set that as the point where we plot remaining stocks per capita, going linearly to gamma by the end of the time period
                 #find the date where stocks per capita passes gamma
@@ -482,13 +485,8 @@ def find_parameters_for_logistic_function(model_data, show_plots, matplotlib_boo
                 #add this back to the main dataframe
                 model_data_economy_scenario_vtype[model_data_economy_scenario_vtype['Date'] >= date_where_stocks_per_capita_passes_gamma] = data_to_change
 
-                #grab data we need
-                date = model_data_economy_scenario_vtype['Date']
-                stocks_per_capita = model_data_economy_scenario_vtype['Stocks_per_thousand_capita']
-                #TODO NOT SURE IF WE WANT TO GRAB GDP PER CPITA OR FIT THE MODEL TO THE YEAR NOW? IM GOING TO TRY USING GDP PER CPAITA SO THAT AT ELAST THE PARAMETER ESTIMATES CAN BE SHARED BETWEEN ECONOMIES IN TERMS OF GDP PER CAPITA
-                gdp_per_capita = model_data_economy_scenario_vtype['Gdp_per_capita']
                 #fit a logistic curve to the stocks per capita data
-                gamma, growth_rate, midpoint = logistic_fitting_function(gdp_per_capita, stocks_per_capita, gamma, date, economy_vtype_scenario, show_plots,matplotlib_bool=matplotlib_bool, plotly_bool=plotly_bool)
+                gamma, growth_rate, midpoint = logistic_fitting_function(model_data_economy_scenario_vtype, gamma, economy_vtype_scenario, show_plots,matplotlib_bool=matplotlib_bool, plotly_bool=plotly_bool)
                 
                 #note midpoint is alpha, growth is beta
                 params = pd.DataFrame({'Gompertz_beta':growth_rate, 'Gompertz_alpha':midpoint, 'Gompertz_gamma':gamma, 'Economy': economy, 'Vehicle Type': vehicle_type, 'Scenario': scenario}, index=[0])
@@ -507,8 +505,13 @@ def logistic_function(gdp_per_capita,gamma, growth_rate, midpoint):
     # x is the input to the function (in your case, this could be time or GDP per capita).
     return gamma / (1 + np.exp(-growth_rate * (gdp_per_capita - midpoint)))
     
-def logistic_fitting_function(gdp_per_capita, stocks_per_capita, gamma, date, economy_vtype_scenario, show_plots, matplotlib_bool, plotly_bool):
-
+def logistic_fitting_function(model_data_economy_scenario_vtype, gamma, economy_vtype_scenario, show_plots, matplotlib_bool, plotly_bool):
+    #grab data we need
+    date = model_data_economy_scenario_vtype['Date']
+    stocks_per_capita = model_data_economy_scenario_vtype['Stocks_per_thousand_capita']
+    #TODO NOT SURE IF WE WANT TO GRAB GDP PER CPITA OR FIT THE MODEL TO THE YEAR NOW? IM GOING TO TRY USING GDP PER CPAITA SO THAT AT ELAST THE PARAMETER ESTIMATES CAN BE SHARED BETWEEN ECONOMIES IN TERMS OF GDP PER CAPITA
+    gdp_per_capita = model_data_economy_scenario_vtype['Gdp_per_capita']
+    # breakpoint()
     def logistic_function_curve_fit(gdp_per_capita, growth_rate, midpoint):
         #need a new function so we can pass in gamma (i couldnt work out how to do it in curve fit function ): 
         #gompertz funtion: gamma * np.exp(alpha * np.exp(beta * gdp_per_capita))

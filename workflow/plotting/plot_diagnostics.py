@@ -28,7 +28,7 @@ model_output_8th = pd.read_csv('intermediate_data/activity_energy_road_stocks.cs
 # macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)
 regression_based_growth_estimates = pd.read_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv')
 #drop unit
-regression_based_growth_estimates = regression_based_growth_estimates.drop(columns=['Unit'])
+regression_based_growth_estimates = regression_based_growth_estimates.drop(columns=['Unit']).drop_duplicates()
 #make wide
 regression_based_growth_estimates = regression_based_growth_estimates.pivot(index=['Economy','Transport Type',	'Scenario', 'Date'], columns='Measure', values='Value').reset_index()
 #Index(['economy', 'date', 'Gdp_per_capita', 'Population', 'GDP',

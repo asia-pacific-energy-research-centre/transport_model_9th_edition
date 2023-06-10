@@ -45,27 +45,54 @@ if CREATE_MODEL_CONCORDANCES:
 #%%
 PREPARE_DATA = True
 if PREPARE_DATA:
-    exec(open("./workflow/grooming_code/1_create_and_clean_user_input.py").read())
-    
-    exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
+    import create_and_clean_user_input
+    create_and_clean_user_input.create_and_clean_user_input()
 
-    exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
+    # exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
+    import import_macro_data
+    import_macro_data.import_macro_data()
+
+    # exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
+    import import_transport_system_data
+    import_transport_system_data.import_transport_system_data()
     
-    exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
+    # exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
+    import aggregate_data_for_model
+    aggregate_data_for_model.aggregate_data_for_model()
+
     if PLOT_INPUT_DATA:
-        exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
+        # exec(open("./workflow/grooming_code/3_communicate_missing_input_data.py").read())
+        import communicate_missing_input_data
+        communicate_missing_input_data.communicate_missing_input_data()
     
-    exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
+    # exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
+    import calculate_inputs_for_model
+    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS)
 
 #%%
-exec(open("./workflow/1_run_non_road_model.py").read())
-exec(open("./workflow/1_run_road_model.py").read())
+# exec(open("./workflow/1_run_non_road_model.py").read())
+import run_non_road_model
+run_non_road_model.run_non_road_model()
+# exec(open("./workflow/1_run_road_model.py").read())
+import run_road_model
+run_road_model.run_road_model()
+
+# exec(open("./workflow/2_concatenate_model_output.py").read())
+import concatenate_model_output
+concatenate_model_output.concatenate_model_output()
+# exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
 #%%
-exec(open("./workflow/2_concatenate_model_output.py").read())
-exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
-exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
-exec(open("./workflow/5_clean_model_output.py").read())
+import apply_fuel_mix_demand_side
+apply_fuel_mix_demand_side.apply_fuel_mix_demand_side()
+# exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
+import apply_fuel_mix_supply_side
+apply_fuel_mix_supply_side.apply_fuel_mix_supply_side()
+# exec(open("./workflow/5_clean_model_output.py").read())
+import clean_model_output
+clean_model_output.clean_model_output()
 # exec(open("./workflow/6_create_osemosys_output.py").read())
+# import create_osemosys_output
+# create_osemosys_output.create_osemosys_output()
 #%%
 ANALYSE_OUTPUT = True
 if ANALYSE_OUTPUT:
