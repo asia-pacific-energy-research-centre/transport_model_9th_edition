@@ -24,7 +24,7 @@ def import_transport_system_data():
 
     #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
     # FILE_DATE_ID2 = FILE_DATE_ID.replace('_','')
-    FILE_DATE_ID2 ='DATE20230608' # 'DATE20230216'
+    FILE_DATE_ID2 ='DATE20230612' # 'DATE20230216'
     # combined_data_DATE20230531
     transport_data_system_folder = '../transport_data_system'
     transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,FILE_DATE_ID2))

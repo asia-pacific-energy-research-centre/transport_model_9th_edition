@@ -26,8 +26,9 @@ default_save_folder = f'plotting_output/{subfolder_name}/{FILE_DATE_ID}/'
 if not os.path.exists(default_save_folder):
     os.makedirs(default_save_folder)
     
-economies_to_filter_for =[]# ['19_THA', '20_USA']
-
+economies_to_filter_for =['19_THA', '20_USA']
+beginning_year = 2019
+end_year = 2070
 #%%
 #plot all data in model_output_all:
 value_cols = ['passenger_km','freight_tonne_km', 'Energy', 'Stocks',
@@ -59,6 +60,8 @@ model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.forma
 change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
 model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
 model_output_8th = pd.read_csv('intermediate_data/activity_energy_road_stocks.csv')
+#rename Year col into Date
+model_output_8th = model_output_8th.rename(columns={'Year':'Date'})
 activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
 #%%
 #FILTER FOR SCENARIO OF INTEREST
@@ -124,7 +127,19 @@ if len(economies_to_filter_for) > 0:
     model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Economy'].isin(economies_to_filter_for)]
     activity_growth = activity_growth[activity_growth['Economy'].isin(economies_to_filter_for)]
 
-
+#filter for certain years:
+if beginning_year != None:
+    model_output_all = model_output_all[model_output_all['Date']>=beginning_year]
+    model_output_detailed = model_output_detailed[model_output_detailed['Date']>=beginning_year]
+    model_output_8th = model_output_8th[model_output_8th['Date']>=beginning_year]
+    model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Date']>=beginning_year]
+    activity_growth = activity_growth[activity_growth['Date']>=beginning_year]
+if end_year != None:
+    model_output_all = model_output_all[model_output_all['Date']<=end_year]
+    model_output_detailed = model_output_detailed[model_output_detailed['Date']<=end_year]
+    model_output_8th = model_output_8th[model_output_8th['Date']<=end_year]
+    model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Date']<=end_year]
+    activity_growth = activity_growth[activity_growth['Date']<=end_year]
 #%%
 #split freight tonne km and passenger km into two columns, as well as occupancy and load
 new_dfs_list = []

@@ -1,7 +1,7 @@
 #generally this will all work on the grouping of economy, year, v-type, drive, transport type, and scenario. There is a model simulation excel workbook in the documentation folder to more easily understand the operations here.
 
 #NOTE that there is still the fuel mixing operation that is not in this file of code. 
-
+#%%
 #set working directory as one folder back so that config works
 import os
 import re
@@ -18,7 +18,6 @@ def run_road_model():
 
     growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
     
-    # breakpoint()
     main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     
     #if you want to analyse what is hapening in th model then set this to true and the model will output a dataframe wioth all the variables that are being calculated.
@@ -52,20 +51,24 @@ def run_road_model():
     #PUT RESULTS THROUGH logistic_fitting_function_handler AND FIND NEW PARAMETERS TO AVOID OVERGROWTH OF PASSENGER VEHICLE STOCKS
     #set gompertz gamma to 800 for all economies just to test.
     # main_dataframe['Gompertz_gamma'] = 800
-    # breakpoint()
+    # breakpoint()#seems we're getting activity estimates much higher for china than we should be.
     activity_growth_estimates, parameters_estimates = functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True)
+    #breakpoint()
     #set transport type to passenger for all rows
     activity_growth_estimates['Transport Type'] = 'passenger'
-    # breakpoint()
-    #join all cols in growth_forecasts onto activity_growth_estimates that arent already there. this is because they werent calculated in the model, but might be needed as inputs for the next run of the model
-    cols_in_growth_forecasts_not_in_activity_growth_estimates = [col for col in growth_forecasts.columns if col not in activity_growth_estimates.columns]
-    index_cols = [col for col in INDEX_COLS if col in activity_growth_estimates.columns]
-    activity_growth_estimates = activity_growth_estimates.merge(growth_forecasts[cols_in_growth_forecasts_not_in_activity_growth_estimates+index_cols].drop_duplicates(), on=index_cols, how='left')
-    #concat on the frieght transport type data from growth_forecasts
-    activity_growth_estimates = pd.concat([activity_growth_estimates, growth_forecasts[growth_forecasts['Transport Type'] != 'passenger']], axis=0)
-    #now srt growth_forecasts to activity_growth_estimates
-    growth_forecasts = activity_growth_estimates.copy()
-
+    #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
+    #so do a merge and only keep the new growth rates for the economies that have them
+    new_growth_forecasts = growth_forecasts.copy()
+    similar_cols = [col for col in growth_forecasts.columns if col in activity_growth_estimates.columns]
+    index_cols = ['Economy', 'Scenario', 'Date', 'Transport Type']
+    new_growth_forecasts = new_growth_forecasts.merge(activity_growth_estimates.drop_duplicates(), on=index_cols, how='left', suffixes=('', '_new'))
+    #now where there is a new growth rate, use that, otherwise use the old one
+    new_growth_forecasts['Activity_growth'] = new_growth_forecasts['Activity_growth_new'].fillna(new_growth_forecasts['Activity_growth'])
+    #drop the cols with _new suffix
+    new_growth_forecasts = new_growth_forecasts[[col for col in new_growth_forecasts.columns if not col.endswith('_new')]]
+    
+    #now srt growth_forecasts to new_growth_forecasts
+    growth_forecasts = new_growth_forecasts.copy()
     
     main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     #######################################################################
@@ -93,7 +96,7 @@ def run_road_model():
     main_dataframe.to_pickle('./intermediate_data/road_model/main_dataframe_growth_adjusted.pkl')
     
 #%%
-# run_road_model()
+run_road_model()
 #%%
 
 

@@ -374,9 +374,10 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
     This will be done for each scenario too because movement between vehicle types might change the growth rate."""
     #grab only passenger data 
     model_data = model_data.loc[(model_data['Transport Type'] == 'passenger')]
-    #breakpoint()
     #EXTRACT PARAMETERS FOR LOGISTIC FUNCTION:
     parameters_estimates = find_parameters_for_logistic_function(model_data, show_plots, matplotlib_bool, plotly_bool)
+    #some parameters will be np.nan because we dont need to fit the curve for all economies. We will drop these and not recalculate the growth rate for these economies
+    parameters_estimates = parameters_estimates.dropna(subset=['Gompertz_gamma'])
 
     #CREATE NEW DATAFRAME WITH LOGISTIC FUNCTION PREDICTIONS
     #FILTER FOR LDVS ONLY (TODO: DO THIS FOR ALL VEHICLE TYPES)
@@ -384,7 +385,7 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
     #grab only cols we need
     model_data_ldvs = model_data_ldvs[['Date', 'Economy', 'Scenario','Vehicle Type', 'Stocks', 'Occupancy_or_load', 'Mileage', 'Population', 'Gdp_per_capita','Activity', 'Travel_km']]
     #join the params on: #PLEASE NOTE THAT WE ARE ASSUMING WE HAVENT CHANGD GAMMA IN THE PARAMETERS ESTIMATES. AS SUCH WE JOIN IT IN HERE. THIS MAY CHANGE IN THE FUTURE
-    model_data_ldvs = model_data_ldvs.merge(parameters_estimates, on=['Economy', 'Scenario','Vehicle Type'], how='left')
+    model_data_ldvs = model_data_ldvs.merge(parameters_estimates, on=['Economy', 'Scenario','Vehicle Type'], how='inner')
 
     #sum stocks,'Activity', Travel_km, , with any NAs set to 0
     model_data_ldvs['Stocks'] = model_data_ldvs['Stocks'].fillna(0)
@@ -396,7 +397,7 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
     model_data_ldvs.drop(columns=['Stocks','Activity', 'Travel_km'], inplace=True)
     model_data_ldvs.drop_duplicates(inplace=True)
     model_data_ldvs = model_data_ldvs.merge(summed_values, on=['Date','Economy', 'Vehicle Type'], how='left')
-
+    # breakpoint()
     model_data_logistic_predictions = create_new_dataframe_with_logistic_predictions(model_data_ldvs)
 
     #find growth rate of activity as the percentage change in activity from the previous year plus 1. make sur eto group by economy and scenario BUT NOT BY VEHICLE TYPE (PLEASE NOTE THAT THIS MAY CHANGE IN THE FUTURE)
@@ -414,6 +415,7 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
 
     #drop Activity from activity_growth_estimates
     activity_growth_estimates.drop(columns=['Activity'], inplace=True)
+    
     return activity_growth_estimates, parameters_estimates
 
 #CREATE NEW DATAFRAME WITH LOGISTIC FUNCTION PREDICTIONS
@@ -423,11 +425,6 @@ def create_new_dataframe_with_logistic_predictions(model_data):
     model_data_logistic_predictions = model_data.copy()
     #apply logistic_function to each row
     model_data_logistic_predictions['Stocks_per_thousand_capita'] = model_data_logistic_predictions.apply(lambda row: logistic_function(row['Gdp_per_capita'], row['Gompertz_gamma'], row['Gompertz_beta'], row['Gompertz_alpha']), axis=1)
-    # aus_values = model_data_logistic_predictions[model_data_logistic_predictions.Economy == '01_AUS']
-    # aus_values[['Gdp_per_capita', 'Gompertz_gamma', 'Gompertz_alpha', 'Gompertz_beta','Stocks_per_thousand_capita']]
-    # model_data_logistic_predictions['Stocks_per_thousand_capita'] = model_data_logistic_predictions.apply(lambda row: logistic_function(row['Gdp_per_capita'], row['Gompertz_gamma'], row['Gompertz_beta'], row['Gompertz_alpha']), axis=1)
-    # logistic_function(50.4, 663.1, 33.2, 1.5) = 1.5
-    # logistic_function(66.5,663.12,33.22,1.5) = 1.5
     #calaculte stocks
     model_data_logistic_predictions['Thousand_stocks_per_capita'] = model_data_logistic_predictions['Stocks_per_thousand_capita'] / 1000000
     model_data_logistic_predictions['Stocks'] = model_data_logistic_predictions.apply(lambda row: row['Thousand_stocks_per_capita'] * row['Population'], axis=1)
@@ -445,7 +442,7 @@ def find_parameters_for_logistic_function(model_data, show_plots, matplotlib_boo
     #filter for only ldv for now
     model_data = model_data.loc[(model_data['Vehicle Type'] == 'ldv')]
 
-    parameters_estimates = pd.DataFrame()
+    parameters_estimates = pd.DataFrame(columns=['Gompertz_beta', 'Gompertz_alpha', 'Gompertz_gamma', 'Economy', 'Vehicle Type', 'Scenario'])
     for economy in model_data['Economy'].unique():
         for scenario in model_data['Scenario'].unique():
             for vehicle_type in model_data['Vehicle Type'].unique():
@@ -478,20 +475,29 @@ def find_parameters_for_logistic_function(model_data, show_plots, matplotlib_boo
                 #find the date where stocks per capita passes gamma
                 gamma = model_data_economy_scenario_vtype['Gompertz_gamma'].unique()[0]
                 date_where_stocks_per_capita_passes_gamma = model_data_economy_scenario_vtype[model_data_economy_scenario_vtype['Stocks_per_thousand_capita'] > gamma]['Date'].min()
-                #extract data after this date and set the stocks per capita to be a linear line from the gamma - gamma*proportion_below_gamma to gamma over the time period
-                data_to_change = model_data_economy_scenario_vtype[model_data_economy_scenario_vtype['Date'] >= date_where_stocks_per_capita_passes_gamma]
-                data_to_change['Stocks_per_thousand_capita'] = [gamma - (gamma * proportion_below_gamma) + ((gamma * proportion_below_gamma) / len(data_to_change['Stocks_per_thousand_capita'])) * i for i in range(len(data_to_change['Stocks_per_thousand_capita']))]#todo check this is correct
 
-                #add this back to the main dataframe
-                model_data_economy_scenario_vtype[model_data_economy_scenario_vtype['Date'] >= date_where_stocks_per_capita_passes_gamma] = data_to_change
+                #sometimes the date is not found. in which case we ahve no issue with the stocks per capita going aobve gamma. So we dont need to adjsut growth rates for this economy. 
+                if np.isnan(date_where_stocks_per_capita_passes_gamma):
+                    #set parameters to nan so that we can filter them out later
+                    params = pd.DataFrame({'Gompertz_beta':np.nan, 'Gompertz_alpha':np.nan, 'Gompertz_gamma':np.nan, 'Economy': economy, 'Vehicle Type': vehicle_type, 'Scenario': scenario}, index=[0])
+                    #concat to parameters_estimates
+                    parameters_estimates = pd.concat([parameters_estimates, params], axis=0).reset_index(drop=True)
 
-                #fit a logistic curve to the stocks per capita data
-                gamma, growth_rate, midpoint = logistic_fitting_function(model_data_economy_scenario_vtype, gamma, economy_vtype_scenario, show_plots,matplotlib_bool=matplotlib_bool, plotly_bool=plotly_bool)
-                
-                #note midpoint is alpha, growth is beta
-                params = pd.DataFrame({'Gompertz_beta':growth_rate, 'Gompertz_alpha':midpoint, 'Gompertz_gamma':gamma, 'Economy': economy, 'Vehicle Type': vehicle_type, 'Scenario': scenario}, index=[0])
-                #concat to parameters_estimates
-                parameters_estimates = pd.concat([parameters_estimates, params], axis=0).reset_index(drop=True)
+                else:
+                    #extract data after this date and set the stocks per capita to be a linear line from the gamma - gamma*proportion_below_gamma to gamma over the time period
+                    data_to_change = model_data_economy_scenario_vtype[model_data_economy_scenario_vtype['Date'] >= date_where_stocks_per_capita_passes_gamma]
+                    data_to_change['Stocks_per_thousand_capita'] = [gamma - (gamma * proportion_below_gamma) + ((gamma * proportion_below_gamma) / len(data_to_change['Stocks_per_thousand_capita'])) * i for i in range(len(data_to_change['Stocks_per_thousand_capita']))]#todo check this is correct
+
+                    #add this back to the main dataframe
+                    model_data_economy_scenario_vtype[model_data_economy_scenario_vtype['Date'] >= date_where_stocks_per_capita_passes_gamma] = data_to_change
+
+                    #fit a logistic curve to the stocks per capita data
+                    gamma, growth_rate, midpoint = logistic_fitting_function(model_data_economy_scenario_vtype, gamma, economy_vtype_scenario, show_plots,matplotlib_bool=matplotlib_bool, plotly_bool=plotly_bool)
+                    
+                    #note midpoint is alpha, growth is beta
+                    params = pd.DataFrame({'Gompertz_beta':growth_rate, 'Gompertz_alpha':midpoint, 'Gompertz_gamma':gamma, 'Economy': economy, 'Vehicle Type': vehicle_type, 'Scenario': scenario}, index=[0])
+                    #concat to parameters_estimates
+                    parameters_estimates = pd.concat([parameters_estimates, params], axis=0).reset_index(drop=True)
 
     return parameters_estimates
 
@@ -527,10 +533,12 @@ def logistic_fitting_function(model_data_economy_scenario_vtype, gamma, economy_
 
     # Use the fitted function to calculate growth
     growth_rate, midpoint = popt
-    #print gamma
-    print('gamma: ', gamma)
-    #print params
-    print('growth_rate: ', growth_rate, 'midpoint: ', midpoint)
+    
+    if show_plots:
+        #print gamma
+        print('gamma: ', gamma)
+        #print params
+        print('growth_rate: ', growth_rate, 'midpoint: ', midpoint)
 
     projected_growth = logistic_function_curve_fit(gdp_per_capita, growth_rate, midpoint)
 
