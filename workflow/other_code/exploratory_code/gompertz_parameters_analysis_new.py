@@ -55,6 +55,9 @@ def gompertz_fitting_function_handler(model_data):
     #loop through economies and vehicle types
     #create empty dataframe to store results
     gompertz_parameters_estimates = pd.DataFrame()
+    if 'ldv' not in model_data['Vehicle Type'].unique():
+        raise ValueError('ldv not in model_data')
+        #would pro bably be smart to make this for lpv's which are the sum of lt,suv,car
     for economy in model_data['Economy'].unique():
         for scenario in model_data['Scenario'].unique():
             for vehicle_type in model_data['Vehicle Type'].unique():
