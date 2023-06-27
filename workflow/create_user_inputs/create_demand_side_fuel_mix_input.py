@@ -4,6 +4,7 @@
 #this means that the supply side fuel mixing needs to occur after this script, because it will be merging on the fuel column.
 
 #%%
+# FILE_DATE_ID='_20230615'
 #set working directory as one folder back so that config works
 import os
 import re
@@ -36,9 +37,30 @@ def create_demand_side_fuel_mixing_input():
     #startwith the model concordances, filter for drive == PHEVG or PHEVD and create a col for PHEV elec and PHEV non-elec, fill them with 0.5. The icct paper indicates that for europe its more like 0.4 for elec and 0.6 for oil, but this doesnt include expeted growth. easier and simpler to assume 0.5
 
     #NOTE THAT ICE IS DELAT WITH IN other_code\create_user_inputs\estimate_ice_fuel_splits.py through estimate_ice_fuel_splits(demand_side_fuel_mixing)
+    #ICE_G
+    model_concordances_ICEG = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'ice_g')]
+    #make wide
+    model_concordances_ICEG = model_concordances_ICEG.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+    #fill cols with values
+    model_concordances_ICEG['07_01_motor_gasoline'] = 1
+    #fill na with 0
+    model_concordances_ICEG = model_concordances_ICEG.fillna(0)
+    #now melt so we have a tall dataframe
+    model_concordances_ICEG_melt = pd.melt(model_concordances_ICEG, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+    
+    #ICE_D
+    model_concordances_ICED = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'ice_d')]
+    #make wide
+    model_concordances_ICED = model_concordances_ICED.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+    #fill cols with values
+    model_concordances_ICED['07_07_gas_diesel_oil'] = 1
+    #fill na with 0
+    model_concordances_ICED = model_concordances_ICED.fillna(0)
+    #now melt so we have a tall dataframe
+    model_concordances_ICED_melt = pd.melt(model_concordances_ICED, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
-    #PHEV bus or ht
-    model_concordances_PHEVD = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev') & (model_concordances_fuels['Vehicle Type'].isin(['bus','ht']))]
+    #PHEV_g
+    model_concordances_PHEVD = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev_d')]
     #make wide
     model_concordances_PHEVD = model_concordances_PHEVD.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
     #fill cols with values
@@ -50,7 +72,7 @@ def create_demand_side_fuel_mixing_input():
     model_concordances_PHEVD_melt = pd.melt(model_concordances_PHEVD, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
 
     #PHEV ldv
-    model_concordances_PHEVG = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev') & (model_concordances_fuels['Vehicle Type'] == 'ldv')]
+    model_concordances_PHEVG = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev_g')]
     #make wide
     model_concordances_PHEVG = model_concordances_PHEVG.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
     #fill cols with values
@@ -151,23 +173,26 @@ def create_demand_side_fuel_mixing_input():
 
     
     #CONCATENATE all
-    demand_side_fuel_mixing = pd.concat([model_concordances_PHEVD_melt, model_concordances_PHEVG_melt, model_concordances_rail_melt, model_concordances_air_melt, model_concordances_ship_melt,model_concordances_BEV_melt,model_concordances_FCEV_melt,model_concordances_LPG_melt,model_concordances_CNG_melt], axis=0)
+    demand_side_fuel_mixing = pd.concat([model_concordances_PHEVD_melt, model_concordances_PHEVG_melt, model_concordances_rail_melt, model_concordances_air_melt, model_concordances_ship_melt,model_concordances_BEV_melt,model_concordances_FCEV_melt,model_concordances_LPG_melt,model_concordances_CNG_melt,model_concordances_ICEG_melt,model_concordances_ICED_melt], axis=0)
 
     #remove any rows where demand side fuel share is 0 as they are just fuels where there is no use of the fuel
     demand_side_fuel_mixing = demand_side_fuel_mixing[demand_side_fuel_mixing['Demand_side_fuel_share'] != 0]
-    breakpoint()
-    #load in ice data:
-    import estimate_ice_fuel_splits
-    ice_demand_side_fuel_mixing = estimate_ice_fuel_splits.estimate_ice_fuel_splits(demand_side_fuel_mixing)
-    #concatenate
-    demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, ice_demand_side_fuel_mixing], axis=0)
+    # breakpoint()
+    # #load in ice data:
+    # import estimate_ice_fuel_splits
+    # # ice_demand_side_fuel_mixing = estimate_ice_fuel_splits.estimate_ice_fuel_splits(demand_side_fuel_mixing)
+    # #concatenate
+    # demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, ice_demand_side_fuel_mixing], axis=0)
     
-    do_this = True
+    do_this = False
     if do_this:
-        #include data for these economies for ldv, ices in freight. the daata can be the same as or other economies
+        #actually throw an errorhere because we want to double check its what we expect when we start using lcv's and iceg and so on
+        raise ValueError('Check this with the updates youre making to the ice fuel splits')
+        breakpoint()
+        #include data for these economies for ldv, ices in freight. the daata can be the same as or other economies. This was done because we were missing that data. It would be good to reuturn to it 
         # '04_CHL', '10_MAS', '12_NZ', '13_PNG'
         #filter for the other economies
-        ice_ldv_freight_econs = demand_side_fuel_mixing[~demand_side_fuel_mixing['Economy'].isin(['04_CHL', '10_MAS', '12_NZ', '13_PNG']) & (demand_side_fuel_mixing['Transport Type'] == 'freight') & (demand_side_fuel_mixing['Vehicle Type'] == 'ldv') & (demand_side_fuel_mixing['Drive'] == 'ice')]
+        ice_ldv_freight_econs = demand_side_fuel_mixing[~demand_side_fuel_mixing['Economy'].isin(['04_CHL', '10_MAS', '12_NZ', '13_PNG']) & (demand_side_fuel_mixing['Transport Type'] == 'freight') & (demand_side_fuel_mixing['Vehicle Type'] == 'lcv') & (demand_side_fuel_mixing['Drive'].isin(['ice_g','ice_d']))]
         #average it all by a;; the cols ecxcept economy
         ice_ldv_freight_econs = ice_ldv_freight_econs.groupby(['Date', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive',
             'Scenario', 'Frequency', 'Fuel']).mean().reset_index()

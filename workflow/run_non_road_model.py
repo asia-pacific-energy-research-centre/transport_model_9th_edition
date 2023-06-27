@@ -177,7 +177,7 @@ def run_non_road_model():
     #%%
     import matplotlib.pyplot as plt
 
-    analyse = True
+    analyse = False
     if analyse:
         #looking at data during covid period
         #plot freight tonne km for 2017 TO 2024 for 01_AUS, with a line, and then have the growth rate as a bar in the same graph on right y axis

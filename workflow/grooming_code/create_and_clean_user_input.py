@@ -23,7 +23,7 @@ def create_and_clean_user_input():
     model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name))
 
     if NEW_SALES_SHARES:
-        create_vehicle_sales_share_input(INDEX_COLS)
+        create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST)
 
     if NEW_FUEL_MIXING_DATA:
         #note that this wont be saved to user input, as it has a different data structure.
@@ -203,10 +203,66 @@ def create_and_clean_user_input():
 
 
 
+#%%
+#edit user input vehicle types and drive because we ahve updated them,,. 
+#however make sure to ignore vehicle sales share sheet
+
+#for vehicle type:
+#basically, where there is data for ldv passenger, replicate it twice and call it suv and car for each new set.
+# then rename freight ldv to lcv
+#replicated ht and call it mt
+#for drive:
+#replicate ice and call it ice_g and ice_d
+#replicate phev and call it phev_g and phev_d
+# def edit_user_input()
+#     #first, prepare user input 
+#     #load these files in and concat them
+#     user_input = pd.DataFrame()
+#     print(f'There are {len(os.listdir("input_data/user_input_spreadsheets"))} user input files to import')
+#     for file in os.listdir('input_data/user_input_spreadsheets'):
+#         #check its a csv
+#         if file[-4:] != '.csv':
+#             continue
+#         if file == 'Vehicle_sales_share.csv':
+#             continue
+#         print('Importing user input file: {}'.format(file))
+#         user_input = pd.read_csv('input_data/user_input_spreadsheets/{}'.format(file))
+
+#         #now edit the vehicle type and drive cols
+#         #for vehicle type:
+#         #basically, where there is data for ldv passenger, replicate it twice and call it suv and car for each new set.
+#         suv = user_input.loc[(user_input['Vehicle Type'] == 'ldv') & (user_input['Transport Type']=='passenger')].copy()
+#         suv['Vehicle Type'] = 'suv'
+
+#         car = user_input.loc[(user_input['Vehicle Type'] == 'ldv') & (user_input['Transport Type']=='passenger')].copy()
+#         car['Vehicle Type'] = 'car'
+
+#         lcv = user_input.loc[(user_input['Vehicle Type'] == 'ldv') & (user_input['Transport Type']=='freight')].copy()
+#         lcv['Vehicle Type'] = 'lcv'
+
+#         mt = user_input.loc[(user_input['Vehicle Type'] == 'ht')].copy()
+#         mt['Vehicle Type'] = 'mt'
+
+#         #now append these to the user_input
+#         user_input = user_input.append([suv, car, lcv, mt], ignore_index=True)
+
+#         #now edit the drive cols
+#         #replicate ice and call it ice_g and ice_d
+#         ice_g = user_input.loc[(user_input['Drive'] == 'ice')].copy()
+#         ice_g['Drive'] = 'ice_g'
+#         user_input.loc[(user_input['Drive'] == 'ice'), 'Drive'] = 'ice_d'
+
+#         phev_g = user_input.loc[(user_input['Drive'] == 'phev')].copy()
+#         phev_g['Drive'] = 'phev_g'
+#         user_input.loc[(user_input['Drive'] == 'phev'), 'Drive'] = 'phev_d'
+
+#         #now append these to the user_input
+#         user_input = user_input.append([ice_g, phev_g], ignore_index=True)
 
 
-
-
+#         #resave the user input
+#         user_input.to_csv('input_data/user_input_spreadsheets/{}'.format(file), index=False)
+    #%%
 
 
 # 

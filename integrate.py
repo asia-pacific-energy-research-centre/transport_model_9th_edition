@@ -45,9 +45,6 @@ if CREATE_MODEL_CONCORDANCES:
 #%%
 PREPARE_DATA = True
 if PREPARE_DATA:
-    import create_and_clean_user_input
-    create_and_clean_user_input.create_and_clean_user_input()
-
     # exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
     import import_macro_data
     import_macro_data.import_macro_data()
@@ -55,6 +52,10 @@ if PREPARE_DATA:
     # exec(open("./workflow/grooming_code/1_import_transport_system_data.py").read())
     import import_transport_system_data
     import_transport_system_data.import_transport_system_data()
+
+    
+    import create_and_clean_user_input
+    create_and_clean_user_input.create_and_clean_user_input()
     
     # exec(open("./workflow/grooming_code/2_aggregate_data_for_model.py").read())
     import aggregate_data_for_model
@@ -105,6 +106,7 @@ if ANALYSE_OUTPUT:
     plot_all = True
     if plot_all:
         exec(open("./workflow/plotting/all_economy_graphs.py").read())
+        exec(open("./workflow/plotting/create_assumptions_dashboards.py").read())
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:

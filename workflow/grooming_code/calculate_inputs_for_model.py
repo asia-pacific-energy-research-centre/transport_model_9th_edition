@@ -134,5 +134,5 @@ def calculate_inputs_for_model(INDEX_COLS):
 
 #%%
 
-# calculate_inputs_for_model(INDEX_COLS)
+calculate_inputs_for_model(INDEX_COLS)
 #%%

@@ -52,8 +52,8 @@ def run_road_model():
     #set gompertz gamma to 800 for all economies just to test.
     # main_dataframe['Gompertz_gamma'] = 800
     # breakpoint()#seems we're getting activity estimates much higher for china than we should be.
-    activity_growth_estimates, parameters_estimates = functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True)
-    #breakpoint()
+    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True)
+    breakpoint()
     #set transport type to passenger for all rows
     activity_growth_estimates['Transport Type'] = 'passenger'
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
