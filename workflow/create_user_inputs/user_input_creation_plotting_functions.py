@@ -58,7 +58,6 @@ def plot_new_sales_shares(new_sales_shares_all, new_sales_shares_sum):
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport}_{scenario}_drive_share.html', auto_open=False)
 
                 plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport']==Vehicle_Transport) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
-                breakpoint()
                 fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport}_{scenario}Transport_type_share_pre_vehicle_share_adj.html', auto_open=False)
@@ -127,3 +126,43 @@ def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new
     print('Plots of new sales shares saved to plotting_output/input_exploration/vehicle_sales_shares/')
 
     
+def plot_supply_side_fuel_mixing(supply_side_fuel_mixing):
+    #plot supply side fuel mixing
+    # breakpoint()
+    supply_side_fuel_mixing_plot = supply_side_fuel_mixing.copy()
+    #round the Supply_side_fuel_share column to 2dp
+    supply_side_fuel_mixing_plot['Supply_side_fuel_share'] = supply_side_fuel_mixing_plot['Supply_side_fuel_share'].round(2)
+    supply_side_fuel_mixing_plot= supply_side_fuel_mixing_plot[['Date', 'Economy','Scenario', 'Fuel','New_fuel' ,'Supply_side_fuel_share']].drop_duplicates()
+    for scenario in supply_side_fuel_mixing_plot.Scenario.unique():
+        scenario_data = supply_side_fuel_mixing_plot[supply_side_fuel_mixing_plot['Scenario'] == scenario]
+        #supply side mixing is just the percent of a fuel type that is mixed into another fuel type, eg. 5% biodiesel mixed into diesel. We can use the concat of Fuel and New fuel cols to show the data:
+        scenario_data['Fuel mix'] = scenario_data['Fuel'] + ' mixed with ' + scenario_data['New_fuel']
+        #concat
+        title = 'Supply side fuel sharing for ' + scenario + ' scenario'
+        fig = px.line(scenario_data, x="Date", y="Supply_side_fuel_share", color='Fuel mix', facet_col="Economy", facet_col_wrap=7,  title=title)
+        #save to html
+        fig.write_html(f"plotting_output/input_exploration/fuel_mixing/{title}.html")
+
+def plot_demand_side_fuel_mixing(demand_side_fuel_mixing):
+    #for each cat col in demand_side_fuel_mixing, plot the fuel shares using plotly line graph, with date on x axis, faceted by Economy, and color by Drive and line dash by Fuel
+    #do a graph for each scenario
+    breakpoint()
+    demand_side_fuel_mixing_plot = demand_side_fuel_mixing.copy()
+    demand_side_fuel_mixing_plot['Demand_side_fuel_share'] = demand_side_fuel_mixing_plot['Demand_side_fuel_share'].round(2)
+    #drop where Demand_side_fuel_share is 1
+    demand_side_fuel_mixing_plot = demand_side_fuel_mixing_plot[demand_side_fuel_mixing_plot['Demand_side_fuel_share'] <= 0.999]
+    
+    #where medium is not 'road', then set drive to medium
+    demand_side_fuel_mixing_plot.loc[demand_side_fuel_mixing_plot['Medium'] != 'road', 'Drive'] = demand_side_fuel_mixing_plot['Medium']
+    
+    demand_side_fuel_mixing_plot = demand_side_fuel_mixing_plot[['Date', 'Economy','Scenario', 'Fuel','Drive', 'Demand_side_fuel_share']].drop_duplicates()
+    
+    for scenario in demand_side_fuel_mixing_plot.Scenario.unique():
+        scenario_data = demand_side_fuel_mixing_plot[demand_side_fuel_mixing_plot['Scenario'] == scenario]
+        title = 'Demand side fuel sharing for ' + scenario + ' scenario'
+        #concat drive aND FUEL 
+        scenario_data['Drive'] = scenario_data['Drive'] + ' ' + scenario_data['Fuel'] 
+        fig = px.line(scenario_data, x="Date", y="Demand_side_fuel_share", color="Drive",facet_col="Economy", facet_col_wrap=7,  title=title)
+        #save to html
+        fig.write_html(f"plotting_output/input_exploration/fuel_mixing/{title}.html")
+        

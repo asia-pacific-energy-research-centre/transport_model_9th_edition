@@ -360,7 +360,6 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     #set any nas to 0
     new_sales_shares_all.loc[new_sales_shares_all['Transport_type_share'].isna(), 'Transport_type_share'] = 0
-    breakpoint()
     ################################################################################################################################################################
     #PLOT INTERPOLATED DATA
     ################################################################################################################################################################

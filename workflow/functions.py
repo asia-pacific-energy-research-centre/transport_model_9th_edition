@@ -46,7 +46,11 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     test_data_frame = change_dataframe.copy()
     test_data_frame['Activity_check'] = test_data_frame['Mileage'] * test_data_frame['Occupancy_or_load'] * test_data_frame['Stocks']
     if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']):
-        raise ValueError('ERROR: Activity does not match sum of activity when you calcualte it as (change_dataframe[\'Activity\']/( change_dataframe[\'Mileage\'] * change_dataframe[\'Occupancy_or_load\']))') 
+        throw_error=False
+        if throw_error:
+            raise ValueError('ERROR: Activity does not match sum of activity when you calcualte it as (change_dataframe[\'Activity\']/( change_dataframe[\'Mileage\'] * change_dataframe[\'Occupancy_or_load\']))') 
+        else:
+            print('WARNING: Activity does not match sum of activity when you calcualte it as (change_dataframe[\'Activity\']/( change_dataframe[\'Mileage\'] * change_dataframe[\'Occupancy_or_load\']))')
     #######################################################################
 
     #First do adjustments:

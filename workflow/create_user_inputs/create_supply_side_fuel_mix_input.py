@@ -13,6 +13,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 import sys
 sys.path.append("./config/utilities")
 import archiving_scripts
+import user_input_creation_plotting_functions
 #%%
 #create fake user input for demand side fuel mixes using model concordances
 def create_supply_side_fuel_mixing_input():
@@ -95,11 +96,9 @@ def create_supply_side_fuel_mixing_input():
     supply_side_fuel_mixing = pd.concat([supply_side_fuel_mixing_earliest_dates, supply_side_fuel_mixing], axis=0)
 
     #do interpolation using spline adn order = X
-    breakpoint()
     X_order = 2#the higher the order the more smoothing but the less detail
     supply_side_fuel_mixing['Supply_side_fuel_share'] = supply_side_fuel_mixing.groupby(cols_no_date)['Supply_side_fuel_share'].apply(lambda group: group.interpolate(method='spline', order=X_order))
     
-    breakpoint()
     # INDEX_COLS_no_measure = INDEX_COLS.copy()
     # INDEX_COLS_no_measure.remove('Measure')
     # INDEX_COLS_no_measure.remove('Unit')
@@ -147,19 +146,16 @@ def create_supply_side_fuel_mixing_input():
     #save the variables we used to calculate the data by savinbg the 'input_data/vehicle_sales_share_inputs.xlsx' file
     shutil.copy('input_data/fuel_mixing_assumptions.xlsx', archiving_folder + '/fuel_mixing_assumptions.xlsx')
 
-    breakpoint()
     #save as user input csv
     supply_side_fuel_mixing.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv', index=False)
     
+    user_input_creation_plotting_functions.plot_supply_side_fuel_mixing(supply_side_fuel_mixing)
+    
 #%%
-# create_supply_side_fuel_mixing_input()
+create_supply_side_fuel_mixing_input()
 #%%
 
 #%%
-
-
-
-
 
 
 

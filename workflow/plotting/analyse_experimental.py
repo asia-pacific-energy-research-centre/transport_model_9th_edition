@@ -41,10 +41,10 @@ model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.pivot(inde
 #replace any nan's with 0's
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.fillna(0)
 
-model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['ice'])# + model_output_detailed_ratio_drive['d'])
+model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['ice_g'] + model_output_detailed_ratio_drive['ice_d'])
 
-# model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd']) / (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
-model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev'] ) / (model_output_detailed_ratio_drive['phev'] + model_output_detailed_ratio_drive['ice'])
+model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev_g'] +  model_output_detailed_ratio_drive['phev_d']) / (model_output_detailed_ratio_drive['phev_g'] +  model_output_detailed_ratio_drive['phev_d'] + model_output_detailed_ratio_drive['ice_g'] + model_output_detailed_ratio_drive['ice_d'])
+# model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev'] ) / (model_output_detailed_ratio_drive['phev'] + model_output_detailed_ratio_drive['ice'])
 
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive[['BEV_ICE_ratio', 'PHEV_ICE_ratio']]
 
@@ -72,10 +72,10 @@ model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.pivot(inde
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive.fillna(0)
 
 # model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
-model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['ice'])# + model_output_detailed_ratio_drive['d'])
+model_output_detailed_ratio_drive['BEV_ICE_ratio'] = model_output_detailed_ratio_drive['bev'] / (model_output_detailed_ratio_drive['bev'] + model_output_detailed_ratio_drive['ice_g'] + model_output_detailed_ratio_drive['ice_d'])
 
-# model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd']) / (model_output_detailed_ratio_drive['phevg'] +  model_output_detailed_ratio_drive['phevd'] + model_output_detailed_ratio_drive['g'] + model_output_detailed_ratio_drive['d'])
-model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev'] ) / (model_output_detailed_ratio_drive['phev'] + model_output_detailed_ratio_drive['ice'])
+model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev_g'] +  model_output_detailed_ratio_drive['phev_d']) / (model_output_detailed_ratio_drive['phev_g'] +  model_output_detailed_ratio_drive['phev_d'] + model_output_detailed_ratio_drive['ice_g'] + model_output_detailed_ratio_drive['ice_d'])
+# model_output_detailed_ratio_drive['PHEV_ICE_ratio'] = (model_output_detailed_ratio_drive['phev'] ) / (model_output_detailed_ratio_drive['phev'] + model_output_detailed_ratio_drive['ice'])
 
 model_output_detailed_ratio_drive = model_output_detailed_ratio_drive[['BEV_ICE_ratio', 'PHEV_ICE_ratio']]
 
@@ -251,17 +251,19 @@ plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 #%%
 ################################################################################################################################################################
 #plot the average vehivle sales shares for each economy for each Date, for LV's
-title = 'Average vehicle sales shares for each drive for passenger LDVs'
-model_output_detailed_sales = model_output_detailed[model_output_detailed['Vehicle Type'] == 'ldv']
+title = 'Average vehicle sales shares for each drive for passenger lpvs'
+model_output_detailed_sales = model_output_detailed[model_output_detailed['Vehicle Type'].isin(['lt', 'car', 'suv'])]
 # #tet out excludeing china 05_PRC
 # model_output_detailed_sales = model_output_detailed_sales[model_output_detailed_sales['Economy'] != '05_PRC']
 model_output_detailed_sales = model_output_detailed_sales[model_output_detailed_sales['Transport Type'] == 'passenger']
-model_output_detailed_sales = model_output_detailed_sales.groupby(['Date', 'Drive'])['Vehicle_sales_share'].mean().reset_index()
+model_output_detailed_sales = model_output_detailed_sales.groupby(['Date', 'Drive','Vehicle Type'])['Vehicle_sales_share'].mean().reset_index()
 
 #plot
 fig, ax = plt.subplots()
-for key, grp in model_output_detailed_sales.groupby(['Drive']):
+for key, grp in model_output_detailed_sales.groupby(['Drive','Vehicle Type']):
     ax.plot(grp['Date'], grp['Vehicle_sales_share'], label=key)
+#legend
+plt.legend(loc='best')
 
 
 plt.title(title)

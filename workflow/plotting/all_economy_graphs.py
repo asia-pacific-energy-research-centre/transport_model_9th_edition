@@ -76,6 +76,10 @@ for scenario in original_model_output_all['Scenario'].unique():
     change_dataframe_aggregation = original_change_dataframe_aggregation[original_change_dataframe_aggregation['Scenario']==SCENARIO_OF_INTEREST]
     model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Scenario']==SCENARIO_OF_INTEREST]
     activity_growth = original_activity_growth[original_activity_growth['Scenario']==SCENARIO_OF_INTEREST]
+    # if SCENARIO_OF_INTEREST == 'Reference':
+    model_output_8th = original_model_output_8th[original_model_output_8th['Scenario']=='Reference']
+    # else:
+    #     model_output_8th = original_model_output_8th[original_model_output_8th['Scenario']=='Carbon Neutral']
     #%%
     #set nans to '' so that they dont cause issues with the plotly graphs
     model_output_all = model_output_all.fillna('')
@@ -666,7 +670,50 @@ for scenario in original_model_output_all['Scenario'].unique():
         end_timer(start, dataframe_name)
 
     #%%
+    #TESTING:
+    #calcualte intensity of road transpoty
+    #do this by dividing energy by activity
+    model_output_detailed_int = model_output_detailed.copy()
+    
+    #fill nans with 0   in pkm and ftkm
+    model_output_detailed_int['passenger_km'] = model_output_detailed_int['passenger_km'].fillna(0)
+    model_output_detailed_int['freight_tonne_km'] = model_output_detailed_int['freight_tonne_km'].fillna(0)
+    model_output_detailed_int['Activity'] = model_output_detailed_int['passenger_km']  + model_output_detailed_int['freight_tonne_km']
+    #sum activity and energy by medium, transport type and vehicle type.
+    model_output_detailed_int = model_output_detailed_int.groupby(['Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Date']).sum().reset_index() 
+    model_output_detailed_int['new_energy_intensity'] = model_output_detailed_int['Energy'] / model_output_detailed_int['Activity']
+    
+    #replace nans
+    model_output_detailed_int['new_energy_intensity'] = model_output_detailed_int['new_energy_intensity'].fillna(0)
+    # model_output_detailed_int['Intensity'] = model_output_detailed_int['Intensity'].fillna(0)
+    # #filter out road medium
+    # model_output_detailed_int = model_output_detailed_int[model_output_detailed_int['Medium'] != 'road']
+    
+    # model_output_detailed_int['diff'] = model_output_detailed_int['new_energy_intensity'] - model_output_detailed_int['Intensity']
+    # diff = model_output_detailed_int[model_output_detailed_int['diff'] != 0]
+    # print(diff[['Economy', 'Medium', 'Transport Type', 'Date', 'diff']])
+    
+    #CANT WORK OUT WHY IONTENSITY IS DIFF FOR NON ROAD. BUT ANYWAY, LETS JSUT PLOT INTENSITY FOR ROAD AND NON ROAD TOGETHER:
+    
+    
+    #plot graphs with all economies on one graph
+    new_categorical_cols = ['Medium', 'Transport Type', 'Vehicle Type']
+    new_n_categorical_cols = len(new_categorical_cols)
+    do_this = True
+    dataframe_name = 'model_output_detailed_intensity'
+    value_cols = [ 'new_energy_intensity']#'Intensity',
+    if do_this:
+        start = start_timer(dataframe_name+' with all economies on one graph')
+        for value_col in value_cols:
+            for i in range(1, new_n_categorical_cols+1):
+                for combo in itertools.combinations(new_categorical_cols, i):
+                    title = f'{value_col} by {combo} - {scenario}'
+                    
+                    save_folder = f'{default_save_folder}/{dataframe_name}/all_economies_plot/{value_col}'
 
+                    plot_line_by_economy(model_output_detailed_int, color_categories= list(combo),y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
+                    print(f'plotting {value_col} by {combo}')
+        end_timer(start, dataframe_name+' with all economies on one graph')
 
 
 

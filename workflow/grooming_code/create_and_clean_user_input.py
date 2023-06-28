@@ -1,7 +1,7 @@
 #this is intended to be where all data that is used in the model is cleaned before being adjusted to be used in the model.
 
 #CLEANING IS anything that involves changing the format of the data. The next step is filling in missing values. 
-
+#%%
 #set working directory as one folder back so that config works
 import os
 import re
@@ -14,7 +14,7 @@ sys.path.append("./config/utilities")
 import archiving_scripts
 sys.path.append("./workflow/create_user_inputs")
 from create_vehicle_sales_share_data import create_vehicle_sales_share_input
-
+#%%
 # data_available
 def create_and_clean_user_input():
     
@@ -156,7 +156,10 @@ def create_and_clean_user_input():
         user_input_new = pd.concat([user_input_missing_values_dont_change, user_input_missing_values_change], sort=False)
 
         #check for nas and throw error if so. might need to utilise the commented out code below (that i didnt finish gettting working) to do this
+        breakpoint()
         if len(user_input_new[user_input_new.Value.isna()]) >0:
+            #identify the rows where there are still nas in the Value col:
+            user_input_new_nas = user_input_new[user_input_new.Value.isna()]
             raise ValueError('There are still some rows where Value is NA. Please check this.')
         # #there will be soe cases where there are still nas because there are nas for every year in the group of INDEX_COLS_no_date. We will check for these cases and separate them for analysis. THen identify any extra cases where there are still nas in the Value col. these are problematic and we will raise an error
         # user_input_new_groups_with_all_nas = user_input_new.groupby(INDEX_COLS_no_date).apply(lambda group: group.isna().all()).reset_index()
@@ -190,9 +193,9 @@ def create_and_clean_user_input():
 
 
     
-
-
-
+#%%
+create_and_clean_user_input()
+#%%
 
 
 
