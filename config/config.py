@@ -19,9 +19,10 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 #STATE VARIABLES USER MAY CHANGE OFTEN:
 NEW_SALES_SHARES = True
 NEW_FUEL_MIXING_DATA = True
-transport_data_system_FILE_DATE_ID ='DATE20230628_08_JPN' # 'DATE20230216'))
+REPLACE_ACTIVITY_GROWTH_WITH_8TH = False#NOTE THAT THIS CURRENETLY DOESNT WORK BECAUSE OF NAS IN THE DATA
+transport_data_system_FILE_DATE_ID ='DATE20230703' # 'DATE20230216'))
 
-economies_to_plot_for =['08_JPN', '20_USA']
+ECONOMIES_TO_PLOT_FOR =['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
 #%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 
@@ -35,18 +36,19 @@ except NameError:
     FILE_DATE_ID = '_{}'.format(file_date)#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
    
 #%%
-USE_LATEST_OUTPUT_DATE_ID = False#True
+USE_LATEST_OUTPUT_DATE_ID = True
 #create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
 if USE_LATEST_OUTPUT_DATE_ID:
     list_of_files = glob.glob('./output_data/model_output/*.csv') 
     latest_file = max(list_of_files, key=os.path.getctime)
-    #get file data id using regex. want to grab the firt 8 digits and then an underscore and then the next 4 digits
-    FILE_DATE_ID = re.search(r'_DATE(\d{8})_(\d{4})', latest_file).group(0)
+    #get file data id using regex. want to grab the firt 8 digits and then .csv
+    FILE_DATE_ID ='_'+ re.search(r'_(\d{8}).csv', latest_file).group(1)
 
 #%%
 #state important modelling variables
 BASE_YEAR= 2017
 END_YEAR = 2100
+GRAPHING_END_YEAR = 2070
 USE_LOGISTIC_FUNCTION=True
 #this is important for defining how the dataframes are used. Generally this shouldnt change unless a column name changes or the model is changed
 INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
@@ -98,6 +100,8 @@ ECONOMY_LIST = pd.read_csv(economy_codes_path).iloc[:,0]#get the first column
 economy_regions_path = 'config/concordances_and_config_data/region_economy_mapping.csv'
 ECONOMY_REGIONS = pd.read_csv(economy_regions_path)
 
+if len(ECONOMIES_TO_PLOT_FOR) == 0:
+    ECONOMIES_TO_PLOT_FOR = ECONOMY_LIST.tolist()
 ###################################################
 #%%
 import plotly.express as px

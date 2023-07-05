@@ -19,25 +19,25 @@ def run_non_road_model():
     non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
 
 
-    #%%
+
     # #testing:
     # #just set energy and stocks to 1
     # non_road_model_input['Energy'] = 1
     # non_road_model_input['Stocks'] = 1
     # non_road_model_input['Efficiency'] = 1
     # non_road_model_input['Non_road_efficiency_growth'] = 1
-    #%%
+
 
     #separate user inputs from main dataframe
     non_road_intensity_improvement = non_road_model_input[['Economy', 'Scenario', 'Transport Type', 'Drive', 'Medium', 'Vehicle Type', 'Date','Non_road_intensity_improvement']].drop_duplicates()
 
     non_road_model_input.drop(columns=['Non_road_intensity_improvement'], inplace=True)
-    #%%
+
     #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
     previous_year_main_dataframe = non_road_model_input.loc[non_road_model_input.Date == BASE_YEAR,:]
     main_dataframe = previous_year_main_dataframe.copy()
 
-    #%%
+
     #give option to run the process on a low RAM computer. If True then the loop will be split into 10 year blocks, saving each block in a csv, then starting again with an empty main datafrmae for the next 10 years block. If False then the loop will be run on all years without saving intermediate results.
     low_ram_computer = True
     if low_ram_computer:
@@ -49,7 +49,7 @@ def run_non_road_model():
 
     #if you want to analyse what is hapening in th model then set this to true and lok at the change dataframe.
     ANALYSE_CHANGE_DATAFRAME = True
-    #%%
+
     #START MAIN PROCESS
     for year in range(BASE_YEAR+1, END_YEAR+1):
         print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
@@ -139,7 +139,7 @@ def run_non_road_model():
                 main_dataframe.to_csv(low_ram_file_name, index=False)
                 low_ram_computer_files_list.append(low_ram_file_name)
 
-    #%%
+
     #this will be the name of the output file
     new_output_file = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
 
@@ -174,7 +174,7 @@ def run_non_road_model():
         #save dataframe
         change_dataframe_aggregation.to_csv('intermediate_data/non_road_model/change_dataframe_aggregation.csv', index=False)
 
-    #%%
+
     import matplotlib.pyplot as plt
 
     analyse = False

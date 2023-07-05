@@ -21,7 +21,13 @@ pio.renderers.default = "browser"#allow plotting of graphs in the interactive no
 import sys
 sys.path.append("./config/utilities")
 import archiving_scripts
-import user_input_creation_plotting_functions
+import user_input_creation_functions
+
+
+sys.path.append("./workflow/plotting")
+import plot_user_input_data
+
+X_ORDER = 'linear'#set me to linear or the order for the spline
 #%%
 
 def estimate_transport_data_system_sales_share(new_transport_data_system_df, INDEX_COLS,SCENARIOS_LIST,YEARS_TO_KEEP_AFTER_BASE_YEAR):
@@ -70,7 +76,7 @@ def estimate_transport_data_system_sales_share(new_transport_data_system_df, IND
     sales = sales.loc[sales['Date']==max_year]
     plotting = False
     if plotting:
-        user_input_creation_plotting_functions.plot_estimated_data_system_sales_share(sales, INDEX_COLS, SCENARIOS_LIST, YEARS_TO_KEEP_AFTER_BASE_YEAR)
+        plot_user_input_data.plot_estimated_data_system_sales_share(sales, INDEX_COLS, SCENARIOS_LIST, YEARS_TO_KEEP_AFTER_BASE_YEAR)
         
     #drop Total Stocks column and Value column
     sales = sales.drop(columns=['Total Stocks', 'Value'])
@@ -134,6 +140,14 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     regions_passenger = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx',sheet_name='regions_passenger')
     regions_freight = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx',sheet_name='regions_freight')
 
+
+    ######################################
+    #TESTING
+    #check the regions in regions_passenger and regions_freight are the same as in passenger_drive_shares and freight_drive_shares, also check that the regions in vehicle_type_growth_regions are the same as in vehicle_type_growth
+    breakpoint()
+    user_input_creation_functions.check_region(regions_passenger, passenger_drive_shares)
+    user_input_creation_functions.check_region(regions_freight, freight_drive_shares)
+    user_input_creation_functions.check_region(vehicle_type_growth_regions, vehicle_type_growth)
 
     #####################################
     #PREPARE INPUT DATA
@@ -326,21 +340,27 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     
     #order data by year
     new_sales_shares_concat_interp = new_sales_shares_pre_interp.sort_values(by=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']).copy()
-    #do interpolation using spline and order = X
-    X_order = 2#the higher the order the more smoothing but the less detail
-    new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='spline', order=X_order))
+    
+    if X_ORDER == 'linear':
+        #do interpolation using spline and order = X
+        
+        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='linear'))
+    else:
+        #do interpolation using spline and order = X
+        
+        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='spline', order=X_ORDER))
     
     #where any values are negatives or na just set them to 0
     new_sales_shares_concat_interp.loc[new_sales_shares_concat_interp['Drive_share']<0, 'Drive_share'] = 0
     new_sales_shares_concat_interp.loc[new_sales_shares_concat_interp['Drive_share'].isna(), 'Drive_share'] = 0
 
-    #now we just need to normalise by vehicle type
-    new_sales_shares_concat_interp['D_sum'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date'])['Drive_share'].transform('sum')
+    #now we just need to normalise by vehicle type so that the drive share for each vehicle type sums to 1
+    new_sales_shares_concat_interp['Drive_sum'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date'])['Drive_share'].transform('sum')
 
-    new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp['Drive_share']/new_sales_shares_concat_interp['D_sum']
+    new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp['Drive_share']/new_sales_shares_concat_interp['Drive_sum']
 
     #Prepare sum of vehicle type share for each economy, scenario, transport type, vehicle type and date. THis will be used to normalise the drive share for each vehicle type
-    new_sales_shares_interp_by_drive = new_sales_shares_concat_interp.drop(['D_sum'], axis=1)
+    new_sales_shares_interp_by_drive = new_sales_shares_concat_interp.drop(['Drive_sum'], axis=1)
     original_new_sales_shares_by_vehicle = new_sales_shares_sum.drop(['Transport_type_share', 'Drive_share'], axis=1)
     #ffill the vehicle type share sum col so that we can times it by the drive share for new years. currently 0 for all new years.
     # #first set all years where all values are 0 to nan
@@ -366,7 +386,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     plotting = True
     
     if plotting:
-        user_input_creation_plotting_functions.plot_new_sales_shares(new_sales_shares_all, new_sales_shares_sum)
+        plot_user_input_data.plot_new_sales_shares(new_sales_shares_all, new_sales_shares_sum)
     
     ################################################################################################################################################################
     #APPLY VEHICLE TYPE GROWTH RATES TO SALES SHARES TO FIND SALES SHARE WITHIN EACH TRANSPORT TYPE
@@ -392,7 +412,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     plotting=True
     if plotting:
-        user_input_creation_plotting_functions.plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new_sales_shares_sum,new_sales_shares_all_new)
+        plot_user_input_data.plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new_sales_shares_sum,new_sales_shares_all_new)
 
 
     #rename Transport_type_share_new to Vehicle^sales_share
@@ -426,7 +446,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     
     #final check before saving:
     a = new_sales_shares_all_new.loc[(new_sales_shares_all_new['Measure']=='Vehicle_sales_share') & (new_sales_shares_all_new['Transport Type']=='passenger') & (new_sales_shares_all_new['Date']==2019) & (new_sales_shares_all_new['Economy']=='01_AUS') & (new_sales_shares_all_new['Scenario']=='Reference')].copy()
-    if a.Value.sum() != 1:
+    if abs(a.Value.sum() - 1) > 0.0001: 
         raise ValueError(f'The sum of the vehicle sales share for passenger vehicles in 2019 is not 1, it is {a.Value.sum()}. Please check the user input data and fix this.')
     
     #also save the data to the user_input_spreadsheets folder as csv

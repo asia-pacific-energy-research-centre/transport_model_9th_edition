@@ -1,0 +1,221 @@
+#quick script for now. will take in dictioanry of parameters such as:
+#expected number of chargers per kw of kwh of ev battery capacity # this value can be arrived at by first using the following aprameters
+#expected cahrgers per ev (given avg kwh of ev battery capacity)
+#average kwh of ev battery capacity (also broken dwon by vehicle type and perhaps economy based on some kind of urbanisation metric - perhaps this will need another script to calculate)
+#%%
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
+from runpy import run_path
+exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+import sys
+import plotly.express as px
+import utility_functions
+sys.path.append("./workflow/plotting")
+import plot_charging_graphs
+#%%
+
+def prepare_inputs_for_estimating_charging_requirements():
+    ##############################################
+
+    #load in latest model output:
+    latest_file_date_id = utility_functions.get_latest_date_for_data_file('output_data/model_output', 'model_output_years_{}_to_{}'.format(BASE_YEAR, END_YEAR))
+    latest_model_output_file_name = 'model_output_years_{}_to_{}_{}.csv'.format(BASE_YEAR, END_YEAR, latest_file_date_id)
+    df = pd.read_csv('output_data/model_output/{}'.format(latest_model_output_file_name))
+    #reaple any nan values with 0
+    df = df.fillna(0)#bit of a temp measure, but will do for now
+    ##############################################
+    parameters = {'average_kwh_of_battery_capacity_by_vehicle_type': {'car': 50, 'bus': 100, '2w': 20, 'mt': 200, 'ht': 200, 'lt': 100, 'lcv': 100, 'suv': 80},
+                'expected_kw_of_chargers_per_ev': 0.1,#based on iea graph in ev outlook 2023
+                'average_kw_per_non_fast_charger': 50,#based on iea graph in ev outlook 2023 #assumed it didnt include fast chargers because technology isnt there yet for the vehicles that would need fast chargers
+                'average_kw_per_charger': 60,#guess
+                'average_kw_per_fast_charger': 200,#guess
+                'average_ratio_of_fast_chargers_to_chargers': 0.05,#guess
+                'public_charger_utilisation_rate': {'car': 0.5, 'bus': 0.5, '2w': 0.3, 'mt': 1, 'ht': 1, 'lt': 0.5, 'lcv': 0.5, 'suv': 0.5},#vehicle type specific. ones that are commercial and expected to be used in urban areas may have lower rates because they might be charged at depots. then private vehicles also might have lower rates because they might be charged at home as they have lower daily mileage
+                'fast_charger_utilisation_rate': {'car': 0.2, 'bus': 0.2, '2w': 0, 'mt': 1, 'ht': 1, 'lt': 0.5, 'lcv': 0.5, 'suv': 0.2},
+                
+    }
+    colors_dict = {'2w': 'pink', 'car': 'blue', 'suv': 'teal', 'lt': 'green', 'bus': 'purple', 'ht': 'red', 'mt': 'orange', 'lcv': 'brown'}
+    INCORPORATE_UTILISATION_RATE = True
+    
+    return df, parameters, colors_dict, INCORPORATE_UTILISATION_RATE
+#%%
+##############################################
+def estimate_kwh_of_ev_battery_capacity(df, parameters):
+    #take in the number of evs for each vehicle type in an economy and calcualte the total kwh of battery capacity for that economy, given the number of evs and the average kwh of battery capacity for each vehicle type
+    evs = df[(df['Drive']=='bev')]
+    evs['sum_of_stocks'] = evs.groupby(['Economy','Date','Scenario'])['Stocks'].transform('sum')
+    #map parameters['average_kwh_of_battery_capacity_by_vehicle_type'] to the evs dataframe by the Vehicle Type column
+    evs['average_kwh_of_battery_capacity_by_vehicle_type'] = evs['Vehicle Type'].map(parameters['average_kwh_of_battery_capacity_by_vehicle_type'])
+    #calculate the kwh of battery capacity for all evs in the economy, by vehicle type
+    evs['kwh_of_battery_capacity'] = evs['average_kwh_of_battery_capacity_by_vehicle_type']*evs['Stocks']
+    # #calcualte  kwh_of_battery_capacity by economy, date, scenario and vehicle type
+    # evs['kwh_of_battery_capacity'] = evs.groupby(['Economy','Date','Scenario','Vehicle Type'])['kwh_of_battery_capacity'].transform('sum')
+    #create sum of total_kwh_of_battery_capacity by economy, date, scenario 
+    evs['sum_of_kwh_of_battery_capacity'] = evs.groupby(['Economy','Date','Scenario'])['kwh_of_battery_capacity'].transform('sum')
+    
+    return evs[['Economy','Date','Scenario','Vehicle Type','Stocks', 'sum_of_stocks','kwh_of_battery_capacity','sum_of_kwh_of_battery_capacity','average_kwh_of_battery_capacity_by_vehicle_type']].drop_duplicates()
+
+def incorporate_utilisation_rate(total_kwh_of_battery_capacity, parameters):
+    
+    total_kwh_of_battery_capacity['public_charger_utilisation_rate'] = total_kwh_of_battery_capacity['Vehicle Type'].map(parameters['public_charger_utilisation_rate'])
+    
+    total_kwh_of_battery_capacity['expected_kw_of_chargers_WITHOUT_UTILISATION_RATE'] = total_kwh_of_battery_capacity['kwh_of_battery_capacity']*parameters['expected_kw_of_chargers_per_ev']
+    #CALC SUM
+    total_kwh_of_battery_capacity['sum_of_expected_kw_of_chargers_WITHOUT_UTILISATION_RATE'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['expected_kw_of_chargers_WITHOUT_UTILISATION_RATE'].transform('sum')
+    
+    total_kwh_of_battery_capacity['expected_kw_of_chargers_WITH_UTILISATION_RATE'] = total_kwh_of_battery_capacity['kwh_of_battery_capacity']*parameters['expected_kw_of_chargers_per_ev']*total_kwh_of_battery_capacity['public_charger_utilisation_rate']
+    #CALC SUM
+    total_kwh_of_battery_capacity['sum_of_expected_kw_of_chargers_WITH_UTILISATION_RATE'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['expected_kw_of_chargers_WITH_UTILISATION_RATE'].transform('sum')
+    
+    #CALC PROPORTIONAL DIFFERENCE
+    total_kwh_of_battery_capacity['proportional_difference'] = total_kwh_of_battery_capacity['sum_of_expected_kw_of_chargers_WITH_UTILISATION_RATE']/total_kwh_of_battery_capacity['sum_of_expected_kw_of_chargers_WITHOUT_UTILISATION_RATE']
+    
+    #RECALCAULTE expected_kw_of_chargers_WITH_UTILISATION_RATE BUT TIMES ALL BY THE PROPORTIONAL DIFFERENCE SO THE EFFECT OF THE UTILISATION RATE IS INCORPORATED BUT DOESNT CHANGE THE TOTAL!
+    total_kwh_of_battery_capacity['expected_kw_of_chargers'] = total_kwh_of_battery_capacity['expected_kw_of_chargers_WITH_UTILISATION_RATE'] * total_kwh_of_battery_capacity['proportional_difference']
+    
+    #DROP COLUMNS
+    total_kwh_of_battery_capacity.drop(columns=['expected_kw_of_chargers_WITHOUT_UTILISATION_RATE','sum_of_expected_kw_of_chargers_WITHOUT_UTILISATION_RATE','expected_kw_of_chargers_WITH_UTILISATION_RATE','sum_of_expected_kw_of_chargers_WITH_UTILISATION_RATE','proportional_difference'], inplace=True)
+    
+    return total_kwh_of_battery_capacity
+
+################################################################
+
+def estimate_kw_of_required_chargers():
+    #MAIN FUNCTION
+    df, parameters, colors_dict, INCORPORATE_UTILISATION_RATE = prepare_inputs_for_estimating_charging_requirements()
+    
+    total_kwh_of_battery_capacity = estimate_kwh_of_ev_battery_capacity(df, parameters)
+    #now we can use this to estimate the number of chargers required given the expected number of chargers per kw of kwh of ev battery capacity
+
+    # total_kwh_of_battery_capacity = estimate_kw_of_required_chargers(total_kwh_of_battery_capacity, parameters)
+    #calcualte this for each vehicle type and then sum as a total for each economy, date and scenario
+    #do this using the number of kwh of battery capacity needed per kw of charger capacity
+    
+    #by vehicle type: (will use a public_charger_utilisation_rate for each vehicle type)    
+    if INCORPORATE_UTILISATION_RATE:
+        total_kwh_of_battery_capacity = incorporate_utilisation_rate(total_kwh_of_battery_capacity, parameters)
+    else:
+        total_kwh_of_battery_capacity['expected_kw_of_chargers'] = total_kwh_of_battery_capacity['kwh_of_battery_capacity']*parameters['expected_kw_of_chargers_per_ev']
+    
+    total_kwh_of_battery_capacity['sum_of_expected_kw_of_chargers'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['expected_kw_of_chargers'].transform('sum')
+    
+    #then create sum of expected_number_of_chargers by economy, date, scenario
+    total_kwh_of_battery_capacity['average_kw_per_charger'] = parameters['average_kw_per_charger']
+    total_kwh_of_battery_capacity['expected_number_of_chargers'] = total_kwh_of_battery_capacity['expected_kw_of_chargers']/total_kwh_of_battery_capacity['average_kw_per_charger']
+    total_kwh_of_battery_capacity['sum_of_expected_number_of_chargers'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['expected_number_of_chargers'].transform('sum')
+    
+    #estiamte number f slow and fast chargers needed using fast_charger_utilisation_rate
+    #first map on the fast_charger_utilisation_rate data by vheicle type
+    total_kwh_of_battery_capacity['fast_charger_utilisation_rate'] = total_kwh_of_battery_capacity['Vehicle Type'].map(parameters['fast_charger_utilisation_rate'])
+    #now times the expected_number_of_chargers by the fast_charger_utilisation_rate to get the number of fast chargers needed, then calc the number of slow chargers needed as remaining chargers. Do this to kw of chargers, then calcualte the number of chargers needed by using average_kw_per_non_fast_charger and average_kw_per_fast_charger
+    total_kwh_of_battery_capacity['slow_kw_of_chargers_needed'] = total_kwh_of_battery_capacity['expected_kw_of_chargers']*(1-total_kwh_of_battery_capacity['fast_charger_utilisation_rate'])
+    total_kwh_of_battery_capacity['fast_kw_of_chargers_needed'] = total_kwh_of_battery_capacity['expected_kw_of_chargers']*total_kwh_of_battery_capacity['fast_charger_utilisation_rate']
+    
+    total_kwh_of_battery_capacity['average_kw_per_non_fast_charger'] = parameters['average_kw_per_non_fast_charger']
+    total_kwh_of_battery_capacity['average_kw_per_fast_charger'] = parameters['average_kw_per_fast_charger']
+    total_kwh_of_battery_capacity['slow_chargers_needed'] = total_kwh_of_battery_capacity['slow_kw_of_chargers_needed']/parameters['average_kw_per_non_fast_charger']
+    total_kwh_of_battery_capacity['fast_chargers_needed'] = total_kwh_of_battery_capacity['fast_kw_of_chargers_needed']/parameters['average_kw_per_fast_charger']
+    
+    #calculate sums
+    total_kwh_of_battery_capacity['sum_of_slow_chargers_needed'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['slow_chargers_needed'].transform('sum')
+    total_kwh_of_battery_capacity['sum_of_fast_chargers_needed'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['fast_chargers_needed'].transform('sum')
+    total_kwh_of_battery_capacity['sum_of_slow_kw_of_chargers_needed'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['slow_kw_of_chargers_needed'].transform('sum')
+    total_kwh_of_battery_capacity['sum_of_fast_kw_of_chargers_needed'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['fast_kw_of_chargers_needed'].transform('sum')
+    
+    total_kwh_of_battery_capacity = total_kwh_of_battery_capacity[['Economy','Date','Scenario','Vehicle Type','Stocks', 'sum_of_stocks','kwh_of_battery_capacity','sum_of_kwh_of_battery_capacity','sum_of_expected_number_of_chargers','expected_kw_of_chargers','sum_of_expected_kw_of_chargers','expected_number_of_chargers','sum_of_fast_kw_of_chargers_needed','sum_of_slow_kw_of_chargers_needed','sum_of_fast_chargers_needed','sum_of_slow_chargers_needed','fast_charger_utilisation_rate','average_kwh_of_battery_capacity_by_vehicle_type','average_kw_per_charger','average_kw_per_non_fast_charger','average_kw_per_fast_charger','slow_kw_of_chargers_needed','fast_kw_of_chargers_needed','slow_chargers_needed','fast_chargers_needed']].drop_duplicates()
+    #save data to csv for use in \output_data\for_other_modellers
+    total_kwh_of_battery_capacity.to_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv', index=False)
+    
+# return total_kwh_of_battery_capacity
+#%%
+#%%
+def estimate_ev_stocks_given_chargers(df, economy, date, scenario, parameters,number_of_non_fast_chargers=0,number_of_fast_chargers=0, number_of_chargers=0):
+    #use a value for the number of chargers for a specified economy, date and scenario to estimate the number of evs in that economy, date and scenario.
+    #we can use the previous forecasts to estimate the portion of evs in each vehicle type too.
+    
+    #calcualte average kw of charger capacity given the different kw of fast and non-fast chargers:
+    if number_of_chargers == 0:
+        kw_of_charger_capacity = (number_of_non_fast_chargers*parameters['average_kw_per_non_fast_charger']+number_of_fast_chargers*parameters['average_kw_per_fast_charger'])/(number_of_non_fast_chargers+number_of_fast_chargers)
+        kw_of_fast_charger_capacity = number_of_fast_chargers*parameters['average_kw_per_fast_charger']
+        kw_of_non_fast_charger_capacity = number_of_non_fast_chargers*parameters['average_kw_per_non_fast_charger']
+        number_of_chargers = kw_of_charger_capacity / parameters['average_kw_per_charger']
+    elif (number_of_chargers > 0) & (number_of_non_fast_chargers == 0):
+        kw_of_charger_capacity = number_of_chargers*parameters['average_kw_per_charger']
+        kw_of_fast_charger_capacity = 0
+        kw_of_non_fast_charger_capacity = 0
+        number_of_chargers = number_of_chargers
+    else:
+        raise ValueError('You must provide either a value for number_of_chargers or number_of_non_fast_chargers and number_of_fast_chargers, but not both')
+    
+    #calcualte portion of bev stocks in each vehicle type:
+    #get stocks for each vehicle type
+    stocks = df[(df['Drive']=='bev') & (df['Economy']==economy) & (df['Date']==date) & (df['Scenario']==scenario)]
+    #get kwh of those stocks. first map on average_kwh_of_battery_capacity_by_vehicle_type
+    stocks['average_kwh_of_battery_capacity_by_vehicle_type'] = stocks['Vehicle Type'].map(parameters['average_kwh_of_battery_capacity_by_vehicle_type'])
+    stocks['kwh_of_battery_capacity'] = stocks['Stocks']*stocks['average_kwh_of_battery_capacity_by_vehicle_type']
+    
+    breakpoint()
+    stocks['sum_of_stocks'] = stocks['Stocks'].sum()
+    stocks['sum_of_kwh_of_battery_capacity'] = stocks['kwh_of_battery_capacity'].sum()
+    #calculate portion of stocks for each vehicle type, adjsuted by the ?normalised? uitlisation rate of each vehicle type (so the sum of stocks remains the same but some of the stocks are shifted to account for the utilisation rate)
+    stocks['portion_of_stocks_kwh_of_battery_capacity'] = stocks['kwh_of_battery_capacity']/stocks['sum_of_kwh_of_battery_capacity']
+    
+    if INCORPORATE_UTILISATION_RATE:
+        stocks['public_charger_utilisation_rate'] = stocks['Vehicle Type'].map(parameters['public_charger_utilisation_rate'])
+        #just times the portuin of stocks by utiliosation and then normalise to 1.
+        stocks['portion_of_stocks_kwh_of_battery_capacity'] = stocks['portion_of_stocks_kwh_of_battery_capacity']*stocks['public_charger_utilisation_rate']
+        stocks['portion_of_stocks_kwh_of_battery_capacity'] = stocks['portion_of_stocks_kwh_of_battery_capacity']/stocks['portion_of_stocks_kwh_of_battery_capacity'].sum()
+        #check that the sum of the portion of stocks is 1
+        breakpoint()
+        if abs(1- stocks['portion_of_stocks_kwh_of_battery_capacity'].sum()) > 0.0001:
+            raise ValueError('The sum of the portion of stocks is not 1')
+        #drop the sum of stocks column and the utilisation rate column
+        stocks = stocks.drop(columns=['public_charger_utilisation_rate'])
+    
+    #calcualte expected kwh of battery capacity then split this by vehicle type using the portion of stocks
+    stocks['sum_of_expected_kwh_of_battery_capacity'] = kw_of_charger_capacity/parameters['expected_kw_of_chargers_per_ev']
+    stocks['expected_kwh_of_battery_capacity'] = stocks['sum_of_expected_kwh_of_battery_capacity']*stocks['portion_of_stocks_kwh_of_battery_capacity']
+    
+    #calcualte stocks of each vehicle type using the expected kwh of battery capacity and the average kwh of battery capacity for each vehicle type
+    stocks['average_kwh_of_battery_capacity'] = stocks['Vehicle Type'].map(parameters['average_kwh_of_battery_capacity_by_vehicle_type'])
+    
+    stocks['expected_stocks'] = (stocks['expected_kwh_of_battery_capacity']/stocks['average_kwh_of_battery_capacity']).round(2)
+    stocks['total_expected_stocks'] = stocks['expected_stocks'].sum()
+    
+    stocks['number_of_chargers'] = number_of_chargers
+    stocks['number_of_fast_chargers'] = number_of_fast_chargers
+    stocks['number_of_non_fast_chargers'] = number_of_non_fast_chargers
+    
+    stocks['kw_of_charger_capacity'] = kw_of_charger_capacity
+    stocks['kw_of_fast_charger_capacity'] = kw_of_fast_charger_capacity
+    stocks['kw_of_non_fast_charger_capacity'] = kw_of_non_fast_charger_capacity
+    
+    #quickly estiamte the expected number of chargers needed for each vehicle type based on the proportion of stocks value:
+    stocks['expected_number_of_chargers_by_vehicle_type'] = stocks['number_of_chargers']*stocks['portion_of_stocks_kwh_of_battery_capacity']
+    stocks['expected_kw_of_chargers_by_vehicle_type'] = stocks['kw_of_charger_capacity']*stocks['portion_of_stocks_kwh_of_battery_capacity']
+    
+    ev_stocks_and_chargers = stocks[['Economy','Date','Scenario','Vehicle Type',"Transport Type",'expected_kwh_of_battery_capacity', 'sum_of_expected_kwh_of_battery_capacity','expected_stocks', 'total_expected_stocks', 'portion_of_stocks_kwh_of_battery_capacity','number_of_chargers','number_of_fast_chargers','number_of_non_fast_chargers','kw_of_charger_capacity','kw_of_fast_charger_capacity','kw_of_non_fast_charger_capacity','expected_number_of_chargers_by_vehicle_type','expected_kw_of_chargers_by_vehicle_type']].drop_duplicates()
+    return ev_stocks_and_chargers
+
+# %%
+
+#%%
+calculate_evs_given_chargers = False 
+if calculate_evs_given_chargers:
+    economy= '08_JPN'
+    date=2030
+    scenario='Target'
+    number_of_fast_chargers = 4000
+    number_of_non_fast_chargers = 150000 - number_of_fast_chargers
+    number_of_chargers = 0
+    
+    df, parameters, colors_dict, INCORPORATE_UTILISATION_RATE = prepare_inputs_for_estimating_charging_requirements()
+    
+    ev_stocks_and_chargers = estimate_ev_stocks_given_chargers(df, economy, date, scenario, parameters, number_of_non_fast_chargers=number_of_non_fast_chargers, number_of_fast_chargers=number_of_fast_chargers, number_of_chargers=number_of_chargers)
+    
+    plot_charging_graphs.plot_required_evs(ev_stocks_and_chargers,colors_dict)
+     
+        
+
+#%%

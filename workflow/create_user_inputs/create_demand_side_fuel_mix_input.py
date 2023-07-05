@@ -14,7 +14,9 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 import sys
 sys.path.append("./config/utilities")
 import archiving_scripts
-import user_input_creation_plotting_functions
+
+sys.path.append("./workflow/plotting")
+import plot_user_input_data
 #%%
 
 #create fake user input for demand side fuel mixes using model concordances
@@ -231,8 +233,8 @@ def create_demand_side_fuel_mixing_input():
     
     
     demand_side_fuel_mixing.to_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv', index=False)
-    user_input_creation_plotting_functions.plot_demand_side_fuel_mixing(demand_side_fuel_mixing)
+    plot_user_input_data.plot_demand_side_fuel_mixing(demand_side_fuel_mixing)
 #%%
 
-create_demand_side_fuel_mixing_input()
+# create_demand_side_fuel_mixing_input()
 #%%

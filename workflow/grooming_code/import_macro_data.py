@@ -7,11 +7,17 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+#%%
 def import_macro_data():
     #grab the file D:\APERC\transport_model_9th_edition\input_data\macro\APEC_GDP_population.csv
     #from 
     # Modelling/Data/GDP/GDP projections 9th/GDP_estimates/GDP_estimates_12May2023/data
-    macro = pd.read_csv('./input_data/macro/APEC_GDP_population.csv')
+    macro = pd.read_csv('./input_data/macro/APEC_GDP_data_2023_07_05.csv')
+    #filter so  variable is in ['real_GDP', 'population','GDP_per_capita']
+    macro = macro[macro['variable'].isin(['real_GDP', 'population','GDP_per_capita'])]
+    #drop units col
+    macro = macro.drop(columns=['units'])
+
     #import coeffficients prodcuied in create_growth_parameters:
     # 'input_data/growth_coefficients_by_region.csv'
     growth_coeff = pd.read_csv('input_data/growth_coefficients_by_region.csv')
@@ -22,7 +28,7 @@ def import_macro_data():
     #pivot so each measure in the vairable column is its own column.
     macro = macro.pivot_table(index=['economy_code', 'economy', 'year'], columns='variable', values='value').reset_index()
     # macro.columns#Index(['economy_code', 'economy', 'date', 'real_GDP', 'GDP_per_capita', 'population'], dtype='object', name='variable')
-    #%%
+    
     #make lowercase
     activity_growth_8th.columns = activity_growth_8th.columns.str.lower()
     #drop scenario and remove duplicvates
@@ -38,7 +44,7 @@ def import_macro_data():
     macro = macro.drop(columns=['economy'])
     macro = macro.rename(columns={'real_GDP':'GDP', 'population':'Population', 'economy_code':'economy', 'year':'date'})
 
-    #%%
+    
     #times population and gdp by 1000 to get it in actual numbers
     macro['Population'] = macro['Population'] * 1000
     macro['GDP'] = macro['GDP'] * 1000000
@@ -48,7 +54,7 @@ def import_macro_data():
 
     #rename the coeffs so they have _coeff at the end:
     growth_coeff.rename({'gdp_per_capita_growth': 'gdp_per_capita_growth_coeff', 'gdp_times_capita_growth': 'gdp_times_capita_growth_coeff'}, axis=1, inplace=True)
-    #%%
+    
     #calcaulte grwoth rates for all when you group by economy (make sure that date is sorted from low to high)
     macro1 = macro.copy()
     macro1 = macro1.sort_values(by=['economy', 'date'])
@@ -56,7 +62,7 @@ def import_macro_data():
     macro1['Population_growth'] = macro1.groupby('economy')['Population'].pct_change()
     macro1['GDP_per_capita_growth'] = macro1.groupby('economy')['GDP_per_capita'].pct_change()
     macro1['GDP_times_capita_growth'] = macro1.groupby('economy')['GDP_times_capita'].pct_change()
-    #%%
+    
     #combine it with above data using a merge
     macro1 = pd.merge(macro1, growth_coeff, on=['economy'], how='left')
     #filter any rows with nas
@@ -66,16 +72,16 @@ def import_macro_data():
     macro1['energy_growth_est'] = macro1['const'] + macro1['gdp_per_capita_growth_coeff'] * macro1['GDP_per_capita_growth'] + macro1['gdp_times_capita_growth_coeff'] * macro1['GDP_times_capita_growth']
     #since we currently have no idea about intensity, we will assume that energy growth is the same as activity growth
     macro1['Activity_growth'] = macro1['energy_growth_est']
-    #%%
+    
     #ADD ONE
     macro1['Activity_growth'] = macro1['Activity_growth'] + 1
     #also add one to activity_growth_8th.activity_growth_8th
     activity_growth_8th['activity_growth_8th'] = activity_growth_8th['activity_growth_8th'] + 1
-    #%%
+    
     #join activity_growth_8th on for diagnostics so they are from same date
     macro1 = pd.merge(macro1, activity_growth_8th, on=['economy', 'date'], how='left')
 
-    #%%
+    
     #make all cols start with caps 
     macro1.columns = [col.capitalize() for col in macro1.columns]
     #drop region
@@ -88,7 +94,7 @@ def import_macro_data():
         'Energy_growth_est', 'Activity_growth', 'Activity_growth_8th',
         'Activity_growth_8th_index'], var_name='Measure', value_name='Value')
 
-    #%%
+    
     #split into 'Transport Type' by creating one df for each transport type in 'passenger' and 'freight'
     macro1_passenger = macro1.copy()
     macro1_passenger['Transport Type'] = 'passenger'
@@ -97,7 +103,7 @@ def import_macro_data():
     #concat
     macro1 = pd.concat([macro1_passenger, macro1_freight])
 
-    #%%
+    
     #split macro into the required scenarios. perhaps later, if the macro differs by scenario we will do this somehwere ese:
     new_macro = pd.DataFrame()
     for scenario in SCENARIOS_LIST:
@@ -105,16 +111,18 @@ def import_macro_data():
         s_macro['Scenario'] = scenario
         new_macro = pd.concat([new_macro, s_macro])
     macro1 = new_macro.copy()
-    #%%
+    
     measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
     macro1 = pd.merge(macro1, measure_to_unit_concordance[['Unit', 'Measure']], on=['Measure'], how='left')
 
-    #%%
+    
     #save to intermediate_data/model_inputs/regression_based_growth_estimates.csv
     macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)
 
-    #%%
-
+    
+#%%
+import_macro_data()
+#%%
 
 
 
@@ -159,7 +167,7 @@ def import_macro_data():
 # macro1_indexed_pct_growth['Carbon Neutral_activity_growth_index'] = (1 + macro1_indexed_pct_growth['Carbon Neutral_activity_growth']).cumprod()
 # macro1_indexed_pct_growth['Reference_activity_growth_index'] = (1 + macro1_indexed_pct_growth['Reference_activity_growth']).cumprod()
 # #####
-# #%%
+# 
 # plot_this = False
 # if plot_this:
 #     #plot these as line graphs using plotly
@@ -197,7 +205,7 @@ def import_macro_data():
 
 
 # #so take in the activity data and calcualte the growth rates for each economy
-# #%%
+# 
 # #data
 # #take in activity data from 8th edition up to 2050 (activity_from_OSEMOSYS-hughslast.csv)
 # activity = pd.read_csv('input_data/from_8th/reformatted/activity_from_OSEMOSYS-hughslast.csv')
@@ -210,7 +218,7 @@ def import_macro_data():
 
 # #keep reference only since the growth rates are the same
 # activity = activity[activity['Scenario'] == 'Reference']
-# #%%
+# 
 # #define index cols
 # INDEX_COLS = ['Economy','Date']
 
@@ -226,7 +234,7 @@ def import_macro_data():
 
 # #make cols lower case
 # activity_growth.columns = [col.lower() for col in activity_growth.columns]
-# #%%
+# 
 # #join activity_growth with macro data
 # macro2 = macro.copy()
 # macro2 = macro2.merge(activity_growth, how='inner', on=['economy', 'date'])
@@ -275,7 +283,7 @@ def import_macro_data():
 
 # macro2_melt = macro2.melt(id_vars=['region_growth_analysis', 'date'], value_vars=['GDP_activity', 'Population_activity', 'GDP_per_capita_activity', '8th_activity'], var_name='variable', value_name='activity')
 
-# #%%
+# 
 # #drop china and North America because they are too big and mess up the graph
 # macro2_melt = macro2_melt[macro2_melt['region_growth_analysis'] != 'China']
 # macro2_melt = macro2_melt[macro2_melt['region_growth_analysis'] != 'North America']
@@ -393,9 +401,9 @@ def import_macro_data():
 # energy_use['date'] = energy_use['date'].apply(lambda x: x[:4])
 # #make into int
 # energy_use['date'] = energy_use['date'].astype(int)
-# #%%
+# 
 # ##########################################
-# #%%
+# 
 # #do same for macro
 # new_macro=macro.copy()
 # new_macro.columns = new_macro.columns.str.lower()
@@ -405,7 +413,7 @@ def import_macro_data():
 
 # #calculaqte a test value that is GDP * Population. this might be better than gdp/population
 # energy_macro['gdp_times_capita'] = energy_macro['gdp'] * energy_macro['population']
-# #%%
+# 
 # # Make sure data is sorted by year
 # energy_macro = energy_macro.sort_values('date')
 
@@ -419,7 +427,7 @@ def import_macro_data():
 #         energy_macro[col + ' Cumulative Growth'] = (1 + energy_macro[col + ' Growth Rate'])
 #         energy_macro[col + ' Cumulative Growth'] = energy_macro.groupby('economy')[col + ' Cumulative Growth'].cumprod(skipna=True)
 
-# #%%
+# 
 # # Remove the first year (since it has no growth rate)
 # energy_macro = energy_macro[energy_macro['date'] != energy_macro['date'].min()]
 
@@ -493,7 +501,7 @@ def import_macro_data():
 #         # fig2.write_html('plotting_output/input_analysis/regions/correlation_between_energy_use_cumulative_growth_rate_and_macro_growth_cumulative_' + region + '.html')
         
 
-# #%%
+# 
 
 
 # #################################################
@@ -531,7 +539,7 @@ def import_macro_data():
 #                 #add as a row to df using pd.concat
 #                 new_row = pd.DataFrame([[medium, macro, correlation, _, economy]], columns=['Medium', 'Macro', 'Correlation', 'P-Value', 'Economy'])
 #                 correlation_df = pd.concat([correlation_df, new_row], ignore_index=True)
-# #%%
+# 
 # #do the same as above but for Cumulative Growth to see if it is more correlated
 
 # # Calculate correlation between each medium and each macro variable
@@ -602,7 +610,7 @@ def import_macro_data():
 #                         title='Correlation Heatmap for ' + economy)
 #         #save to html   
 #         fig.write_html('plotting_output/input_analysis/economies/correlation_heatmap_' + economy + '.html')
-# #%%
+# 
 # # energy_macro.columns
 # # Index(['economy', 'date', 'total', 'air', 'nonspecified', 'pipeline', 'rail',
 # #    'road', 'ship', 'industry', 'gdp_per_capita', 'population', 'gdp',
@@ -649,7 +657,7 @@ def import_macro_data():
 
 # # Print out the statistics
 # print(results.summary())
-# #%%
+# 
 # #plot
 # import plotly.graph_objects as go
 
@@ -688,7 +696,7 @@ def import_macro_data():
 
 # #save to html
 # fig.write_html("plotting_output/input_analysis/energy_vs_macro_regression.html")
-# #%%
+# 
 # #                             OLS Regression Results                            
 # # ==============================================================================
 # # Dep. Variable:           energy_total   R-squared:                       0.873
@@ -720,7 +728,7 @@ def import_macro_data():
 # # AIC:  14431.618096345892
 # # BIC:  14445.705493097068
 
-# #%%
+# 
 # #i think we actually want to try find the relation between 'growth' in energy and growth in gdp/population. So we need to do a regression on the growth rates.
 # df_growth = energy_macro[['economy', 'date', 'total Growth Rate','road Growth Rate', 'gdp Growth Rate', 'population Growth Rate', 'gdp_per_capita Growth Rate', 'gdp_times_capita Growth Rate']]
 # #rename total to energy_total
@@ -753,7 +761,7 @@ def import_macro_data():
 # # Print out the statistics
 # print(results.summary())
 
-# #%%
+# 
 # #plot
 # import plotly.graph_objects as go
 
@@ -811,7 +819,7 @@ def import_macro_data():
 
 # # Print out the statistics
 # print(results.summary())
-# #%%
+# 
 # # Create the prediction plane
 # x_pred = np.linspace(df_growth['gdp_growth'].min(), df_growth['gdp_growth'].max(), 10)
 # y_pred = np.linspace(df_growth['population_growth'].min(), df_growth['population_growth'].max(), 10)
@@ -852,7 +860,7 @@ def import_macro_data():
 # #it is actually not bad because the higher pop growth indicates a lower development level and in turn a lower energy growth because of lower gdp per capita... hmm
 
 # #lets take a lok at regression analysis for gdp_per_cpita
-# #%%
+# 
 # #i think we actually want to try find the relation between 'growth' in energy and growth in gdp/population. So we need to do a regression on the growth rates.
 # df_growth = energy_macro[['economy', 'date', 'total Growth Rate','road Growth Rate', 'gdp_per_capita Growth Rate']]
 # #rename total to energy_total
@@ -879,7 +887,7 @@ def import_macro_data():
 # # Print out the statistics
 # print(results.summary())
 
-# #%%
+# 
 # #i want to create a functionised version of the regression analysis done above so i dont have to repeat it for each variable
 # from sklearn.linear_model import LinearRegression
 # def regression_analysis(df, x, y):
@@ -1014,7 +1022,7 @@ def import_macro_data():
 # #i think we actually want to try find the relation between 'growth' in energy and growth in gdp/population. So we need to do a regression on the growth rates.
 # df = energy_macro[['economy', 'date', 'total Growth Rate','road Growth Rate', 'gdp Growth Rate', 'population Growth Rate', 'gdp_per_capita Growth Rate', 'gdp_times_capita Growth Rate', 'total','road', 'gdp', 'population', 'gdp_per_capita', 'gdp_times_capita']]
 # df.rename(columns={'total': 'energy_total', 'road': 'energy_road', 'gdp Growth Rate': 'gdp_growth', 'population Growth Rate': 'population_growth', 'gdp_per_capita Growth Rate': 'gdp_per_capita_growth', 'gdp_times_capita Growth Rate': 'gdp_times_capita_growth', 'total Growth Rate': 'energy_total_growth', 'road Growth Rate': 'energy_road_growth'}, inplace=True)
-# #%%
+# 
 # #do it for the following:
 # #energy_road_growth vs gdp_per_capita_growth, gdp_times_capita_growth, gdp_growth, population_growth
 # #energy_total_growth vs gdp_per_capita_growth, gdp_times_capita_growth, gdp_growth, population_growth
@@ -1042,7 +1050,7 @@ def import_macro_data():
 #     dependent_variable = 'energy_total'
 
 #     plot_regression_results(regression_analysis(df, independent_variables, dependent_variable), df, independent_variables, dependent_variable, 'regression_macro_vs_energy_total')
-# #%%
+# 
 # #ok it works. Now lets do it by economy (ignore energy road)
 # #filter for only 07_INA
 # df = df[df['economy'] == '07_INA']
@@ -1081,7 +1089,7 @@ def import_macro_data():
 
 
 
-# # #%%
+# # 
 
 # # #if x is list, then it is a multiple regression
 # # if isinstance(x, list):
@@ -1119,7 +1127,7 @@ def import_macro_data():
 # #         multiple_plus_df = pd.concat([multiple_plus_df,new_df_values])
         
 
-# # #%%
+# # 
 # # # Creating the scatter plot
 # # if regression_type == 'multiple':
 # #     fig = go.Figure(data=[go.Scatter3d(

@@ -21,6 +21,15 @@ def aggregate_data_for_model():
     #load activity growth data and macro data
     # macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)
     growth = pd.read_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv')
+    
+    #TEMP REPALCE ACTIVITY GROWTH WITH Activity_growth_8th FOR TESTING. 
+    if REPLACE_ACTIVITY_GROWTH_WITH_8TH:#NOTE THAT THIS CURRENETLY DOESNT WORK BECAUSE OF NAS IN THE DATA
+        breakpoint()
+        Activity_growth_8th = growth.copy()
+        Activity_growth_8th = Activity_growth_8th.loc[Activity_growth_8th.Measure=='Activity_growth_8th']
+        Activity_growth_8th.Measure = 'Activity_growth'
+        growth = growth.loc[growth.Measure!='Activity_growth']
+        growth = pd.concat([growth, Activity_growth_8th], sort=False)
     # growth.columns Index(['economy', 'date',Transport type 'GDP_per_capita', 'Population', 'GDP',
     #        'GDP_times_capita', 'GDP_growth', 'Population_growth',
     #        'GDP_per_capita_growth', 'GDP_times_capita_growth', 'region', 'const',
@@ -28,12 +37,12 @@ def aggregate_data_for_model():
     #        'energy_growth_est', 'Activity_growth', 'Activity_growth_8th',
     #        'Activity_growth_8th_index'],
     #       dtype='object')
-    #%%
+    
     #find where user_input[user_input.Measure=='Vehicle_sales_share'] has transport type = passenger and date = 2019
     # a = user_input.loc[(user_input['Measure']=='Vehicle_sales_share') & (user_input['Transport Type']=='passenger') & (user_input['Date']==2019) & (user_input['Economy']=='01_AUS')]
     # if a.Value.sum() != 1:
     #     raise ValueError('The sum of the vehicle sales share for passenger vehicles in 2019 is not 1. Please check the user input data and fix this.')
-    #%%
+    
     #connect user inputs with transport datassystem dataset
 
     #create Dataset column in user input and call it 'user_input'
@@ -47,13 +56,13 @@ def aggregate_data_for_model():
         nans.remove('Activity_growth_8th')
         nans.remove('Activity_growth_8th_index')
         print('These measures contains nans iun the value column. They will be ignored in the model. Please check the data and fix the nans if you want to use them in the model. ' +nans)
-    #%%
+    
     #concat user inputs to transport dataset
     aggregated_model_data = pd.concat([new_transport_dataset, user_input], sort=False)
     #concat growth to transport dataset
     aggregated_model_data = pd.concat([aggregated_model_data, growth], sort=False)
 
-    #%%
+    
     #make sure that the data is in the right format. We will have date as int, value as float and all others as objects. if there si an error, then something is probably wrong with the data
     aggregated_model_data['Date'] = aggregated_model_data['Date'].astype(int)
     aggregated_model_data['Value'] = aggregated_model_data['Value'].astype(float)
@@ -64,7 +73,7 @@ def aggregate_data_for_model():
 
     #convert 'nan' to np.nan
     aggregated_model_data = aggregated_model_data.replace('nan', np.nan)
-    #%%
+    
     #convert units to similar magnitudes. We might need to change the units as well.
     #these are based off the units in measure_to_unit_concordance from config.py
     measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
@@ -72,7 +81,7 @@ def aggregate_data_for_model():
     # 	Pj	Energy	1.000000e+00	PJ
     # Magnitude_adjustment is needed to convert the numbers from their Unit to their Magnitude adjusted unit. 
     # eg. to convert form stocks to million stocks just itmes the vlaue by magnitude adjustment
-    #%%
+    
     #convert to dict
     unit_to_adj_unit_concordance_dict = measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjusted_unit']
     value_adjustment_concordance_dict = measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjustment']
@@ -84,36 +93,29 @@ def aggregate_data_for_model():
 
         #convert units
         aggregated_model_data.loc[aggregated_model_data['Unit']==unit, 'Unit'] = unit_to_adj_unit_concordance_dict[unit]
-    #%%
+    
     #IMPORTANT ERROR CHECK FOR LINE 135 OF 1_RUN_ROAD_MODEL.PY
     #check that the units for stocks and populatin are in millions and thousands respectively
     if aggregated_model_data.loc[aggregated_model_data['Measure']=='Stocks', 'Unit'].unique().tolist() != ['Million_stocks']:
         print('ERROR: The units for stocks are not in millions. Please fix the data')
     if aggregated_model_data.loc[aggregated_model_data['Measure']=='Population', 'Unit'].unique().tolist() != ['Population_thousands']:
         print('ERROR: The units for population are not in thousands. Please fix the data')
-    #%%
+    
     #For years previous to the base year we may have only some measures and not others. Later on we will be trying to calcaulte values from these and this could reasult in errors. So we will fill in the missing measures with earliest availble data. THis should be okay because the values will only be those like mileage, 
 
 
 
 
-
-
-
-
-
-
-
-
-    #%%
+    
     ################################################################################
     #save
     aggregated_model_data.to_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID), index=False)
 
-
-# #%%
-
 #%%
+aggregate_data_for_model()
+#%%
+
+
 # #testing:
 # #plot freight tonne km for 2017 for 01_AUS
 # aggregated_model_data[(aggregated_model_data['Date']=='2017') & (aggregated_model_data['Economy']=='20_USA') & (aggregated_model_data['Measure']=='Energy')].plot(x='Medium',y='Value',kind='bar')
@@ -123,20 +125,20 @@ def aggregate_data_for_model():
 # aggregated_model_data[(aggregated_model_data['Date']==2017) & (aggregated_model_data['Economy']=='20_USA') & (aggregated_model_data['Measure']=='Energy')].groupby(['Medium']).sum().plot(y='Value',kind='bar')
 
 
-#%%
 
 
 
 
 
-# #%%
+
+# 
 # if run:
 #     #merge data
 #     # activity_efficiency = activity.merge(efficiency, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type','Drive', 'Year'], how='left') 
 #     activity_energy = activity.merge(energy, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
 #     activity_energy_road_stocks = activity_energy.merge(road_stocks, on=['Scenario', 'Economy', 'Medium', 'Transport Type', 'Vehicle Type', 'Drive', 'Year'], how='left')
 
-# #%%
+# 
 # if run:
 #     #AGGREGATE ROAD MODEL INPUT
 #     #create a df for road model. We will filter for base year later
@@ -151,7 +153,7 @@ def aggregate_data_for_model():
 #     road_model_input = road_model_input.merge(turnover_rate, on=['Economy', 'Scenario', 'Transport Type', 'Drive','Vehicle Type', 'Year'], how='left')
 #     road_model_input = road_model_input.merge(new_vehicle_efficiency, on=['Economy', 'Scenario', 'Transport Type', 'Drive','Vehicle Type', 'Year'], how='left')
 
-# #%%
+# 
 # if run:
 #     #AGGREGATE NON ROAD MODEL INPUT
 #     non_road_model_input = activity_energy_road_stocks.loc[(activity_energy_road_stocks['Medium'] != 'road')]
@@ -159,7 +161,7 @@ def aggregate_data_for_model():
 #     #remove data that isnt in the base year
 #     non_road_model_input = non_road_model_input.loc[(non_road_model_input['Year'] == BASE_YEAR)]
 
-# #%%
+# 
 # run= False
 # if run:
 #     #AGGREGATE USER DEFINED INPUTS AND GROWTH RATES
@@ -181,7 +183,7 @@ def aggregate_data_for_model():
 #     road_user_input_growth = road_user_input_growth.merge(OccupanceAndLoad_growth, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
 #     road_user_input_growth = road_user_input_growth.merge(Activity_growth, on=['Economy','Scenario', 'Year'], how='left')
 
-# #%%
+# 
 # #NOTE WANT TO USE THIS AT THE END OF GREOOMING
 # if run:
 #     #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
@@ -194,7 +196,7 @@ def aggregate_data_for_model():
 #     #save user input growth rates
 #     road_user_input_growth.to_csv('intermediate_data/aggregated_model_inputs/road_user_input_and_growth_rates.csv', index=False)
 #     non_road_user_input_growth.to_csv('intermediate_data/aggregated_model_inputs/non_road_user_input_and_growth_rates.csv', index=False)
-# #%%
+# 
 
 
 # run = False

@@ -156,7 +156,6 @@ def create_and_clean_user_input():
         user_input_new = pd.concat([user_input_missing_values_dont_change, user_input_missing_values_change], sort=False)
 
         #check for nas and throw error if so. might need to utilise the commented out code below (that i didnt finish gettting working) to do this
-        breakpoint()
         if len(user_input_new[user_input_new.Value.isna()]) >0:
             #identify the rows where there are still nas in the Value col:
             user_input_new_nas = user_input_new[user_input_new.Value.isna()]
@@ -194,7 +193,7 @@ def create_and_clean_user_input():
 
     
 #%%
-create_and_clean_user_input()
+# create_and_clean_user_input()
 #%%
 
 

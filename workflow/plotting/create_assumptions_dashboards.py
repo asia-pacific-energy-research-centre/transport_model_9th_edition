@@ -39,11 +39,12 @@ fig_dict = {}
 #fig dict will have the following structure:
 #economy > scenario > plots
 #so you can iterate through each economy, scenaio and plot the dashboard for the plots ordered as is in the list in the dict.
-plots = ['passenger_km_by_drive', 'freight_tonne_km_by_drive',  'activity_growth','energy_use_by_fuel_type',
-'drive_share_passenger', 'drive_share_freight']
+plots = ['passenger_km_by_drive', 'freight_tonne_km_by_drive',  'activity_indexed','energy_use_by_fuel_type', 'vehicle_type_stocks',
+'drive_share_passenger', 'drive_share_freight', 'fuel_mixing', 'charging']#activity_growth
 #so in the end there will be a dashboard for every scenario and economy, with the plots in the order specified in the plots list
+     
 for economy in economy_scenario_concordance['Economy'].unique():
-    if economy in economies_to_plot_for:
+    if economy in ECONOMIES_TO_PLOT_FOR:
         
         #create economy folder in plotting_output/dashboards too
         if not os.path.exists('plotting_output/dashboards/{}'.format(economy)):
@@ -66,8 +67,15 @@ def create_dashboard(fig_dict):
     #create passenger km by drive plots
     fig_dict = passenger_km_by_drive(fig_dict)
     #create activity growth plots
-    fig_dict = activity_growth(fig_dict)
-
+    # fig_dict = activity_growth(fig_dict)
+    
+    fig_dict = activity_indexed(fig_dict)
+    #insertt fuel mixing plots
+    fig_dict = plot_supply_side_fuel_mixing(fig_dict)
+    #charging:
+    fig_dict = create_charging_plot(fig_dict)
+    #vehicle_type_stocks
+    fig_dict = create_vehicle_type_stocks_plot(fig_dict)
     #now create the dashboards:
     for economy in fig_dict.keys():
         for scenario in fig_dict[economy].keys():
@@ -109,35 +117,91 @@ def create_dashboard(fig_dict):
 
 
 #%%
-def create_sales_share_plots(fig_dict):
-    new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
-    #sum up all the sales shares for each drive type (so drop vehicle type
-    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.drop(columns=['Vehicle Type']).groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
-    for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
-        for economy in economies_to_plot_for:
-            
-            plot_data = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario) & (new_sales_shares_all_plot_drive_shares['Economy']==economy)].copy()
+def remap_vehicle_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']):
 
-            #also plot the data like the iea does. So plot the data for 2022 and previous, then plot for the follwoign eyars: [2025, 2030, 2035, 2040, 2050, 2060]. 
-            plot_data = plot_data.apply(lambda x: x if x['Date'] <= 2022 or x['Date'] in [2025, 2030, 2035, 2040, 2050, 2060] else 0, axis=1)
+    #also group and sum by the following vehicle type cmbinations:
+    vehicle_type_combinations = {'lt':'lpv', 'suv':'lpv', 'car':'lpv', 'ht':'trucks', 'mt':'trucks', 'bus':'bus', '2w':'2w', 'lcv':'lcv'}
+    
+    df['Vehicle Type new'] = df['Vehicle Type'].map(vehicle_type_combinations)
+    #drop then rename vehicle type
+    df['Vehicle Type'] = df['Vehicle Type new']
+    #dxrop the new column
+    df.drop(columns=['Vehicle Type new'], inplace=True)
+    df = df.groupby(index_cols).sum().reset_index()
+    return df
+    
+def create_sales_share_plots(fig_dict):
+
+    # breakpoint()
+    new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
+
+    #and filter so data is less than GRAPHING_END_YEAR
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Date']<=GRAPHING_END_YEAR)].copy()
+    
+    # #sum up all the sales shares for each drive type
+    # new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.groupby(['Scenario', 'Economy', 'Date', 'Vehicle Type','Transport Type', 'Drive']).sum().reset_index()
+    
+    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    
+    new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales_share'
+    
+    for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
+        new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
+        ###
+        #grab stocks data to include in the plot. ths can be used to show how stocks increase slowly.
+        stocks = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
+        
+        #rename to Value
+        stocks = stocks.rename(columns={'Stocks':'Value'})
+        
+        #and filter so data is less than GRAPHING_END_YEAR  
+        stocks = stocks.loc[(stocks['Date']<=GRAPHING_END_YEAR)].copy()
+        
+        # #groupby and sum like in sales shares:
+        # stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Vehicle Type','Stocks']].groupby(['Scenario', 'Economy', 'Date','Vehicle Type', 'Transport Type', 'Drive']).sum().reset_index()
+        
+        stocks = remap_vehicle_types(stocks, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+        
+        #now calucalte share of total stocks as a proportion like the sales share
+        stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
+        
+        #create line_dash column and call it stocks
+        stocks['line_dash'] = 'stocks'
+        
+        #then concat the two dataframes
+        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks])
+        
+        #times shares by 100
+        new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
+                
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            plot_data =  new_sales_shares_all_plot_drive_shares_scenario.loc[(new_sales_shares_all_plot_drive_shares_scenario['Economy']==economy)].copy()
+
+            # #also plot the data like the iea does. So plot the data for 2022 and previous, then plot for the follwoign eyars: [2025, 2030, 2035, 2040, 2050, 2060]. This helps to keep the plot clean too
+            # plot_data = plot_data.apply(lambda x: x if x['Date'] <= 2022 or x['Date'] in [2025, 2030, 2035, 2040, 2050, 2060, 2070, 2080,2090, 2100] else 0, axis=1)
             #drop all drives except phev, bev and fcev
             plot_data = plot_data.loc[(plot_data['Drive']=='bev') | (plot_data['Drive']=='phev') | (plot_data['Drive']=='fcev')].copy()
 
+            #concat drive and vehicle type
+            plot_data['Drive'] = plot_data['Drive'] + ' ' + plot_data['Vehicle Type']
+            
+            #sort by date col
+            plot_data.sort_values(by=['Date'], inplace=True)
             #############
             #now plot
             
-            title = f'Average sales shares for passenger vehicles'
+            title = f'Sales and stocks shares for passenger vehicles (%)'
 
-            fig = px.bar(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title)
+            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
             
             #############
             
-            title = f'Average sales shares for freight vehicles'
+            title = f'Sales and stocks shares for freight vehicles (%)'
 
-            fig = px.bar(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title)
+            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
@@ -146,13 +210,16 @@ def create_sales_share_plots(fig_dict):
 
 def energy_use_by_fuel_type(fig_dict):
     #load in data and recreate plot, as created in all_economy_graphs
-
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
+            
         # pkl : plotting_output\all_economy_graphs\_20230614\model_output_with_fuels.pkl
         model_output_with_fuels = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_with_fuels.pkl')
+        #and filter so data is less than GRAPHING_END_YEAR\
+        model_output_with_fuels = model_output_with_fuels.loc[(model_output_with_fuels['Date']<=GRAPHING_END_YEAR)].copy()
         if DROP_NON_ROAD_TRANSPORT:
             model_output_with_fuels = model_output_with_fuels.loc[model_output_with_fuels['Medium']=='road'].copy()
+        
         #create a new df with only the data we need: 
         energy_use_by_fuel_type = model_output_with_fuels.copy()
         energy_use_by_fuel_type= energy_use_by_fuel_type[['Economy', 'Scenario', 'Date', 'Fuel', 'Energy']].groupby(['Economy', 'Scenario', 'Date', 'Fuel']).sum().reset_index()
@@ -162,13 +229,15 @@ def energy_use_by_fuel_type(fig_dict):
         #add units
         energy_use_by_fuel_type['Unit'] = energy_use_by_fuel_type['Measure'].map(measure_to_unit_concordance_dict)
 
-        for economy in economies_to_plot_for:
+        energy_use_by_fuel_type_scenario = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Scenario']==scenario].copy()
+        
+        for economy in ECONOMIES_TO_PLOT_FOR:
             #filter to economy
-            energy_use_by_fuel_type_economy = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Economy']==economy].copy()
+            energy_use_by_fuel_type_economy = energy_use_by_fuel_type_scenario.loc[energy_use_by_fuel_type_scenario['Economy']==economy].copy()
             #sort by date
             # energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.sort_values(by='Date')
             #now plot
-            fig = px.line(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy Use by Fuel Type')
+            fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy Use by Fuel Type')
             #add units to y col
             title_text = 'Energy Use by Fuel Type ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
             # fig.update_yaxes(title_text='Energy ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0]))
@@ -177,13 +246,63 @@ def energy_use_by_fuel_type(fig_dict):
             fig_dict[economy][scenario]['energy_use_by_fuel_type'] = [fig, title_text]
     return fig_dict
 
-def freight_tonne_km_by_drive(fig_dict):
-    # model_output_detailed.pkl
-    
+
+def create_vehicle_type_stocks_plot(fig_dict):
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
-        model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
         
+        model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
+        #rename Stocks to Value
+        model_output_detailed = model_output_detailed.rename(columns={'Stocks':'Value'})
+        
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_detailed = model_output_detailed.loc[(model_output_detailed['Date']<=GRAPHING_END_YEAR)].copy()
+        
+        model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']=='road'].copy()
+        
+        #create a new df with only the data we need:
+        stocks_by_vehicle_type = model_output_detailed.copy()
+        stocks_by_vehicle_type = stocks_by_vehicle_type[['Economy', 'Scenario', 'Date', 'Vehicle Type', 'Value']].groupby(['Economy', 'Scenario', 'Date', 'Vehicle Type']).sum().reset_index()
+
+        #add units (by setting measure to Freight_tonne_km haha)
+        stocks_by_vehicle_type['Measure'] = 'Stocks'
+        #add units
+        stocks_by_vehicle_type['Unit'] = stocks_by_vehicle_type['Measure'].map(measure_to_unit_concordance_dict)
+
+        stocks_by_vehicle_type_scenario = stocks_by_vehicle_type.loc[stocks_by_vehicle_type['Scenario']==scenario].copy()
+        
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            stocks_by_vehicle_type_economy = stocks_by_vehicle_type_scenario.loc[stocks_by_vehicle_type_scenario['Economy']==economy].copy()
+            
+            # #also if stocks of 2w are more than 50% of total stocks then recategorise the vehicle types a bit
+            # if stocks_by_vehicle_type_economy.loc[stocks_by_vehicle_type_economy['Vehicle Type']=='2w']['Value'].sum() > 0.5*stocks_by_vehicle_type_economy.loc[stocks_by_vehicle_type_economy['Vehicle Type']!='2w']['Value'].sum():
+            # breakpoint()
+            stocks_by_vehicle_type_economy = remap_vehicle_types(stocks_by_vehicle_type_economy, value_col='Value', index_cols = ['Date', 'Vehicle Type','Unit'])
+            
+            #sort by date
+            # stocks_by_vehicle_type_economy = stocks_by_vehicle_type_economy.sort_values(by='Date')
+            #now plot
+            fig = px.line(stocks_by_vehicle_type_economy, x='Date', y='Value', color='Vehicle Type')#, title='Freight Tonne Km by Drive Type')
+            title_text = 'Stocks by Vehicle Type ({})'.format(stocks_by_vehicle_type_economy['Unit'].unique()[0])
+            #add units to y col
+            # fig.update_yaxes(title_text='Freight Tonne Km ({})'.format(stocks_by_vehicle_type_economy['Unit'].unique()[0]))
+
+            #add fig to dictionary for scenario and economy:
+            fig_dict[economy][scenario]['vehicle_type_stocks'] = [fig, title_text]
+    return fig_dict
+
+
+def freight_tonne_km_by_drive(fig_dict):
+    # model_output_detailed.pkl
+
+
+    #loop through scenarios and grab the data for each scenario:
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_detailed = model_output_detailed.loc[(model_output_detailed['Date']<=GRAPHING_END_YEAR)].copy()
         if DROP_NON_ROAD_TRANSPORT:
             model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']=='road'].copy()
         #create a new df with only the data we need:
@@ -195,14 +314,15 @@ def freight_tonne_km_by_drive(fig_dict):
         #add units
         freight_tonne_km_by_drive['Unit'] = freight_tonne_km_by_drive['Measure'].map(measure_to_unit_concordance_dict)
 
-        for economy in economies_to_plot_for:
+        freight_tonne_km_by_drive_scenario = freight_tonne_km_by_drive.loc[freight_tonne_km_by_drive['Scenario']==scenario].copy()
+        for economy in ECONOMIES_TO_PLOT_FOR:
             #filter to economy
-            freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive.loc[freight_tonne_km_by_drive['Economy']==economy].copy()
+            freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive_scenario.loc[freight_tonne_km_by_drive_scenario['Economy']==economy].copy()
             
             #sort by date
             # freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive_economy.sort_values(by='Date')
             #now plot
-            fig = px.line(freight_tonne_km_by_drive_economy, x='Date', y='freight_tonne_km', color='Drive')#, title='Freight Tonne Km by Drive Type')
+            fig = px.area(freight_tonne_km_by_drive_economy, x='Date', y='freight_tonne_km', color='Drive')#, title='Freight Tonne Km by Drive Type')
             title_text = 'Freight Tonne Km by Drive Type ({})'.format(freight_tonne_km_by_drive_economy['Unit'].unique()[0])
             #add units to y col
             # fig.update_yaxes(title_text='Freight Tonne Km ({})'.format(freight_tonne_km_by_drive_economy['Unit'].unique()[0]))
@@ -213,11 +333,12 @@ def freight_tonne_km_by_drive(fig_dict):
 
 def passenger_km_by_drive(fig_dict):
     # model_output_detailed.pkl
-    
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
-        model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
         
+        model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_detailed = model_output_detailed.loc[(model_output_detailed['Date']<=GRAPHING_END_YEAR)].copy()        
         if DROP_NON_ROAD_TRANSPORT:
             model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']=='road'].copy()
         #create a new df with only the data we need:
@@ -229,14 +350,15 @@ def passenger_km_by_drive(fig_dict):
         #add units
         passenger_km_by_drive['Unit'] = passenger_km_by_drive['Measure'].map(measure_to_unit_concordance_dict)
 
-        for economy in economies_to_plot_for:
+        passenger_km_by_drive_scenario = passenger_km_by_drive.loc[passenger_km_by_drive['Scenario']==scenario].copy()
+        for economy in ECONOMIES_TO_PLOT_FOR:
             #filter to economy
-            passenger_km_by_drive_economy = passenger_km_by_drive.loc[passenger_km_by_drive['Economy']==economy].copy()
+            passenger_km_by_drive_economy = passenger_km_by_drive_scenario.loc[passenger_km_by_drive_scenario['Economy']==economy].copy()
             
             #sort by date
             # passenger_km_by_drive_economy = passenger_km_by_drive_economy.sort_values(by='Date')
             #now plot
-            fig = px.line(passenger_km_by_drive_economy, x='Date', y='passenger_km', color='Drive')#, title='Passenger Km by Drive Type')
+            fig = px.area(passenger_km_by_drive_economy, x='Date', y='passenger_km', color='Drive')#, title='Passenger Km by Drive Type')
             #add units to y col
             title_text = 'Passenger Km by Drive Type ({})'.format(passenger_km_by_drive_economy['Unit'].unique()[0])
             # fig.update_yaxes(title_text='Passenger Km ({})'.format(passenger_km_by_drive_economy['Unit'].unique()[0]))
@@ -248,23 +370,45 @@ def passenger_km_by_drive(fig_dict):
 
 def activity_growth(fig_dict):
     # model_output_detailed.pkl
-    breakpoint()
     #loop through scenarios and grab the data for each scenario:
+    breakpoint()
     for scenario in economy_scenario_concordance['Scenario'].unique():
+        
         model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
-        #create a new df with only the data we need:
-        activity_growth = model_output_detailed.copy()
-        activity_growth = activity_growth[['Economy', 'Scenario', 'Date', 'Transport Type', 'Activity_growth']].drop_duplicates()
-        #add units (by setting measure to Freight_tonne_km haha)
-        activity_growth['Measure'] = 'Activity_growth'
+        
+        #calcualte population growth and gdp growth as a percentage:
+        # #first grasb only the data we need for this:
+        # model_output_detailed_growth = model_output_detailed[['Economy', 'Scenario', 'Date', 'Population', 'Gdp']].copy().drop_duplicates()
+        #srot by date
+        model_output_detailed = model_output_detailed.sort_values(by='Date')
+        model_output_detailed['Population_growth'] = model_output_detailed.groupby(['Economy', 'Transport Type'])['Population'].pct_change()
+        model_output_detailed['GDP_growth'] = model_output_detailed.groupby(['Economy', 'Transport Type'])['Gdp'].pct_change()
+        
+        #minus one from the activity_growth col  and times by 100
+        model_output_detailed['Activity_growth'] = (model_output_detailed['Activity_growth']-1)*100
+        
+        #now drop all cols we dont need for activity growth
+        model_output_detailed = model_output_detailed[['Economy', 'Date', 'Transport Type', 'Population_growth', 'GDP_growth', 'Activity_growth']].copy().drop_duplicates()
+        
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_detailed = model_output_detailed.loc[(model_output_detailed['Date']<=GRAPHING_END_YEAR)].copy()
+        
+        #melt so all measures in one col
+        activity_growth = pd.melt(model_output_detailed, id_vars=['Economy',  'Date', 'Transport Type'], value_vars=['Population_growth', 'GDP_growth', 'Activity_growth'], var_name='Measure', value_name='Macro_growth')
+        
+        # #times macro growth by 100 to get percentage
+        # activity_growth['Macro_growth'] = activity_growth['Macro_growth']*100
+        
+        # #add units (by setting measure to Freight_tonne_km haha)
+        # activity_growth['Measure'] = 'Macro_growth'
         #add units
-        activity_growth['Unit'] = activity_growth['Measure'].map(measure_to_unit_concordance_dict)
-        for economy in economies_to_plot_for:
+        activity_growth['Unit'] = '%'
+        for economy in ECONOMIES_TO_PLOT_FOR:
             #filter to economy
             activity_growth_economy = activity_growth.loc[activity_growth['Economy']==economy].copy()
 
             #now plot
-            fig = px.line(activity_growth_economy, x='Date', y='Activity_growth',color='Transport Type')#, title='Activity Growth')
+            fig = px.line(activity_growth_economy, x='Date', y='Macro_growth',color='Measure',line_dash='Transport Type')#, title='Activity Growth')
             #add units to y col
             title_text = 'Activity Growth ({})'.format(activity_growth_economy['Unit'].unique()[0])
             fig.update_yaxes(title_text=title_text)#not working for some reason
@@ -274,8 +418,142 @@ def activity_growth(fig_dict):
 
     return fig_dict
 
+def activity_indexed(fig_dict):
+    # model_output_detailed.pkl
+    #loop through scenarios and grab the data for each scenario:
+    # breakpoint()
+    
+    original_model_output_8th = pd.read_csv('intermediate_data/activity_energy_road_stocks.csv')
+    
+    #grab only the Activity then sum it by economy, scenario and date
+    original_model_output_8th = original_model_output_8th[['Economy', 'Scenario', 'Year', 'Activity']].copy().drop_duplicates()
+    original_model_output_8th = original_model_output_8th.groupby(['Economy', 'Scenario', 'Year']).sum().reset_index()
+    #rename actovity to Activity_8th
+    original_model_output_8th = original_model_output_8th.rename(columns={'Activity':'Activity_8th', 'Year':'Date'})
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
+        #if scenario is Target then look for 'Carbon Neutral' in scenario name
+        if scenario == 'Target':
+            original_model_output_8th_scenario = original_model_output_8th.loc[original_model_output_8th['Scenario']=='Carbon Neutral'].copy()
+        else:
+            original_model_output_8th_scenario = original_model_output_8th.loc[original_model_output_8th['Scenario']==scenario].copy()
+    
+        #drop scenario col
+        original_model_output_8th_scenario = original_model_output_8th_scenario.drop(columns=['Scenario'])
+        
+        #calcualte population, gdp, freight tonne km and passenger km as an index:
+        # #first grasb only the data we need for this:
+        # model_output_detailed_growth = model_output_detailed[['Economy', 'Scenario', 'Date', 'Population', 'Gdp']].copy().drop_duplicates()
+        #srot by date
+        def calc_index(df, col):
+            df = df.sort_values(by='Date')
+            df['Value'] = df[col]/df[col].iloc[0]
+            df['Measure'] = '{}_index'.format(col)
+            df.drop(columns=[col], inplace=True)
+            return df
+        population = calc_index(model_output_detailed[['Population','Date','Economy']].drop_duplicates(),'Population')
+        gdp = calc_index(model_output_detailed[['Gdp','Date','Economy']].drop_duplicates(),'Gdp')
+        freight_km = calc_index(model_output_detailed[['freight_tonne_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'freight_tonne_km')
+        passenger_km = calc_index(model_output_detailed[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
+        original_model_output_8th_scenario = calc_index(original_model_output_8th_scenario,'Activity_8th')
+        breakpoint()
+        #concat all the data together then melt:
+        index_data = pd.concat([population, gdp, freight_km, passenger_km,original_model_output_8th_scenario], axis=0)
+        
+        #and filter so data is less than GRAPHING_END_YEAR
+        index_data = index_data.loc[(index_data['Date']<=GRAPHING_END_YEAR)].copy()
+        
+        # #melt so all measures in one col
+        # index_data = index_data.melt(id_vars=['Economy', 'Date'], value_vars=['Population_index', 'Gdp_index', 'freight_tonne_km_index', 'passenger_km_index', 'Activity_8th'], var_name='Measure', value_name='Index')
+        
+        index_data['Unit'] = 'Index'
 
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            index_data_economy = index_data.loc[index_data['Economy']==economy].copy()
 
+            #now plot
+            fig = px.line(index_data_economy, x='Date', y='Value',color='Measure')#, title='Activity Growth')
+            #add units to y col
+            title_text = 'Index Activity Data ({})'.format(index_data_economy['Unit'].unique()[0])
+            fig.update_yaxes(title_text=title_text)#not working for some reason
+
+            #add fig to dictionary for scenario and economy:
+            fig_dict[economy][scenario]['activity_indexed'] = [fig, title_text]
+
+    return fig_dict
+
+def plot_supply_side_fuel_mixing(fig_dict):
+    #plot supply side fuel mixing
+    
+    # supply_side_fuel_mixing_plot = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name))
+    
+    #save as user input csv
+    supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
+    
+    #and filter so data is less than GRAPHING_END_YEAR
+    supply_side_fuel_mixing = supply_side_fuel_mixing.loc[(supply_side_fuel_mixing['Date']<=GRAPHING_END_YEAR)].copy()
+    
+    #round the Supply_side_fuel_share column to 2dp
+    supply_side_fuel_mixing['Supply_side_fuel_share'] = supply_side_fuel_mixing['Supply_side_fuel_share'].round(2)
+    supply_side_fuel_mixing= supply_side_fuel_mixing[['Date', 'Economy','Scenario', 'Fuel','New_fuel' ,'Supply_side_fuel_share']].drop_duplicates()
+    #supply side mixing is just the percent of a fuel type that is mixed into another fuel type, eg. 5% biodiesel mixed into diesel. We can use the concat of Fuel and New fuel cols to show the data:
+    supply_side_fuel_mixing['Fuel mix'] = supply_side_fuel_mixing['New_fuel']# supply_side_fuel_mixing_plot['Fuel'] + ' mixed with ' + 
+    #actually i changed that because it was too long. should be obivous that it's mixed with the fuel in the Fuel col (eg. biodesel mixed with diesel)
+    
+    #add units (by setting measure to Freight_tonne_km haha)
+    supply_side_fuel_mixing['Measure'] = 'Fuel_mixing'
+    #add units
+    supply_side_fuel_mixing['Unit'] = '%'
+    
+    #sort by date
+    supply_side_fuel_mixing = supply_side_fuel_mixing.sort_values(by='Date')
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        supply_side_fuel_mixing_plot_scenario = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Scenario']==scenario].copy()
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            supply_side_fuel_mixing_plot_economy = supply_side_fuel_mixing_plot_scenario.loc[supply_side_fuel_mixing_plot_scenario['Economy']==economy].copy()
+
+            title = 'Supply side fuel mixing for ' + scenario + ' scenario'
+            fig = px.line(supply_side_fuel_mixing_plot_economy, x="Date", y="Supply_side_fuel_share", color='New_fuel',  title=title)
+
+            #add units to y col
+            title_text = 'Supply side fuel mixing ({})'.format(supply_side_fuel_mixing_plot_economy['Unit'].unique()[0])
+            fig.update_yaxes(title_text=title_text)#not working for some reason
+
+            #add fig to dictionary for scenario and economy:
+            fig_dict[economy][scenario]['fuel_mixing'] = [fig, title_text]
+    return fig_dict
+
+def create_charging_plot(fig_dict):
+    #load in data from r'output_data\for_other_modellers\estimated_number_of_chargers.csv' and plot 'sum_of_fast_chargers_needed','sum_of_slow_chargers_needed' as a staked bar chart
+    chargers = pd.read_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv')
+    
+    #and filter so data is less than GRAPHING_END_YEAR
+    chargers = chargers.loc[(chargers['Date']<=GRAPHING_END_YEAR)].copy()
+    
+    chargers = chargers[['Economy', 'Scenario', 'Date', 'sum_of_fast_chargers_needed','sum_of_slow_chargers_needed']].drop_duplicates()
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            chargers_scenario = chargers.loc[chargers['Scenario']==scenario].copy()
+            chargers_economy = chargers_scenario.loc[chargers_scenario['Economy']==economy].copy()
+
+            title = 'Expected slow and fast public chargers needed for' + scenario + ' scenario'
+            fig = px.bar(chargers_economy, x="Date", y=['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'], color_discrete_sequence=['#636EFA', '#EF553B'], title=title)
+
+            #add units to y col
+            title_text = 'Public chargers (millions)'
+            fig.update_yaxes(title_text=title_text)#not working for some reason
+
+            #add fig to dictionary for scenario and economy:
+            fig_dict[economy][scenario]['charging'] = [fig, title_text]
+    return fig_dict
+        
+    
 #%%
 create_dashboard(fig_dict)
 #%%

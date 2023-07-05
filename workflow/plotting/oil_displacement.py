@@ -55,9 +55,15 @@ AUTO_OPEN_PLOTLY_GRAPHS = False
 #map vtypes to colors and associated opacity
 #vtyes: ['all', 'ht', 'ldv', '2w', 'bus']
 color_map = {
-    'ht': 'rgba(255, 0, 0, 0.2)',     # red
-    'ldv': 'rgba(0, 0, 255, 0.2)',    # blue
-    '2w': 'rgba(128, 0, 128, 0.2)',   # purple
+    'ht': 'rgba(0, 128, 0, 0.2)', # dark green
+    'mt': 'rgba(0, 255, 0, 0.2)', # green
+    'lcv': 'rgba(144, 238, 144, 0.2)', # light green
+    
+    'lt': 'rgba(128, 0, 128, 0.2)',   # purple
+    'car': 'rgba(0, 0, 255, 0.2)', # blue
+    'suv': 'rgba(0, 153, 255, 0.2)', # light blue
+    
+    '2w': 'rgba(255, 0, 0, 0.2)', # red
     'bus': 'rgba(255, 165, 0, 0.2)'   # orange
 }
 
@@ -79,9 +85,14 @@ for economy in model_output_detailed.Economy.unique():
             ##############################################
             #DO SEP PLOT FOR EACH DRIVE TYPE IN BEV AND FCEV
             ##############################################
-            
+            breakpoint()
             ice_bev = plotting_data.copy()
-            ice = ice_bev[ice_bev['Drive']=='ice']#later this willprobably specify ice_g and ice_d
+            ice = ice_bev[ice_bev['Drive'].isin(['ice_g', 'ice_d'])]
+            #grab avg of Efficiency Occupancy_or_load and Mileage and the sum of stocks
+            ice = ice.groupby(['Date', 'Vehicle Type']).agg({'Efficiency': 'mean', 'Occupancy_or_load': 'mean', 'Mileage': 'mean', 'Stocks': 'sum'}).reset_index()
+            #set Drive to ice
+            ice['Drive'] = 'ice'
+            #sum or avg ice values
             bev = ice_bev[ice_bev['Drive']=='bev']#later this willprobably need to include phev
             #join
             index_cols = ['Date', 'Vehicle Type']
@@ -142,7 +153,8 @@ for economy in model_output_detailed.Economy.unique():
                     #set opacity to 0.5
                     opacity=0.01,
                     name=f'Oil displacement - {v_type}',
-                    stackgroup='one'  #this will stack the areas on top of each other
+                    stackgroup='one',  #this will stack the areas on top of each other                    
+                    hovertemplate=f'{v_type}'+'<br>%{y:.0f}PJ oil displaced'
                 ))
             #removed oil displaceemtn line beecause it didnt seem useful
             # # finally, plot the 'Total_oil_displacement' line
@@ -161,8 +173,9 @@ for economy in model_output_detailed.Economy.unique():
                 line_color='Green',
                 name='BEV energy use'
             ))
-            
-            fig.update_layout(title=f'Oil displacement for {t_type} in {economy} in {scenario} (FCEV)')
+            #add a y axis label
+            fig.update_yaxes(title_text='PJ')
+            fig.update_layout(title=f'Oil displacement for {t_type} in {economy} in {scenario} (BEV)')
             
             fig.write_html(f'{default_save_folder}/oil_displacement_{t_type}_{economy}_bev_{scenario}.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
 
@@ -172,8 +185,14 @@ for economy in model_output_detailed.Economy.unique():
 
             
             ice_fcev = plotting_data.copy()
-            ice = ice_fcev[ice_fcev['Drive']=='ice']#later this willprobably specify ice_g and ice_d
+            
             fcev = ice_fcev[ice_fcev['Drive']=='fcev']#later this willprobably need to include phev
+            ice = ice_fcev[ice_fcev['Drive'].isin(['ice_g', 'ice_d'])]
+            #grab avg of Efficiency Occupancy_or_load and Mileage and the sum of stocks
+            ice = ice.groupby(['Date', 'Vehicle Type']).agg({'Efficiency': 'mean', 'Occupancy_or_load': 'mean', 'Mileage': 'mean', 'Stocks': 'sum'}).reset_index()
+            #set Drive to ice
+            ice['Drive'] = 'ice'
+            
             #join
             index_cols = ['Date', 'Vehicle Type']
             ice_fcev = pd.merge(ice, fcev, on=index_cols, suffixes=('_ice', '_fcev'))
@@ -234,7 +253,8 @@ for economy in model_output_detailed.Economy.unique():
                     #set opacity to 0.5
                     opacity=0.2,
                     name=f'Oil displacement - {v_type}',
-                    stackgroup='one'  #this will stack the areas on top of each other
+                    stackgroup='one',  #this will stack the areas on top of each other                    
+                    hovertemplate=f'{v_type}'+'<br>%{y:.0f}PJ oil displaced'
                 ))
             # # finally, plot the 'Total_oil_displacement' line
             # fig.add_trace(go.Scatter(
@@ -252,13 +272,13 @@ for economy in model_output_detailed.Economy.unique():
                 line_color='Green',
                 name='FCEV energy use'
             ))
+            #add a y axis label
+            fig.update_yaxes(title_text='PJ')
             #give it a title:
             fig.update_layout(title=f'Oil displacement for {t_type} in {economy} in {scenario} (FCEV)')
             fig.write_html(f'{default_save_folder}/oil_displacement_{t_type}_{economy}_fcev_{scenario}.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
             breakpoint()
-            break
-        break
-    break
+
 
 
 

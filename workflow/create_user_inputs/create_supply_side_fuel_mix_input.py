@@ -13,7 +13,10 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 import sys
 sys.path.append("./config/utilities")
 import archiving_scripts
-import user_input_creation_plotting_functions
+import user_input_creation_functions
+
+sys.path.append("./workflow/plotting")
+import plot_user_input_data
 #%%
 #create fake user input for demand side fuel mixes using model concordances
 def create_supply_side_fuel_mixing_input():
@@ -34,8 +37,18 @@ def create_supply_side_fuel_mixing_input():
     regions = pd.read_excel('input_data/fuel_mixing_assumptions.xlsx',sheet_name='regions')
 
     #####################################
+    #TEST
+    #check the regions in regions_passenger and regions_freight are the same as in passenger_drive_shares and freight_drive_shares, also check that the regions in vehicle_type_growth_regions are the same as in vehicle_type_growth
+    user_input_creation_functions.check_region(regions, mixing_assumptions)
+    
+    #####################################
     #convert regions to economys
     mixing_assumptions = pd.merge(mixing_assumptions, regions, how='left', on='Region')
+    #check for any nas, which will be caused by regions not being in the regions sheet:
+    if mixing_assumptions.Region.isna().any():
+        #get the regions that are not in the regions sheet
+        missing_region = mixing_assumptions.Region[mixing_assumptions.Region.isna()].unique().tolist()
+        raise ValueError('The following regions are not in the regions sheet for fuel mixing on supply side: {}'.format(missing_region))
     #drop region
     mixing_assumptions.drop(columns=['Region'], inplace=True)
 
@@ -43,6 +56,7 @@ def create_supply_side_fuel_mixing_input():
     mixing_assumptions = pd.melt(mixing_assumptions, id_vars=['Economy', 'Fuel', 'New_fuel', 'Date'], var_name='Scenario', value_name='Supply_side_fuel_share')
     #drop nas
     mixing_assumptions.dropna(inplace=True)
+    mixing_assumptions.drop_duplicates(inplace=True)
 
     #Start filling in fuel mixing using the demand side fuel mixes to start with
     supply_side_fuel_mixing = demand_side_fuel_mixing.copy()
@@ -54,27 +68,26 @@ def create_supply_side_fuel_mixing_input():
     # old_cols = supply_side_fuel_mixing_old.columns.tolist()
 
     #first join so we have the New Fuels col, non dependent of Date
-    supply_side_fuel_mixing = pd.merge(supply_side_fuel_mixing, mixing_assumptions[['Economy', 'Fuel', 'New_fuel', 'Scenario']], how='inner', on=['Economy', 'Fuel', 'Scenario'])
+    supply_side_fuel_mixing = pd.merge(supply_side_fuel_mixing, mixing_assumptions[['Economy', 'Fuel', 'New_fuel', 'Scenario']], how='inner', on=['Economy', 'Fuel', 'Scenario']).drop_duplicates()
 
     supply_side_fuel_mixing_intermediate = supply_side_fuel_mixing.copy()
-
+    
     #then join so we have the Supply Side fuel share col, so join on the Date
-    supply_side_fuel_mixing = pd.merge(supply_side_fuel_mixing, mixing_assumptions, how='inner', on=['Economy', 'Fuel', 'Date', 'New_fuel','Scenario'])
+    supply_side_fuel_mixing = pd.merge(supply_side_fuel_mixing, mixing_assumptions, how='left', on=['Economy', 'Fuel', 'Date', 'New_fuel','Scenario'])
 
     cols = supply_side_fuel_mixing.columns.tolist()
     cols.remove('Supply_side_fuel_share')
 
     #now we need to fill in missing dates. we will interpolate between the first and last date for each economy and fuel type
 
-    #first join on the missing dates by doing another merge. but we also need to remove uneccessary rows before we do this:
-    dates = supply_side_fuel_mixing_intermediate[cols].drop_duplicates()
-    dates = dates.merge(mixing_assumptions[['Economy', 'Fuel', 'Scenario','New_fuel']].drop_duplicates(), how='inner', on=['Economy', 'Fuel', 'Scenario','New_fuel'])
-    #now we have the missing dates, we can join them to the supply side fuel mixing
-    supply_side_fuel_mixing = pd.merge(supply_side_fuel_mixing, dates, how='outer', on=cols)
+    # #first join on the missing dates by doing another merge. but we also need to remove uneccessary rows before we do this:
+    # dates = supply_side_fuel_mixing_intermediate[cols].drop_duplicates()
+    # dates = dates.merge(mixing_assumptions[['Economy', 'Fuel', 'Scenario','New_fuel']].drop_duplicates(), how='inner', on=['Economy', 'Fuel', 'Scenario','New_fuel'])
+    # #now we have the missing dates, we can join them to the supply side fuel mixing
+    # supply_side_fuel_mixing = pd.merge(supply_side_fuel_mixing, dates, how='outer', on=cols)
 
     #now sort by economy, fuel,New_fuel, scenario, date and fill Supply_side_fuel_share using an interpoaltion and a bfill
     supply_side_fuel_mixing.sort_values(by=cols, inplace=True)
-
 
     #backfill on earliest date so we have something to start with. So make sure to bfill only the data before the earliest avialable date is missing
     #earliest dates:
@@ -90,55 +103,37 @@ def create_supply_side_fuel_mixing_input():
     supply_side_fuel_mixing_earliest_dates['Supply_side_fuel_share'] = supply_side_fuel_mixing_earliest_dates.groupby(cols_no_date)['Supply_side_fuel_share'].fillna(method='bfill')
     #drop Earliest_date
     supply_side_fuel_mixing_earliest_dates.drop(columns=['Earliest_date'], inplace=True)
-
-    #concatenate the two dataframes after removing the data that was backfilled from supply_side_fuel_mixing. we can do this by dropping by index:
+    
+    #set index of both supply_side_fuel_mixing and supply_side_fuel_mixing_earliest_dates to be based on the cols list, rather than the default index, so we can compare them directly
+    supply_side_fuel_mixing.set_index(cols, inplace=True)
+    supply_side_fuel_mixing_earliest_dates.set_index(cols, inplace=True)
+    
     supply_side_fuel_mixing.drop(supply_side_fuel_mixing_earliest_dates.index, inplace=True)
+    
+    #reset index for both
+    supply_side_fuel_mixing.reset_index(inplace=True)
+    supply_side_fuel_mixing_earliest_dates.reset_index(inplace=True)
+    
     supply_side_fuel_mixing = pd.concat([supply_side_fuel_mixing_earliest_dates, supply_side_fuel_mixing], axis=0)
-
+    
     #do interpolation using spline adn order = X
-    X_order = 2#the higher the order the more smoothing but the less detail
-    supply_side_fuel_mixing['Supply_side_fuel_share'] = supply_side_fuel_mixing.groupby(cols_no_date)['Supply_side_fuel_share'].apply(lambda group: group.interpolate(method='spline', order=X_order))
     
-    # INDEX_COLS_no_measure = INDEX_COLS.copy()
-    # INDEX_COLS_no_measure.remove('Measure')
-    # INDEX_COLS_no_measure.remove('Unit')
-
-    # supply_side_fuel_mixing = demand_side_fuel_mixing.copy()
-    # #drop Demand_side_fuel_share column
-    # supply_side_fuel_mixing = supply_side_fuel_mixing.drop(columns=['Demand_side_fuel_share']).drop_duplicates()
+    supply_side_fuel_mixing.sort_values(by=cols, inplace=True)
     
-    # #startwith the model concordances with fuel types, filter for each fuel type, and split it into biofuel and fuel type. have to do each fuel type separately depnding on the resulting biofuel mix.
-    # #split all 07_petroleum_products into a mix of biofuels and petroleum products. Note that 07_petroleum_products is currently being used to represent general oil use in ice engines. This just 
-
-    # #Remember this allows for the option of not splitting all diesel use into biofuels. you can set it so vehicle type doesnt equal rail for example
-    # supply_side_fuel_mixing_diesel = supply_side_fuel_mixing.loc[(supply_side_fuel_mixing['Fuel'] == '07_07_gas_diesel_oil')]
-    # supply_side_fuel_mixing_diesel['16_06_biodiesel'] = 0.05
-    # supply_side_fuel_mixing_diesel['07_07_gas_diesel_oil'] = 0.95
-    # #now melt so we have a tall dataframe
-    # supply_side_fuel_mixing_diesel_melt = pd.melt(supply_side_fuel_mixing_diesel, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
-
-    # supply_side_fuel_mixing_petrol = supply_side_fuel_mixing.loc[(supply_side_fuel_mixing['Fuel'] == '07_01_motor_gasoline')]
-    # supply_side_fuel_mixing_petrol['16_05_biogasoline'] = 0.05
-    # supply_side_fuel_mixing_petrol['07_01_motor_gasoline'] = 0.95
-    # #now melt so we have a tall dataframe
-    # supply_side_fuel_mixing_petrol_melt = pd.melt(supply_side_fuel_mixing_petrol, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
-
-    # supply_side_fuel_mixing_jet_fuel = supply_side_fuel_mixing.loc[(supply_side_fuel_mixing['Fuel'] == '07_x_jet_fuel')]
-    # supply_side_fuel_mixing_jet_fuel['16_07_bio_jet_kerosene'] = 0.05
-    # supply_side_fuel_mixing_jet_fuel['07_x_jet_fuel'] = 0.95
-    # #now melt so we have a tall dataframe
-    # supply_side_fuel_mixing_jet_fuel_melt = pd.melt(supply_side_fuel_mixing_jet_fuel, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
-
-    # supply_side_fuel_mixing_avgas = supply_side_fuel_mixing.loc[(supply_side_fuel_mixing['Fuel'] == '07_02_aviation_gasoline')]
-    # supply_side_fuel_mixing_avgas['16_07_bio_jet_kerosene'] = 0.05
-    # supply_side_fuel_mixing_avgas['07_02_aviation_gasoline'] = 0.95
-    # #now melt so we have a tall dataframe
-    # supply_side_fuel_mixing_avgas_melt = pd.melt(supply_side_fuel_mixing_avgas, id_vars=INDEX_COLS_no_measure + ['Fuel'], var_name='New_fuel', value_name='Supply_side_fuel_share')
-
+    #use linear
+    # supply_side_fuel_mixing['Supply_side_fuel_share'] = supply_side_fuel_mixing.groupby(cols_no_date)['Supply_side_fuel_share'].apply(lambda group: group.interpolate(method='linear'))
     
-    # #CONCATENATE all
-    # supply_side_fuel_mixing_all = pd.concat([supply_side_fuel_mixing_petrol_melt, supply_side_fuel_mixing_diesel_melt, supply_side_fuel_mixing_jet_fuel_melt, supply_side_fuel_mixing_avgas_melt])
-
+    #for some reason when we do the itnerpolation by group iteration it works. so we'll jsut do that for now:
+    new_supply_side_fuel_mixing = pd.DataFrame()
+    for group in supply_side_fuel_mixing.groupby(cols_no_date):
+        supply_side_fuel_mixing_e = group[1].copy()
+        
+        supply_side_fuel_mixing_e['Supply_side_fuel_share'] = supply_side_fuel_mixing_e.groupby(cols_no_date)['Supply_side_fuel_share'].apply(lambda group: group.interpolate(method='linear'))#, order=X_order))
+        
+        new_supply_side_fuel_mixing = pd.concat([new_supply_side_fuel_mixing, supply_side_fuel_mixing_e], axis=0)
+    
+    supply_side_fuel_mixing = new_supply_side_fuel_mixing.copy()
+    
     #archive previous results:
     archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID)
     #save previous datra
@@ -149,10 +144,10 @@ def create_supply_side_fuel_mixing_input():
     #save as user input csv
     supply_side_fuel_mixing.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv', index=False)
     
-    user_input_creation_plotting_functions.plot_supply_side_fuel_mixing(supply_side_fuel_mixing)
+    plot_user_input_data.plot_supply_side_fuel_mixing(supply_side_fuel_mixing)
     
 #%%
-create_supply_side_fuel_mixing_input()
+# create_supply_side_fuel_mixing_input()
 #%%
 
 #%%
@@ -163,77 +158,77 @@ create_supply_side_fuel_mixing_input()
 
 
 
-    # #####################################
-    # #PREPARE INPUT DATA
-    # #####################################
+# #####################################
+# #PREPARE INPUT DATA
+# #####################################
+
+# #first we need to separate the sales share of vehicle types from the sales share of drives, by transport type. Since the way the values were created was simply mutliplication, we can jsut reverse that, i think.
+# #so sum by vehicle type to get the total sales share of each vehicle type
+# #then if we divide this by the final sales share values for each v-type/drive we can recreate the shares by drive type, witihin each vehicle type.
+# #now for shares by drive type, witihin each vehicle type, we can create the shares we want.
+# #sum by vtype economy year and scenario
+# new_sales_shares_sum = sales.copy()
+
+# #sum all up in case we have multiple rows for the same economy, vehicle type, drive type, transport type and date
+# new_sales_shares_sum = new_sales_shares_sum.groupby(['Economy', 'Scenario', 'Vehicle Type', 'Transport Type','Drive', 'Date']).sum().reset_index()
     
-    # #first we need to separate the sales share of vehicle types from the sales share of drives, by transport type. Since the way the values were created was simply mutliplication, we can jsut reverse that, i think.
-    # #so sum by vehicle type to get the total sales share of each vehicle type
-    # #then if we divide this by the final sales share values for each v-type/drive we can recreate the shares by drive type, witihin each vehicle type.
-    # #now for shares by drive type, witihin each vehicle type, we can create the shares we want.
-    # #sum by vtype economy year and scenario
-    # new_sales_shares_sum = sales.copy()
+# #now doulbe check we have therequired categories that are in the concordances
+# model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name))
+# #drop all measures that are not vehicle sales share
+# model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Measure']=='Vehicle_sales_share']
+# #drop any cols not in the new_sales_shares_sum
+# cols = [col for col in model_concordances_user_input_and_growth_rates.columns if col in new_sales_shares_sum.columns]
+# model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[cols]
+# model_concordances_user_input_and_growth_rates.drop_duplicates(inplace=True)
+# INDEX_COLS = [col for col in INDEX_COLS if col in model_concordances_user_input_and_growth_rates.columns]
 
-    # #sum all up in case we have multiple rows for the same economy, vehicle type, drive type, transport type and date
-    # new_sales_shares_sum = new_sales_shares_sum.groupby(['Economy', 'Scenario', 'Vehicle Type', 'Transport Type','Drive', 'Date']).sum().reset_index()
-        
-    # #now doulbe check we have therequired categories that are in the concordances
-    # model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name))
-    # #drop all measures that are not vehicle sales share
-    # model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Measure']=='Vehicle_sales_share']
-    # #drop any cols not in the new_sales_shares_sum
-    # cols = [col for col in model_concordances_user_input_and_growth_rates.columns if col in new_sales_shares_sum.columns]
-    # model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[cols]
-    # model_concordances_user_input_and_growth_rates.drop_duplicates(inplace=True)
-    # INDEX_COLS = [col for col in INDEX_COLS if col in model_concordances_user_input_and_growth_rates.columns]
-    
-    # #add BASE YEAR to the concordances which canb be a copy of the BASE_YEAR +1
-    # model_concordances_user_input_and_growth_rates_base = model_concordances_user_input_and_growth_rates.loc[model_concordances_user_input_and_growth_rates['Date']==BASE_YEAR+1].copy()
-    # model_concordances_user_input_and_growth_rates_base['Date'] = BASE_YEAR
-    # model_concordances_user_input_and_growth_rates = pd.concat([model_concordances_user_input_and_growth_rates,model_concordances_user_input_and_growth_rates_base])
+# #add BASE YEAR to the concordances which canb be a copy of the BASE_YEAR +1
+# model_concordances_user_input_and_growth_rates_base = model_concordances_user_input_and_growth_rates.loc[model_concordances_user_input_and_growth_rates['Date']==BASE_YEAR+1].copy()
+# model_concordances_user_input_and_growth_rates_base['Date'] = BASE_YEAR
+# model_concordances_user_input_and_growth_rates = pd.concat([model_concordances_user_input_and_growth_rates,model_concordances_user_input_and_growth_rates_base])
 
-    # #set index for both dfs
-    # new_sales_shares_sum.set_index(INDEX_COLS, inplace=True)
-    # model_concordances_user_input_and_growth_rates.set_index(INDEX_COLS, inplace=True)
-    
-    # # use the difference method to find:
-    # #missing_index_values1 :  the index values that are missing from the new_sales_shares_sum 
-    # # #missing_index_values2 : and also the index values that are present in the new_sales_shares_sum but not in the concordance 
-    # # this method is a lot faster than looping through each index row in the concordance and checking if it is in the new_sales_shares_sum
-    # missing_index_values1 = model_concordances_user_input_and_growth_rates.index.difference(new_sales_shares_sum.index)
-    # missing_index_values2 = new_sales_shares_sum.index.difference(model_concordances_user_input_and_growth_rates.index)
+# #set index for both dfs
+# new_sales_shares_sum.set_index(INDEX_COLS, inplace=True)
+# model_concordances_user_input_and_growth_rates.set_index(INDEX_COLS, inplace=True)
 
-    # if missing_index_values1.empty:
-    #     print('All rows are present in the user input')
-    # else:
-    #     #add these rows to the new_sales_shares_sum and set them to row_and_data_not_available
-    #     missing_index_values1 = pd.DataFrame(index=missing_index_values1).reset_index()
-    #     missing_index_values1['Value'] = np.nan
-    #     #then append to transport_data_system_df
-    #     new_sales_shares_sum = new_sales_shares_sum.reset_index()
-    #     new_sales_shares_sum = pd.concat([missing_index_values1, new_sales_shares_sum], sort=False)
-    #     print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
-    #     new_sales_shares_sum.set_index(INDEX_COLS, inplace=True)
+# # use the difference method to find:
+# #missing_index_values1 :  the index values that are missing from the new_sales_shares_sum 
+# # #missing_index_values2 : and also the index values that are present in the new_sales_shares_sum but not in the concordance 
+# # this method is a lot faster than looping through each index row in the concordance and checking if it is in the new_sales_shares_sum
+# missing_index_values1 = model_concordances_user_input_and_growth_rates.index.difference(new_sales_shares_sum.index)
+# missing_index_values2 = new_sales_shares_sum.index.difference(model_concordances_user_input_and_growth_rates.index)
 
-    # if missing_index_values2.empty:
-    #     pass#this is to be expected as the cocnordance should always have everything we need in it!
-    # else:
-    #     #we want to make sure user is aware of this as we will be removing rows from the user input
-    #     #remove these rows from the new_sales_shares_sum
-    #     new_sales_shares_sum.drop(missing_index_values2, inplace=True)
-    #     #convert missing_index_values to df
-    #     missing_index_values2 = pd.DataFrame(index=missing_index_values2).reset_index()
-    #     print('Missing rows in the user input concordance: {}'.format(missing_index_values2))
-    #     print('We will remove these rows from the user input dataset. If you intended to have data for these rows, please add them to the concordance table.')
+# if missing_index_values1.empty:
+#     print('All rows are present in the user input')
+# else:
+#     #add these rows to the new_sales_shares_sum and set them to row_and_data_not_available
+#     missing_index_values1 = pd.DataFrame(index=missing_index_values1).reset_index()
+#     missing_index_values1['Value'] = np.nan
+#     #then append to transport_data_system_df
+#     new_sales_shares_sum = new_sales_shares_sum.reset_index()
+#     new_sales_shares_sum = pd.concat([missing_index_values1, new_sales_shares_sum], sort=False)
+#     print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
+#     new_sales_shares_sum.set_index(INDEX_COLS, inplace=True)
 
-    #     # #print the unique Vehicle types and drives that are missing
-    #     # print('Unique Vehicle types and drives that are missing: {}'.format(missing_index_values2[['Vehicle Type', 'Drive']].drop_duplicates()))#as of /4 we ha
+# if missing_index_values2.empty:
+#     pass#this is to be expected as the cocnordance should always have everything we need in it!
+# else:
+#     #we want to make sure user is aware of this as we will be removing rows from the user input
+#     #remove these rows from the new_sales_shares_sum
+#     new_sales_shares_sum.drop(missing_index_values2, inplace=True)
+#     #convert missing_index_values to df
+#     missing_index_values2 = pd.DataFrame(index=missing_index_values2).reset_index()
+#     print('Missing rows in the user input concordance: {}'.format(missing_index_values2))
+#     print('We will remove these rows from the user input dataset. If you intended to have data for these rows, please add them to the concordance table.')
 
-    # #replace all nan values with 0 now
-    # # new_sales_shares_sum.fillna(0, inplace=True)
+#     # #print the unique Vehicle types and drives that are missing
+#     # print('Unique Vehicle types and drives that are missing: {}'.format(missing_index_values2[['Vehicle Type', 'Drive']].drop_duplicates()))#as of /4 we ha
 
-    # #reset index
-    # new_sales_shares_sum.reset_index(inplace=True)
+# #replace all nan values with 0 now
+# # new_sales_shares_sum.fillna(0, inplace=True)
+
+# #reset index
+# new_sales_shares_sum.reset_index(inplace=True)
 
 
 

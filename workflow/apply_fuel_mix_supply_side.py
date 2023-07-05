@@ -11,6 +11,7 @@ from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 def apply_fuel_mix_supply_side():
+    # breakpoint()
     # model_output_file_name = 'model_output_years_2017_to_2050_DATE20220824_1043.csv'
     #load user input for fuel mixing
     supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
@@ -21,13 +22,13 @@ def apply_fuel_mix_supply_side():
     #to deal with historical data that may or may not have been included, jsut assume the same fuel mix as the base year for all previous years.
     supply_side_fuel_mixing_historical = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] == BASE_YEAR]
     # Get the unique years in model_output that are before the BASE_YEAR
-    unique_years = model_output[model_output['Date'] < BASE_YEAR]['Date'].unique()
+    unique_years_less_than_base = model_output[model_output['Date'] < BASE_YEAR]['Date'].unique()
 
     # Initialize an empty DataFrame
     supply_side_fuel_mixing_historical_all_years = pd.DataFrame()
 
-    # Loop over the unique years
-    for year in unique_years:
+    # Loop over the unique years less than the base year
+    for year in unique_years_less_than_base:
         # Copy the supply_side_fuel_mixing_historical DataFrame
         df_copy = supply_side_fuel_mixing_historical.copy()
         # Assign the current year to the 'Date' column
@@ -41,26 +42,45 @@ def apply_fuel_mix_supply_side():
     #concatenate the historical fuel mixing with the supply_side_fuel_mixing
     supply_side_fuel_mixing = pd.concat([supply_side_fuel_mixing_historical_all_years, supply_side_fuel_mixing], axis=0)
     
-    
     #merge the supply side fuel mixing data on the fuel column. This will result in a new supply side fuel column which reflects the splitting of the fuel into many types. We will replace the value in the fuel column with the value in the supply side fuel column, and times the energy value by the share. and Where the suply side fuel column contains no value (an NA) then the fuel and its energy use will be unchanged.
+    df_with_new_fuels = model_output.merge(supply_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date','Frequency'], how='left')
 
-    df_with_fuels = model_output.merge(supply_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date','Frequency'], how='left')
-
+    # #filter for where ecnomy is 08_JPN, vehicle type is car, drive is ice_d and fuel is 07_01_motor_gasoline and year is 2030
+    # test = df_with_new_fuels[(df_with_new_fuels['Economy'] == '08_JPN') & (df_with_new_fuels['Vehicle Type'] == 'car') & (df_with_new_fuels['Drive'] == 'ice_g') & (df_with_new_fuels['Fuel'] == '07_01_motor_gasoline') & (df_with_new_fuels['Date'] == 2030)]
     
-    #replace the fuel column with the supply side fuel column if the supply side fuel column is not NA
-    df_with_fuels['Fuel'] = np.where(df_with_fuels['New_fuel'].isna(), df_with_fuels['Fuel'], df_with_fuels['New_fuel'])
-    #times the energy column by the supply side fuel share if the supply side fuel share is not NA
-    df_with_fuels['Energy'] = np.where(df_with_fuels['Supply_side_fuel_share'].isna(), df_with_fuels['Energy'], df_with_fuels['Energy'] * df_with_fuels['Supply_side_fuel_share'])
-
+    #remove rows where New Fuel is nan
+    df_with_new_fuels = df_with_new_fuels[df_with_new_fuels['New_fuel'].notna()]
     
-    #remove the supply side fuel and supply side fuel share columns
-    df_with_fuels = df_with_fuels.drop(['New_fuel', 'Supply_side_fuel_share'], axis=1)
+    df_with_new_fuels['Energy'] = df_with_new_fuels['Energy'] * df_with_new_fuels['Supply_side_fuel_share']
 
-    #sum up the energy by fuel since some casses will result in the same fuel being split into many fuels and there might be an intersection, for excample biofuels used in multiple drive types for the same vehjicle, eg. air
-    df_with_fuels = df_with_fuels.groupby(['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date','Frequency']).sum().reset_index()
-    breakpoint()
+    #now we will have the amount of each new fuel type being used. To find the remainign use of the original fuel we will minus the eegy of the new fuels from the original fuel. However, since some original fuels will ahve been mixed with more than one new fuel, we will need to pivot the new fuels out so that we can minus them from the original fuel, all within the same row. Then later jsut concat the rows back together.
+    df_with_new_fuels_wide = df_with_new_fuels.pivot_table(index=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date','Frequency'], columns='New_fuel', values='Energy').reset_index()
+    #get the new columns names, they will jsut be the unique values in the new fuel column
+    new_fuels_cols = df_with_new_fuels.New_fuel.unique().tolist()
+    #set any nas to 0 in new_fuels_cols
+    df_with_new_fuels_wide[new_fuels_cols] = df_with_new_fuels_wide[new_fuels_cols].fillna(0)
+    # breakpoint()
+    #drop cols except new_fuels_cols and the index cols
+    df_with_new_fuels_wide = df_with_new_fuels_wide[['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date','Frequency'] + new_fuels_cols]
+    
+    #join the new fuel columns back to the original dataframe
+    df_with_old_fuels = model_output.merge(df_with_new_fuels_wide, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date','Frequency'], how='left')
+    
+    #minus the New fuels from the energy to get the original fuels energy use. can use new_fuels_cols as the columns to minus
+    df_with_old_fuels['Energy'] = df_with_old_fuels['Energy'] - df_with_old_fuels[new_fuels_cols].sum(axis=1)
+    
+    #drop those cols
+    df_with_old_fuels = df_with_old_fuels.drop(new_fuels_cols, axis=1)
+    
+    #concat the two dataframes back together
+    #first edit df_with_new_fuels a bit
+    df_with_new_fuels['Fuel'] = df_with_new_fuels['New_fuel']
+    df_with_new_fuels.drop(['New_fuel', 'Supply_side_fuel_share'], axis=1, inplace=True)
+    df_with_all_fuels  = pd.concat([df_with_old_fuels, df_with_new_fuels], axis=0)
+    
+    # breakpoint()
     #save data
-    df_with_fuels.to_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name), index=False)
+    df_with_all_fuels.to_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name), index=False)
 
     
 #%%

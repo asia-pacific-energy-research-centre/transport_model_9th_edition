@@ -53,9 +53,18 @@ def run_road_model():
     #set gompertz gamma to 800 for all economies just to test.
     # main_dataframe['Gompertz_gamma'] = 800
     # breakpoint()#seems we're getting activity estimates much higher for china than we should be.
-    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True)
+    activity_growth_estimates, parameters_estimates, ONLY_PASSENGER_VEHICLES = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=True)
     #set transport type to passenger for all rows
-    activity_growth_estimates['Transport Type'] = 'passenger'
+    if ONLY_PASSENGER_VEHICLES:
+        activity_growth_estimates['Transport Type'] = 'passenger'
+    else:
+        #repliacet the activity growth estimates for passenger and freight:
+        activity_growth_estimates_passenger = activity_growth_estimates.copy()
+        activity_growth_estimates_passenger['Transport Type'] = 'passenger'
+        activity_growth_estimates_freight = activity_growth_estimates.copy()
+        activity_growth_estimates_freight['Transport Type'] = 'freight'
+        #concat
+        activity_growth_estimates = pd.concat([activity_growth_estimates_passenger, activity_growth_estimates_freight])
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
     #so do a merge and only keep the new growth rates for the economies that have them
     new_growth_forecasts = growth_forecasts.copy()
@@ -94,6 +103,9 @@ def run_road_model():
 
     #save results as pickle for testing purposes
     main_dataframe.to_pickle('./intermediate_data/road_model/main_dataframe_growth_adjusted.pkl')
+    
+    # #look at lcv growth in thailand
+    # main_dataframe.loc[(main_dataframe['Vehicle Type']=='lcv') & (main_dataframe['Economy']=='') & 
     
 #%%
 run_road_model()
@@ -194,3 +206,5 @@ run_road_model()
 #     fig.write_html("20_USA_stocks_per_capita.html", auto_open=True)
 
 
+
+# %%
