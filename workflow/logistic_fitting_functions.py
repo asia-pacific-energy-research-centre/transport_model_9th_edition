@@ -309,19 +309,19 @@ def plot_logistic_function_all_economies(model_data_logistic_predictions, activi
     if plotly_bool:
         #first plot will be on the comparitive stocks per capita
         #filter for that data then melt
-        all_data_stocks_per_capita = all_data[['Date','Scenario','Vehicle Type','Gdp_per_capita', 'Economy', 'Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous']]
-        all_data_stocks_per_capita = all_data_stocks_per_capita.melt(id_vars=['Date', 'Economy', 'Scenario','Vehicle Type', 'Gdp_per_capita'], value_vars=['Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous'], var_name='Stocks_per_thousand_capita', value_name='Stocks_per_thousand_capita_value')
+        all_data_stocks_per_capita = all_data[['Date','Scenario','Transport Type','Gdp_per_capita', 'Economy', 'Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous']]
+        all_data_stocks_per_capita = all_data_stocks_per_capita.melt(id_vars=['Date', 'Economy', 'Scenario','Transport Type', 'Gdp_per_capita'], value_vars=['Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous'], var_name='Stocks_per_thousand_capita', value_name='Stocks_per_thousand_capita_value')
         #check its not empty
         if all_data_stocks_per_capita.empty:
             print('No data to plot log_fit_new_stocks_per_capita, this means that there was no need for adjustment of the activity growth rates, because the stocks per capita were already in the right ballpark')
         else:
-            fig = px.line(all_data_stocks_per_capita, x='Date', y='Stocks_per_thousand_capita_value', color='Vehicle Type',line_dash='Stocks_per_thousand_capita', facet_col='Economy', facet_col_wrap=3, title='Comparitive stocks per capita', markers=True)
+            fig = px.line(all_data_stocks_per_capita, x='Date', y='Stocks_per_thousand_capita_value', color='Transport Type',line_dash='Stocks_per_thousand_capita', facet_col='Economy', facet_col_wrap=3, title='Comparitive stocks per capita', markers=True)
 
             #write to html
             fig.write_html(f'plotting_output/input_exploration/gompertz/log_fit_new_stocks_per_capita.html')
             ######################
             #and plot the same but wth gdp per capita in x
-            fig = px.line(all_data_stocks_per_capita, x='Gdp_per_capita', y='Stocks_per_thousand_capita_value', line_dash='Stocks_per_thousand_capita', facet_col='Economy', color='Vehicle Type',facet_col_wrap=3, title='Comparitive stocks per capita vs GDP per capita', markers=True)
+            fig = px.line(all_data_stocks_per_capita, x='Gdp_per_capita', y='Stocks_per_thousand_capita_value', line_dash='Stocks_per_thousand_capita', facet_col='Economy', color='Transport Type',facet_col_wrap=3, title='Comparitive stocks per capita vs GDP per capita', markers=True)
 
             #write to html
             fig.write_html(f'plotting_output/input_exploration/gompertz/log_fit_new_stocks_per_capita_gdp_per_capita.html')
@@ -330,20 +330,20 @@ def plot_logistic_function_all_economies(model_data_logistic_predictions, activi
         #plot stocks for each economy with x as gdp per capita and then x as date. First calcualte stocks from the logistic function 
         all_data['Stocks_logistic'] = (all_data['Stocks_per_thousand_capita_logistic'] * all_data['Population'])/ 1000000
         #now melt
-        all_data_stocks = all_data[['Date','Scenario','Vehicle Type','Gdp_per_capita', 'Economy', 'Stocks_logistic', 'Stocks']]
-        all_data_stocks = all_data_stocks.melt(id_vars=['Date', 'Economy', 'Scenario','Vehicle Type', 'Gdp_per_capita'], value_vars=['Stocks_logistic', 'Stocks'], var_name='Stocks', value_name='Stocks_value')
+        all_data_stocks = all_data[['Date','Scenario','Transport Type','Gdp_per_capita', 'Economy', 'Stocks_logistic', 'Stocks']]
+        all_data_stocks = all_data_stocks.melt(id_vars=['Date', 'Economy', 'Scenario','Transport Type', 'Gdp_per_capita'], value_vars=['Stocks_logistic', 'Stocks'], var_name='Stocks', value_name='Stocks_value')
         
         #check its not empty
         if all_data_stocks.empty:
             print('No data to plot log_fit_new_stocks, this means that there was no need for adjustment of the activity growth rates, because the stocks per capita were already in the right ballpark')
         else:
             #plot
-            fig = px.line(all_data_stocks, x='Date', y='Stocks_value', color='Vehicle Type', line_dash = 'Stocks', facet_col='Economy', facet_col_wrap=3, title='Stocks for each economy', markers=True)
+            fig = px.line(all_data_stocks, x='Date', y='Stocks_value', color='Transport Type', line_dash = 'Stocks', facet_col='Economy', facet_col_wrap=3, title='Stocks for each economy', markers=True)
             #write to html
             fig.write_html(f'plotting_output/input_exploration/gompertz/log_fit_new_stocks.html')
 
             ######################
-            fig = px.line(all_data_stocks, x='Gdp_per_capita', y='Stocks_value', color='Economy', facet_col='Vehicle Type', line_dash = 'Stocks',  facet_col_wrap=3, title='Stocks for each economy with x as gdp per cpita', markers=True)
+            fig = px.line(all_data_stocks, x='Gdp_per_capita', y='Stocks_value', color='Economy', facet_col='Transport Type', line_dash = 'Stocks',  facet_col_wrap=3, title='Stocks for each economy with x as gdp per cpita', markers=True)
             #write to html
             fig.write_html(f'plotting_output/input_exploration/gompertz/log_fit_new_stocks.html')
 
@@ -362,15 +362,15 @@ def plot_logistic_function_all_economies(model_data_logistic_predictions, activi
         all_data_activity = pd.merge(all_data, all_data_activity_sum[['Economy', 'Date', 'Activity_growth_est_previous']], on=['Economy', 'Date'], how='left')
 
         #melt
-        all_data_activity_growth = all_data_activity[['Economy','Date','Vehicle Type', 'Gdp_per_capita', 'Activity_growth', 'Activity_growth_est_previous']]
-        all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Vehicle Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
+        all_data_activity_growth = all_data_activity[['Economy','Date','Transport Type', 'Gdp_per_capita', 'Activity_growth', 'Activity_growth_est_previous']]
+        all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Transport Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
         
         #check its not empty
         if all_data_activity_growth.empty:
             print('No data to plot log_fit_new_activity_growth, this means that there was no need for adjustment of the activity growth rates, because the stocks per capita were already in the right ballpark')
         else:
             #plot
-            fig = px.line(all_data_activity_growth, x='Date', y='Activity_growth_value', color='Vehicle Type',line_dash='Activity_growth', facet_col='Economy', facet_col_wrap=3, title='Comparitive activity growth', markers=True)
+            fig = px.line(all_data_activity_growth, x='Date', y='Activity_growth_value', color='Transport Type',line_dash='Activity_growth', facet_col='Economy', facet_col_wrap=3, title='Comparitive activity growth', markers=True)
 
             #write to html
             fig.write_html(f'plotting_output/input_exploration/gompertz/log_fit_new_activity_growth.html')
@@ -387,27 +387,27 @@ def plot_logistic_function_by_economy(model_data_logistic_predictions, activity_
     model_data_passenger['Thousand_stocks_per_capita'] = model_data_passenger['Stocks']/model_data_passenger['Population']
     #convert to more readable units. We will convert back later if we need to #todo do we need to?
     model_data_passenger['Stocks_per_thousand_capita'] = model_data_passenger['Thousand_stocks_per_capita'] * 1000000
-    model_data_passenger = model_data_passenger[['Date', 'Economy', 'Scenario', 'Vehicle Type', 'Stocks_per_thousand_capita', 'Activity']].drop_duplicates()
+    model_data_passenger = model_data_passenger[['Date', 'Economy', 'Scenario', 'Transport Type', 'Stocks_per_thousand_capita', 'Activity']].drop_duplicates()
     #sum up
-    model_data_passenger = model_data_passenger.groupby(['Date', 'Economy', 'Scenario', 'Vehicle Type']).sum().reset_index()
+    model_data_passenger = model_data_passenger.groupby(['Date', 'Economy', 'Scenario', 'Transport Type']).sum().reset_index()
 
     #join the dataframes together
-    all_data = pd.merge(model_data_logistic_predictions, model_data_passenger, on=['Date', 'Economy', 'Scenario', 'Vehicle Type'], how='left', suffixes=('_logistic', '_previous'))
+    all_data = pd.merge(model_data_logistic_predictions, model_data_passenger, on=['Date', 'Economy', 'Scenario', 'Transport Type'], how='left', suffixes=('_logistic', '_previous'))
     #join on activity_growth_estimates. Note that this ISNT BY VEHIcle type
     all_data = pd.merge(all_data, activity_growth_estimates, on=['Date','Economy', 'Scenario'], how='left')
     
     all_data = all_data.loc[(all_data['Scenario'] == SCENARIO_OF_INTEREST)]
 
 
-    #TEMP FIX SINCE WE ONLY CAULCATED STOCKS PER CAPITA FOR LDVS
-    breakpoint()#i think that we should only have passenger_vehicle as a vehicle type. check this.
-    if all_data['Vehicle Type'].unique() != 'passenger_vehicle':
-        raise ValueError('We dont have stocks per capita for passenger vehicles. Check this')
-    else:
-        print('We only have stocks per capita for passenger vehicles. This is a temporary fix')
+    # #TEMP FIX SINCE WE ONLY CAULCATED STOCKS PER CAPITA FOR LDVS
+    # breakpoint()#i think that we should only have passenger_vehicle as a vehicle type. check this.
+    # if all_data['Transport Type'].unique() != 'passenger_vehicle':
+    #     raise ValueError('We dont have stocks per capita for passenger vehicles. Check this')
+    # else:
+    #     print('We only have stocks per capita for passenger vehicles. This is a temporary fix')
 
         
-    # all_data = all_data.loc[(all_data['Vehicle Type'] == 'lt')]#todo
+    # all_data = all_data.loc[(all_data['Transport Type'] == 'lt')]#todo
     if plotly_bool:
         if all_data.empty:
             print('No data to plot logistic function by economy, this means that there was no need for adjustment of the activity growth rates, because the stocks per capita were already in the right ballpark')
@@ -418,21 +418,21 @@ def plot_logistic_function_by_economy(model_data_logistic_predictions, activity_
 
                 #first plot will be on the comparitive stocks per capita
                 #filter for that data then melt
-                all_data_stocks_per_capita = all_data_economy[['Date','Scenario','Vehicle Type','Gdp_per_capita', 'Economy', 'Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous']]
-                all_data_stocks_per_capita = all_data_stocks_per_capita.melt(id_vars=['Date', 'Economy', 'Scenario','Vehicle Type', 'Gdp_per_capita'], value_vars=['Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous'], var_name='Stocks_per_thousand_capita', value_name='Stocks_per_thousand_capita_value')
+                all_data_stocks_per_capita = all_data_economy[['Date','Scenario','Transport Type','Gdp_per_capita', 'Economy', 'Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous']]
+                all_data_stocks_per_capita = all_data_stocks_per_capita.melt(id_vars=['Date', 'Economy', 'Scenario','Transport Type', 'Gdp_per_capita'], value_vars=['Stocks_per_thousand_capita_logistic', 'Stocks_per_thousand_capita_previous'], var_name='Stocks_per_thousand_capita', value_name='Stocks_per_thousand_capita_value')
 
                 #check its not empty
                 if all_data_stocks_per_capita.empty:
                     print('No data to plot logistic function by economy, this means that there was no need for adjustment of the activity growth rates, because the stocks per capita were already in the right ballpark')
                 else:
                         
-                    fig = px.line(all_data_stocks_per_capita, x='Date', y='Stocks_per_thousand_capita_value', color='Vehicle Type',line_dash='Stocks_per_thousand_capita', title='Comparitive stocks per capita', markers=True)
+                    fig = px.line(all_data_stocks_per_capita, x='Date', y='Stocks_per_thousand_capita_value', color='Transport Type',line_dash='Stocks_per_thousand_capita', title='Comparitive stocks per capita', markers=True)
 
                     #write to html
                     fig.write_html(f'plotting_output/input_exploration/gompertz/economy/log_fit_new_stocks_per_capita_{economy}.html')
                     
                     #and plot the same but wth gdp per capita in x
-                    fig = px.line(all_data_stocks_per_capita, x='Gdp_per_capita', y='Stocks_per_thousand_capita_value', line_dash='Stocks_per_thousand_capita', color='Vehicle Type', title='Comparitive stocks per capita vs GDP per capita', markers=True)
+                    fig = px.line(all_data_stocks_per_capita, x='Gdp_per_capita', y='Stocks_per_thousand_capita_value', line_dash='Stocks_per_thousand_capita', color='Transport Type', title='Comparitive stocks per capita vs GDP per capita', markers=True)
 
                     #write to html
                     fig.write_html(f'plotting_output/input_exploration/gompertz/economy/log_fit_new_stocks_per_capita_gdp_per_capita_{economy}.html')
@@ -450,15 +450,15 @@ def plot_logistic_function_by_economy(model_data_logistic_predictions, activity_
                 all_data_activity = pd.merge(all_data_economy, all_data_activity_sum[['Economy', 'Date', 'Activity_growth_est_previous']], on=['Economy', 'Date'], how='left')
 
                 #melt
-                all_data_activity_growth = all_data_activity[['Economy','Date','Vehicle Type', 'Gdp_per_capita', 'Activity_growth', 'Activity_growth_est_previous']]
-                all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Vehicle Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
+                all_data_activity_growth = all_data_activity[['Economy','Date','Transport Type', 'Gdp_per_capita', 'Activity_growth', 'Activity_growth_est_previous']]
+                all_data_activity_growth = all_data_activity_growth.melt(id_vars=['Economy', 'Transport Type','Date', 'Gdp_per_capita'], value_vars=['Activity_growth', 'Activity_growth_est_previous'], var_name='Activity_growth', value_name='Activity_growth_value')
 
                 #check its not empty
                 if all_data_activity_growth.empty:
                     print('No data to plot logistic function by economy, this means that there was no need for adjustment of the activity growth rates, because the stocks per capita were already in the right ballpark')
                 else:
                         
-                    fig = px.line(all_data_activity_growth, x='Date', y='Activity_growth_value', color='Vehicle Type',line_dash='Activity_growth', title='Comparitive activity growth', markers=True)
+                    fig = px.line(all_data_activity_growth, x='Date', y='Activity_growth_value', color='Transport Type',line_dash='Activity_growth', title='Comparitive activity growth', markers=True)
 
                     #write to html
                     fig.write_html(f'plotting_output/input_exploration/gompertz/economy/log_fit_new_activity_growth_{economy}.html')
