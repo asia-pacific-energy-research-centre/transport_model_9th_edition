@@ -27,6 +27,7 @@ def prepare_inputs_for_estimating_charging_requirements():
     ##############################################
     parameters = {'average_kwh_of_battery_capacity_by_vehicle_type': {'car': 50, 'bus': 100, '2w': 20, 'mt': 200, 'ht': 200, 'lt': 100, 'lcv': 100, 'suv': 80},
                 'stocks_magnitude': 1000000,#stocks are in millions
+                'stocks_magnitude_name': 'millions',
                 'expected_kw_of_chargers_per_ev': 0.1,#based on iea graph in ev outlook 2023
                 'average_kw_per_non_fast_charger': 50,#based on iea graph in ev outlook 2023 #assumed it didnt include fast chargers because technology isnt there yet for the vehicles that would need fast chargers
                 'average_kw_per_charger': 60,#guess
@@ -126,8 +127,11 @@ def estimate_kw_of_required_chargers():
     total_kwh_of_battery_capacity['sum_of_fast_kw_of_chargers_needed'] = total_kwh_of_battery_capacity.groupby(['Economy','Date','Scenario'])['fast_kw_of_chargers_needed'].transform('sum')
     
     total_kwh_of_battery_capacity = total_kwh_of_battery_capacity[['Economy','Date','Scenario','Vehicle Type','Stocks', 'sum_of_stocks','kwh_of_battery_capacity','sum_of_kwh_of_battery_capacity','sum_of_expected_number_of_chargers','expected_kw_of_chargers','sum_of_expected_kw_of_chargers','expected_number_of_chargers','sum_of_fast_kw_of_chargers_needed','sum_of_slow_kw_of_chargers_needed','sum_of_fast_chargers_needed','sum_of_slow_chargers_needed','fast_charger_utilisation_rate','average_kwh_of_battery_capacity_by_vehicle_type','average_kw_per_charger','average_kw_per_non_fast_charger','average_kw_per_fast_charger','slow_kw_of_chargers_needed','fast_kw_of_chargers_needed','slow_chargers_needed','fast_chargers_needed']].drop_duplicates()
+    
+    #rename stocks to stocks_{stocks_magnitude_name}
+    total_kwh_of_battery_capacity.rename(columns={'Stocks':'Stocks_'+parameters['stocks_magnitude_name']}, inplace=True)
     #save data to csv for use in \output_data\for_other_modellers
-    total_kwh_of_battery_capacity.to_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv', index=False)
+    total_kwh_of_battery_capacity.to_csv('output_data/for_other_modellers/estimated_number_of_chargers.csv', index=False)
     
 # return total_kwh_of_battery_capacity
 #%%

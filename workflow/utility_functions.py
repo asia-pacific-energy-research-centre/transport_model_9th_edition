@@ -11,6 +11,31 @@ import pandas as pd
 import shutil
 import yaml
 
+def copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR, output_folder_path='output_data/for_other_modellers'):
+    #to make it easier to give the output to others use ths function to make it a bit easier to group the files that people find useful together, so i can quickly send them.
+    useful_file_paths = []
+    output_file_paths = []
+    #dashboard fiels:
+    for economy in economies:
+        for scenario in SCENARIOS_LIST:
+          useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard.html')
+          output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard.html')
+    
+    # chargers: output_data\for_other_modellers\estimated_number_of_chargers.csv
+    #this one si already put there automatically so ignore it
+    # useful_file_paths.append('output_data/' + 'for_other_modellers' + '/estimated_number_of_chargers.csv')
+    
+    #for every file in useful file paths, copy it to its corresponding output file path
+    for f in range(len(useful_file_paths)):
+        try:
+            shutil.copyfile(useful_file_paths[f], output_file_paths[f])
+        except FileNotFoundError:
+            print('File not found: ' + useful_file_paths[f])
+        except shutil.Error:
+            print('File already exists: ' + output_file_paths[f])
+    
+    
+    
 def get_latest_date_for_data_file(data_folder_path, file_name):
     #get list of all files in the data folder
     all_files = os.listdir(data_folder_path)

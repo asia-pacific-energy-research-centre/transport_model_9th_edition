@@ -106,7 +106,9 @@ if ANALYSE_OUTPUT:
         #plot:
         all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
     
-
+#%%
+import utility_functions
+utility_functions.copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR, output_folder_path='output_data/for_other_modellers')
 
 #%%
 ARCHIVE_INPUT_DATA = True

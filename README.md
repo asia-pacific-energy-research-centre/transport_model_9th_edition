@@ -4,8 +4,6 @@ https://github.com/H3yfinn/transport_model_9th_edition/wiki
 
 ## SETUP
 ### Install Anaconda
- - config/env_transport_model.yml
-
 run:
 conda env create --prefix ./env_transport_model --file ./config/env_transport_model.yml
 
@@ -30,3 +28,6 @@ There are some documentation files in ./documentation/. They can be used in addi
 
 ## State of this repository:
 It's really messy and im sorry. Trying to keep up with schedule means ive had to prioritise getting things working over clean code and documentation. I will try to clean it up after it's all done.
+
+## Integration with transport data system:
+This repo makes use of a repo i also designed which is a data system for transport data. It is called transport_data_system and is available on my own Github page. I havent added it to APERC account because of it's use of the Large File System (LFS) which is not supported by APERC, yet. 

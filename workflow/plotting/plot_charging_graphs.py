@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import estimate_charging_requirements
 #%%    
-def plot_required_chargers():
+def plot_required_chargers(): 
     # total_kwh_of_battery_capacity.to_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv', index=False) 
     #grab colors dict:
     df, parameters, colors_dict, INCORPORATE_UTILISATION_RATE = estimate_charging_requirements.prepare_inputs_for_estimating_charging_requirements()
@@ -58,7 +58,7 @@ def plot_required_chargers():
             for vehicle_type in df_filtered['Vehicle Type'].unique():
                 df_vehicle = df_filtered[df_filtered['Vehicle Type'] == vehicle_type]
                 fig.add_trace(
-                    go.Scatter(x=df_vehicle['Date'], y=df_vehicle['Stocks'], mode='lines', name=vehicle_type,
+                    go.Scatter(x=df_vehicle['Date'], y=df_vehicle['Stocks_'+parameters['stocks_magnitude_name']], mode='lines', name=vehicle_type,
                     line=dict(color=colors_dict[vehicle_type])),
                     secondary_y=True
                 )
@@ -165,7 +165,7 @@ def plot_required_chargers():
             for vehicle_type in df_filtered['Vehicle Type'].unique():
                 df_vehicle = df_filtered[df_filtered['Vehicle Type'] == vehicle_type]
                 fig.add_trace(
-                    go.Scatter(x=df_vehicle['Date'], y=df_vehicle['Stocks'], mode='lines', name=vehicle_type,line=dict(color=colors_dict[vehicle_type])),
+                    go.Scatter(x=df_vehicle['Date'], y=df_vehicle['Stocks_'+parameters['stocks_magnitude_name']], mode='lines', name=vehicle_type,line=dict(color=colors_dict[vehicle_type])),
                     secondary_y=True
                 )
 

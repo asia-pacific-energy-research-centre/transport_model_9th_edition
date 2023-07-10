@@ -26,7 +26,7 @@ def run_road_model():
     #######################################################################
     #RUN PROCESS
     #######################################################################
-    run_this = False#set to false if you want to skip this step and just load the results from pickle.
+    run_this = True#set to false if you want to skip this step and just load the results from pickle.
     # breakpoint()
     if run_this:
         #RUN MODEL TO GET RESULTS FOR EACH YEAR
@@ -48,23 +48,13 @@ def run_road_model():
     # main_dataframe = main_dataframe.merge(growth_forecasts[['Economy','Date','Gdp_per_capita', 'Population']].drop_duplicates(), on=['Economy','Date'], how='left')
     main_dataframe = main_dataframe.merge(user_inputs_df_dict['gompertz_parameters'][['Economy','Date', 'Scenario', 'Gompertz_gamma']].drop_duplicates(), on=['Economy','Date','Scenario'], how='left')
 
-    breakpoint()
+    # breakpoint()
     #PUT RESULTS THROUGH logistic_fitting_function_handler AND FIND NEW PARAMETERS TO AVOID OVERGROWTH OF PASSENGER VEHICLE STOCKS
     #set gompertz gamma to 800 for all economies just to test.
     # main_dataframe['Gompertz_gamma'] = 800
     # breakpoint()#seems we're getting activity estimates much higher for china than we should be.
-    activity_growth_estimates, parameters_estimates, ONLY_PASSENGER_VEHICLES = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=False)
-    #set transport type to passenger for all rows
-    if ONLY_PASSENGER_VEHICLES:
-        activity_growth_estimates['Transport Type'] = 'passenger'
-    else:
-        #repliacet the activity growth estimates for passenger and freight:
-        activity_growth_estimates_passenger = activity_growth_estimates.copy()
-        activity_growth_estimates_passenger['Transport Type'] = 'passenger'
-        activity_growth_estimates_freight = activity_growth_estimates.copy()
-        activity_growth_estimates_freight['Transport Type'] = 'freight'
-        #concat
-        activity_growth_estimates = pd.concat([activity_growth_estimates_passenger, activity_growth_estimates_freight])
+    ONLY_PASSENGER_VEHICLES = False
+    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES)
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
     #so do a merge and only keep the new growth rates for the economies that have them
     new_growth_forecasts = growth_forecasts.copy()
