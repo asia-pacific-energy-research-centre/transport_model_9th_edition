@@ -1,0 +1,14 @@
+name: env_transport_model
+dependencies:
+  - plotly
+  - pandas
+  - numpy
+  - plotly
+  - matplotlib
+  - openpyxl
+  - pip
+  - jupyter
+  - pip:
+    - kaleido
+    
+   # conda env create --prefix ./env_transport_model --file ./config/env_transport_model.yml

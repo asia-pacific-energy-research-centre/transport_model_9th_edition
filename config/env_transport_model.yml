@@ -1,0 +1,16 @@
+name: env_transport_model
+channels:
+  - conda-forge
+dependencies:
+  - plotly
+  - pandas
+  - numpy
+  - matplotlib
+  - openpyxl
+  - pip
+  - jupyter
+  - scikit-learn
+  - pip:
+    - kaleido
+
+   # conda env create --prefix ./env_transport_model --file ./config/env_transport_model.yml

@@ -13,21 +13,21 @@ import shutil
 # %config Completer.use_jedi = False#Jupiter lab specific setting to fix Auto fill bug
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 #%%
-#we can set file_date_id here so that if we are running the script alone, versus through integrate, we can have the variable available
+#we can set FILE_DATE_ID here so that if we are running the script alone, versus through integrate, we can have the variable available
 try:
-    if file_date_id:
+    if FILE_DATE_ID:
        pass
 except NameError:
-    file_date_id = ''
+    FILE_DATE_ID = ''
    
 #%%
 USE_LATEST_OUTPUT_DATE_ID = True#True
-#create option to set file_date_id to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
+#create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
 if USE_LATEST_OUTPUT_DATE_ID:
     list_of_files = glob.glob('./output_data/model_output/*.csv') 
     latest_file = max(list_of_files, key=os.path.getctime)
     #get file data id using regex. want to grab the firt 8 digits and then an underscore and then the next 4 digits
-    file_date_id = re.search(r'_DATE(\d{8})_(\d{4})', latest_file).group(0)
+    FILE_DATE_ID = re.search(r'_DATE(\d{8})_(\d{4})', latest_file).group(0)
 
 #%%
 #state important modelling variables
@@ -35,14 +35,14 @@ BASE_YEAR= 2017
 END_YEAR = 2050
 Scenario_list = ['Carbon Neutral', 'Reference']
 
-model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, file_date_id)
+model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
 
 EIGHTH_EDITION_DATA = True
 
 scenario_id = 'model_development'
 #%%
 #state model concordances file names
-model_concordances_version = file_date_id#'20220824_1256'
+model_concordances_version = FILE_DATE_ID#'20220824_1256'
 model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
 model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
 model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)

@@ -3,15 +3,14 @@ Please view the Wiki here for contextual information:
 https://github.com/H3yfinn/transport_model_9th_edition/wiki
 
 ## SETUP
-There are two options for environments. They depend if you want to use jupyter or just the command line to run the model. I prefer to use jupyter but i know that it takes a lot of space/set-up-time.
- - config/env_jupyter.yml
- - config/env_no_jupyter.yml
+### Install Anaconda
+ - config/env_transport_model.yml
 
 run:
-conda env create --prefix ./env_jupyter --file ./config/env_jupyter.yml
+conda env create --prefix ./env_transport_model --file ./config/env_transport_model.yml
 
 Then:
-conda activate ./env_jupyter
+conda activate ./env_transport_model
 
 Note that installing those libraries in the yml files will result in a few other dependencies also being installed.
 
@@ -28,3 +27,6 @@ There are some documentation files in ./documentation/. They can be used in addi
 ./workflow/ - inside here are the files you need to run the model. 
 ./other_code/ - inside here is extra code that is useful to use for visualisation of the outputs, creation of input data and some kinds of analysis/exploration files. 
 ./config/ - general configurations you can set, other than those that are in the integrate.py file.
+
+## State of this repository:
+It's really messy and im sorry. Trying to keep up with schedule means ive had to prioritise getting things working over clean code and documentation. I will try to clean it up after it's all done.
