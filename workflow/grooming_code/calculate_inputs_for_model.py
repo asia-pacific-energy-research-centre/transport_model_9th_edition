@@ -109,15 +109,23 @@ def calculate_inputs_for_model(INDEX_COLS):
         fig = px.bar(test_road_model_input_wide, x="Vehicle Type", y="Energy_check_diff_abs_mean", color="Drive", barmode="group")
         fig.show()
         print('If the bar is postive then it means the energy is lower than the calculated energy from activity and efficiency. Essentially efficiency is too low or the activity is too high')
-
+    breakpoint()
     RECALCUALTE_THESE =True#until we ahve more confidence in inputs this is the best way to do it
     if RECALCUALTE_THESE:
         #RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
         road_model_input_wide['Activity'] = road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'] * road_model_input_wide['Stocks']
+        road_model_input_wide['Travel_km'] = road_model_input_wide['Mileage'] * road_model_input_wide['Stocks']
         road_model_input_wide['Energy'] = road_model_input_wide['Activity'] / road_model_input_wide['Efficiency']
         #PLEASE NOTE THAT THIS NAY END UP RESULTING IN WACKY NUMBERS.ITS A QUICK FIX FOR NOW
     
-
+    ##########
+    #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)
+    #insert average age column in road_model_input_wide. the average age will be set to 10 for all vehicles except those where drive is bev, phev_g, phev_d and fcev. Those will have an average age of 1
+    road_model_input_wide['Average_age'] = 10
+    road_model_input_wide.loc[(road_model_input_wide['Drive'].isin(['bev', 'phev_g', 'phev_d', 'fcev'])), 'Average_age'] = 1  
+    
+    #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)
+    ##########
     # #join population and gdp per cpita to road model input
     # gdp_cap = growth_forecasts[['Date', 'Economy', 'Transport Type', 'Population', 'Gdp_per_capita']].drop_duplicates()
 
@@ -134,5 +142,5 @@ def calculate_inputs_for_model(INDEX_COLS):
 
 #%%
 
-calculate_inputs_for_model(INDEX_COLS)
+# calculate_inputs_for_model(INDEX_COLS)
 #%%

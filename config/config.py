@@ -41,12 +41,13 @@ def get_latest_date_for_data_file(data_folder_path, file_name):
 # pd.options.mode.chained_assignment = None  # default='warn'
 #%%
 #STATE VARIABLES USER MAY CHANGE OFTEN:
+USE_MEAN_AGES=True
 NEW_SALES_SHARES = True
 NEW_FUEL_MIXING_DATA = True
 REPLACE_ACTIVITY_GROWTH_WITH_8TH = False#NOTE THAT THIS CURRENETLY DOESNT WORK BECAUSE OF NAS IN THE DATA
-transport_data_system_FILE_DATE_ID ='DATE20230710' # 'DATE20230216'))
+transport_data_system_FILE_DATE_ID ='DATE20230711' # 'DATE20230216'))
 
-ECONOMIES_TO_PLOT_FOR =['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
+ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
 #%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 USE_LATEST_OUTPUT_DATE_ID = True

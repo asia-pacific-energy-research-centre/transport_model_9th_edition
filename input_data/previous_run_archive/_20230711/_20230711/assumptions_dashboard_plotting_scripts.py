@@ -537,12 +537,12 @@ def activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordan
         passenger_km = calc_index(model_output_detailed[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
         original_model_output_8th_scenario = calc_index(original_model_output_8th_scenario,'Activity_8th')
         #breakpoint()
-        #set 'line_dash' to '' in passenger_km and freight_km, then set to ' ' in original_model_output_8th_scenario and  population and gdp
-        passenger_km['line_dash'] = ''
-        freight_km['line_dash'] = ''
-        original_model_output_8th_scenario['line_dash'] = ' '
-        population['line_dash'] = ' '
-        gdp['line_dash'] = ' '
+        #set 'line_dash' to 'solid' in passenger_km and freight_km, then set to 'dash' in original_model_output_8th_scenario and  population and gdp
+        passenger_km['line_dash'] = 'solid'
+        freight_km['line_dash'] = 'solid'
+        original_model_output_8th_scenario['line_dash'] = 'dash'
+        population['line_dash'] = 'dash'
+        gdp['line_dash'] = 'dash'
         
         
         #concat all the data together then melt:

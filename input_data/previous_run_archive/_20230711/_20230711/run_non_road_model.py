@@ -14,7 +14,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #%%
 def run_non_road_model():
     #load all data except activity data (which is calcualteed separately to other calcualted inputs)
-    growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
+    growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
     #load all other data
     non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
 

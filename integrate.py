@@ -60,13 +60,13 @@ if PREPARE_DATA:
     calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS)
 
 #%%
-# exec(open("./workflow/1_run_non_road_model.py").read())
-import run_non_road_model
-run_non_road_model.run_non_road_model()
+
 # exec(open("./workflow/1_run_road_model.py").read())
 import run_road_model
 run_road_model.run_road_model()
-
+# exec(open("./workflow/1_run_non_road_model.py").read())
+import run_non_road_model
+run_non_road_model.run_non_road_model()
 # exec(open("./workflow/2_concatenate_model_output.py").read())
 import concatenate_model_output
 concatenate_model_output.concatenate_model_output()

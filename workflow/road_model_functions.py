@@ -47,10 +47,12 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     test_data_frame['Activity_check'] = test_data_frame['Mileage'] * test_data_frame['Occupancy_or_load'] * test_data_frame['Stocks']
     if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']):
         throw_error=False
-        if throw_error:
-            raise ValueError('ERROR: Activity does not match sum of activity when you calcualte it as (change_dataframe[\'Activity\']/( change_dataframe[\'Mileage\'] * change_dataframe[\'Occupancy_or_load\']))') 
-        else:
-            print('WARNING: Activity does not match sum of activity when you calcualte it as (change_dataframe[\'Activity\']/( change_dataframe[\'Mileage\'] * change_dataframe[\'Occupancy_or_load\']))')
+        percent_difference = ((sum(test_data_frame['Activity_check'].dropna()) - sum(test_data_frame['Activity'].dropna()))/sum(test_data_frame['Activity'].dropna())) * 100
+        if abs(percent_difference) > 0.5:
+            if throw_error:
+                raise ValueError('ERROR: Activity does not match sum of activity. percent_difference = {}'.format(percent_difference)) 
+            else:
+                print('ERROR: Activity does not match sum of activity. percent_difference = {}'.format(percent_difference)) 
     #######################################################################
 
     #First do adjustments:
@@ -63,14 +65,26 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #CALCUALTE NEW TURNOVER RATE AND THEN TURNOVER OF OLD STOCKS
     change_dataframe = change_dataframe.merge(Turnover_rate_growth, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Date'], how='left')
-    #now apply turnover growth rate to turnover rate
-    change_dataframe['Turnover_rate'] = change_dataframe['Turnover_rate'] * change_dataframe['Turnover_rate_growth']
-
+    # #now apply turnover growth rate to turnover rate
+    if not USE_MEAN_AGES:
+        change_dataframe['Turnover_rate'] = change_dataframe['Turnover_rate'] * change_dataframe['Turnover_rate_growth']
+    else:
+        #####################TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
+        def calculate_turnover_rate(avg_age, k=0.7, x0=12.5):
+            # k = 0.7
+            # x0 = 12.5
+            return 1 / (1 + np.exp(-k * (avg_age - x0)))
+        # Calculate turnover rates based on average age
+        # ev_turnover = calculate_turnover_rate(ev_mean_age, k, x0)
+        # ice_turnover = calculate_turnover_rate(ice_mean_age, k, x0)
+        change_dataframe['Turnover_rate'] =change_dataframe['Average_age'].apply(calculate_turnover_rate)
+        #CALCULATE PREVIOUSLY AVAILABLE STOCKS AS SUM OF STOCKS AND SURPLUS STOCKS
+        change_dataframe['Original_stocks'] = change_dataframe['Stocks'] + change_dataframe['Surplus_stocks']
+    #####################TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
     #ERROR CHECK double check that turnover rate isnt greater than 1 (in which case the growth rate is too high)
     if change_dataframe['Turnover_rate'].max() > 1:
         raise ValueError('ERROR: Turnover rate is greater than 1. This means that the turnover rate growth rate is too high. Turnover rate cannot be greater than 1.')
         # return 
-
     #calcualte stock turnover as stocks from last year * turnover rate.
     change_dataframe['Stock_turnover'] = - change_dataframe['Stocks'] * change_dataframe['Turnover_rate']
 
@@ -155,7 +169,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #CALCULATE NEW activity total of stocks being used as ACTIVITY
     change_dataframe['Activity'] = change_dataframe['Activity_worth_of_new_stock_sales'] + change_dataframe['Activity_worth_of_stocks_after_turnover_and_surplus_total'] - change_dataframe['Total_surplus_stocks_worth_of_activity']
-
+    
     #CALCUALTE NEW TOTAL TRAVEL_KM PER VEHICLE/DRIVE-TYPE FROM NEW activity total of stocks being useD
     change_dataframe['Travel_km'] = change_dataframe['Activity'] / change_dataframe['Occupancy_or_load']
 
@@ -172,6 +186,15 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #CALCUALTE NEW STOCKS NEEDED AS STOCKS NEEDED TO SATISFY NEW SALES WORTH OF ACTIVITY
     change_dataframe['New_stocks_needed'] = change_dataframe['Travel_km_of_new_stocks'] / change_dataframe['Mileage']
 
+    #########TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
+    if USE_MEAN_AGES:
+        # Calculate new mean age after turnover by assuming that the cars being removed are 1 standard deviation above the mean. The new average age after turnover can be calculated as follows:
+        change_dataframe['Average_age'] = change_dataframe['Average_age'] - change_dataframe['Average_age'] * change_dataframe['Turnover_rate']
+        
+        change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed'])
+        
+    #########TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
+    
     #CALCUALTE SURPLUS STOCKS
     #If we have too many stocks these go into surplus
     change_dataframe['Surplus_stocks'] = change_dataframe['Travel_km_of_surplus_stocks'] / change_dataframe['Mileage']
@@ -221,8 +244,11 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #Now start cleaning up the changes dataframe to create the dataframe for the new year.
     addition_to_main_dataframe = change_dataframe.copy()
-    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]
     
+    if USE_MEAN_AGES:
+        addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population', 'Average_age']]
+    else:
+        addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]
 
     # breakpoint()
     #add new year to the main dataframe.

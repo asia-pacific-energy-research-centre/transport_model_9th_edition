@@ -34,8 +34,16 @@ value_cols = ['passenger_km','freight_tonne_km', 'Energy', 'Stocks',
        'Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency',
        'Travel_km', 'Efficiency', 'Mileage', 'Surplus_stocks',
        'Vehicle_sales_share',  'Gdp_per_capita','Gdp', 'Population', 'Stocks_per_thousand_capita']
+
+if USE_MEAN_AGES:
+    value_cols = value_cols + ['Average_age']
+    
 #some value cols are not summable because they are factors. so specify them for when we group by economy, then we can calculate the mean of them
 non_summable_value_cols = ['Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage','Vehicle_sales_share']
+
+if USE_MEAN_AGES:
+    non_summable_value_cols = non_summable_value_cols + ['Average_age']
+    
 categorical_cols = ['Vehicle Type', 'Medium', 'Transport Type', 'Drive']
 macro_cols = ['Gdp_per_capita','Gdp', 'Population', 'Activity_growth']
 
@@ -238,6 +246,11 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
         def plot_line_by_economy(df, color_categories, y_column,title,line_dash_categories=None,  x_column='Date', save_folder='all_economy_graphs', facet_col_wrap=7, facet_col ='Economy', hover_name = None, hover_data = None, log_y = False, log_x = False, y_axis_title = None, x_axis_title = None, width = 2000, height = 800,AUTO_OPEN_PLOTLY_GRAPHS=False, independent_y_axis = True,plot_png=True, plot_html=True, dont_overwrite_existing_graphs=False):
             """This function is intended to make plotting liine graphs of the model data a bit less repetitive. It will take in specifications like the plotly line graphing function (px.line) but will do some formatting before plotting. Can be used to plot data for multiple economies, jsut one or even a mix."""
+            #############
+            categories = color_categories+line_dash_categories+[facet_col]
+            df = calc_mean_if_not_summable(df, y_column,categories)
+            #############
+            
             graph_exists = check_graph_exists(save_folder, title, dont_overwrite_existing_graphs)
             if graph_exists and dont_overwrite_existing_graphs:
                 print(f'Graph {title} already exists, skipping')
@@ -324,6 +337,11 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
                 fig.write_image(f"./{save_folder}/static/" + title + '.png', scale=1, width=width, height=height)
                 
         def plot_area_by_economy(df, color_categories, y_column, title, line_group_categories=None,  x_column='Date', save_folder='all_economy_graphs', facet_col_wrap=7, facet_col ='Economy', hover_name = None, hover_data = None, log_y = False, log_x = False, y_axis_title = None, x_axis_title = None, width = 2000, height = 800,AUTO_OPEN_PLOTLY_GRAPHS=False, independent_y_axis = True,plot_png=True, plot_html=True, dont_overwrite_existing_graphs=False):
+            
+            #############
+            categories = color_categories+line_group_categories+[facet_col]
+            df = calc_mean_if_not_summable(df, y_column,categories)
+            #############
             graph_exists = check_graph_exists(save_folder, title, dont_overwrite_existing_graphs)
             if graph_exists and dont_overwrite_existing_graphs:
                 print(f'Graph {title} already exists, skipping')
@@ -372,6 +390,21 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
                     df = df.groupby([x_column, facet_col,color,hover_name])[y_column].sum().reset_index()
             plot_area(df, y_column, color, line_group, facet_col_wrap, facet_col, hover_name, hover_data, log_y, log_x, title, independent_y_axis, y_axis_title, x_axis_title, plot_html, plot_png,save_folder, AUTO_OPEN_PLOTLY_GRAPHS, width, height)
 
+        ###########
+        def calc_mean_if_not_summable(df, value_cols,categorical_cols,non_summable_value_cols=non_summable_value_cols):
+            #identifcy means
+            mean_cols = []
+            for col in value_cols:
+                if col in non_summable_value_cols:
+                    mean_cols = mean_cols + [col]
+                    values_cols.remove(col)
+            #replace values equal to '' with nan while we calculate the mean and sum 
+            df[mean_cols] = df[mean_cols].replace('', np.nan)
+            df_mean = df.groupby(categorical_cols+['Date']).agg({col: 'mean' for col in mean_cols}).reset_index()
+            #now replace nan with ''    
+            df = df.replace(np.nan, '', regex=True)
+            
+            return df
         
         
         ###############################################################################
@@ -436,25 +469,24 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
                 print(len(non_ints))
 
         
-        ###########
-        def calc_mean_or_sum(df, value_cols, non_summable_value_cols):
-            #replace values equal to '' with nan while we calculate the mean and sum
-            df[value_cols] = df[value_cols].replace('', np.nan)
-            df_APEC_mean = df.groupby(categorical_cols+['Date']).agg({col: 'mean' for col in value_cols}).reset_index()
-            df_APEC_sum = df.groupby(categorical_cols+['Date']).agg({col: 'sum' for col in value_cols}).reset_index()
-            #now remove non_summable_value_cols from sum, and remove non, non_summable_value_cols from mean
-            df_APEC_mean.drop(columns=[col for col in value_cols if col not in non_summable_value_cols], inplace=True)
-            df_APEC_sum.drop(columns=non_summable_value_cols, inplace=True)
-            #now merge the two dataframes
-            df_APEC = pd.merge(df_APEC_mean, df_APEC_sum, on=categorical_cols+['Date'], how='outer')
 
-            df_APEC['Economy'] = 'all'
-            df = pd.concat([df, df_APEC])
-            return df
+        # def calc_APEC_mean_or_sum(df, value_cols, non_summable_value_cols,categorical_cols):
+        #     #replace values equal to '' with nan while we calculate the mean and sum
+        #     df[value_cols] = df[value_cols].replace('', np.nan)
+        #     df_APEC_mean = df.groupby(categorical_cols+['Date']).agg({col: 'mean' for col in value_cols}).reset_index()
+        #     df_APEC_sum = df.groupby(categorical_cols+['Date']).agg({col: 'sum' for col in value_cols}).reset_index()
+        #     #now remove non_summable_value_cols from sum, and remove non, non_summable_value_cols from mean
+        #     df_APEC_mean.drop(columns=[col for col in value_cols if col not in non_summable_value_cols], inplace=True)
+        #     df_APEC_sum.drop(columns=non_summable_value_cols, inplace=True)
+        #     #now merge the two dataframes
+        #     df_APEC = pd.merge(df_APEC_mean, df_APEC_sum, on=categorical_cols+['Date'], how='outer')
 
-        # do_this = True
-        # if do_this:
-        #     model_output_detailed = calc_mean_or_sum(model_output_detailed, value_cols, non_summable_value_cols)
+        #     df_APEC['Economy'] = 'all'
+        #     df = pd.concat([df, df_APEC])
+            
+        #     #now replace nan with ''    
+        #     df = df.replace(np.nan, '', regex=True)
+        #     return df
 
         ###########
         
@@ -495,7 +527,7 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
         # model_output_detailed_regions = model_output_detailed_regions.groupby(categorical_cols+['Date',  'Region']).agg({col: 'sum' for col in value_cols if col not in non_summable_value_cols else 'mean'}).reset_index()
         
-        model_output_detailed_regions = calc_mean_or_sum(model_output_detailed_regions, value_cols, non_summable_value_cols)
+        model_output_detailed_regions = calc_mean_if_not_summable(model_output_detailed_regions, value_cols, categorical_cols+['Region'])
 
         #save copy of data as pickle for use in recreating plots. put it in save_folder
         if save_pickle:
@@ -560,7 +592,6 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
                                                     
                             #filter for that ecovnomy only and then plot
                             model_output_with_fuels_plot_econ = model_output_with_fuels_plot[model_output_with_fuels_plot['Economy'] == economy_x]
-
                             if PLOT:
                                 plot_line_by_economy(model_output_with_fuels_plot_econ, color_categories= list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
                                 print(f'plotting {value_col} by {combo}')
@@ -582,6 +613,9 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
         #drop nas
         model_output_with_fuels_regions = model_output_with_fuels_regions.dropna(subset=['Region'])
 
+        #we weill need to calcualte the mean for this value so tis not summed
+        model_output_with_fuels_regions = calc_mean_if_not_summable(model_output_with_fuels_regions, ['Energy'], categorical_cols_new+['Region'])
+        
         model_output_detailed_regions = model_output_detailed_regions.groupby(categorical_cols_new+['Date',  'Region']).sum().reset_index()
         #save copy of data as pickle for use in recreating plots. put it in save_folder
         if save_pickle:
@@ -593,7 +627,7 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
             
             #plot singular graphs for each economy #TODO error here
             n_categorical_cols_new = len(categorical_cols_new)
-            for economy_x in model_output_with_fuels_regions['Economy'].unique():
+            for region in model_output_with_fuels_regions['Region'].unique():
                 for value_col in value_cols_new:
                     for i in range(1, n_categorical_cols_new+1):
                         for combo in itertools.combinations(categorical_cols_new, i):
@@ -601,11 +635,10 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
                             # combo = list(combo) + ['Fuel']
 
                             title = f'{value_col} by {list(combo) + ["Fuel"]} - {scenario}'
-                            save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}/line/'
+                            save_folder = f'{default_save_folder}/{dataframe_name}/{region}/{value_col}/line/'
                                                     
                             #filter for that ecovnomy only and then plot
-                            model_output_with_fuels_regions_region = model_output_with_fuels_regions[model_output_with_fuels_regions['Economy'] == economy_x]
-                            
+                            model_output_with_fuels_regions_region = model_output_with_fuels_regions[model_output_with_fuels_regions['Region'] == region]
                             if PLOT:
                                 plot_line_by_economy(model_output_with_fuels_regions_region, color_categories = list(combo), y_column=value_col, title=title,  line_dash_categories = 'Fuel', save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs)
                                 print(f'plotting {value_col} by {combo}')

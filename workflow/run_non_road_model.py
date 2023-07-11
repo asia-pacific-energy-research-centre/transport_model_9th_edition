@@ -14,7 +14,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #%%
 def run_non_road_model():
     #load all data except activity data (which is calcualteed separately to other calcualted inputs)
-    growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
+    growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
     #load all other data
     non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
 
@@ -197,7 +197,7 @@ def run_non_road_model():
         
 
 #%%
-
+# run_non_road_model()
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='freight_tonne_km',kind='bar')
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='Activity',kind='bar')
     # model_input_wide[(model_input_wide['Date']==2017) & (model_input_wide['Economy']=='20_USA')].groupby(['Medium','Economy']).sum().reset_index().plot(x='Medium',y='Energy',kind='bar') 

@@ -53,14 +53,23 @@ def run_road_model():
     #set gompertz gamma to 800 for all economies just to test.
     # main_dataframe['Gompertz_gamma'] = 800
     # breakpoint()#seems we're getting activity estimates much higher for china than we should be.
-    ONLY_PASSENGER_VEHICLES = True
-    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':5, 'mt': 5, 'ht': 5})
+    ONLY_PASSENGER_VEHICLES = False
+    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':3, 'mt': 6, 'ht': 8})
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
     #so do a merge and only keep the new growth rates for the economies that have them
     new_growth_forecasts = growth_forecasts.copy()
     similar_cols = [col for col in growth_forecasts.columns if col in activity_growth_estimates.columns]
     index_cols = ['Economy', 'Scenario', 'Date', 'Transport Type']
     new_growth_forecasts = new_growth_forecasts.merge(activity_growth_estimates.drop_duplicates(), on=index_cols, how='left', suffixes=('', '_new'))
+    #######################################################################
+    CLEAN_UP_GROWTH = True
+    if CLEAN_UP_GROWTH:
+        
+        #some growth in the first 6 years will enmd up a bit weird because of the fitting we did. For now, we will fix that with a bit of smoothing, by averaging it out and then havign that value for the whole period:
+        period = range(BASE_YEAR+1, BASE_YEAR+7)
+        new_growth_forecasts_avg = new_growth_forecasts.loc[new_growth_forecasts['Date'].isin(period)].groupby(['Economy', 'Scenario', 'Transport Type'])['Activity_growth_new'].mean().reset_index()
+        new_growth_forecasts.loc[new_growth_forecasts['Date'].isin(period), 'Activity_growth_new'] = new_growth_forecasts.loc[new_growth_forecasts['Date'].isin(period)].merge(new_growth_forecasts_avg, on=['Economy', 'Scenario', 'Transport Type'], how='left')['Activity_growth_new_y']
+    #######################################################################
     #now where there is a new growth rate, use that, otherwise use the old one
     new_growth_forecasts['Activity_growth'] = new_growth_forecasts['Activity_growth_new'].fillna(new_growth_forecasts['Activity_growth'])
     #drop the cols with _new suffix
@@ -69,6 +78,10 @@ def run_road_model():
     #now srt growth_forecasts to new_growth_forecasts
     growth_forecasts = new_growth_forecasts.copy()
     
+    #save these growth forecasts for use in non road too:
+    growth_forecasts.to_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
+    
+    #######################################################################
     main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     #######################################################################
     #RUN MODEL AGAIN

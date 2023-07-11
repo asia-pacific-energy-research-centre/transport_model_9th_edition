@@ -4,7 +4,7 @@
 
 #as such, this will merge a fuel mixing dataframe onto the model output, by the Drive column, and apply the shares by doing that, resulting in a fuel column.
 #this means that the supply side fuel mixing needs to occur after this script, because it will be merging on the fuel column.
-
+ 
 #%%
 #set working directory as one folder back so that config works
 import os

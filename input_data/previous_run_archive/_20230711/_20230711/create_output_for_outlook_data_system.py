@@ -17,6 +17,7 @@ model_variables = pd.read_excel('./config/9th_EBT_schema.xlsx', sheet_name='9th_
 #cols 'scenarios', 'economy', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'
 #%%
 #match up transport type/vehicle type/drive combinations with sectors in model variables:
+
 #printhem all:
 unique_sectors = model_output_all_with_fuels[['Medium','Transport Type', 'Vehicle Type', 'Drive']].drop_duplicates()
 #%%

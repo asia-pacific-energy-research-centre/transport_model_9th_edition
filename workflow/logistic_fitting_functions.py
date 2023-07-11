@@ -105,7 +105,7 @@ def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_boo
     new_model_data['Activity'] = new_model_data['Activity'].fillna(0)
     new_model_data['Travel_km'] = new_model_data['Travel_km'].fillna(0)
     
-    summed_values = new_model_data.groupby(['Date','Economy', 'Scenario','Transport Type'])['Stocks','Activity', 'Travel_km'].sum().reset_index()
+    summed_values = new_model_data.groupby(['Date','Economy', 'Scenario','Transport Type'])['Stocks','Activity', 'Travel_km'].sum().reset_index().copy()
     #join stocks with other data
     new_model_data.drop(columns=['Stocks','Activity', 'Travel_km'], inplace=True)
     new_model_data.drop_duplicates(inplace=True)
@@ -216,7 +216,10 @@ def find_parameters_for_logistic_function(new_model_data, show_plots, matplotlib
                 else:
                     #extract data after this date and set the stocks per capita to be a linear line from the gamma - gamma*proportion_below_gamma to gamma over the time period
                     data_to_change = new_model_data_economy_scenario_ttype[new_model_data_economy_scenario_ttype['Date'] >= date_where_stocks_per_capita_passes_gamma]
-                    data_to_change['Stocks_per_thousand_capita'] = [gamma - (gamma * proportion_below_gamma) + ((gamma * proportion_below_gamma) / len(data_to_change['Stocks_per_thousand_capita'])) * i for i in range(len(data_to_change['Stocks_per_thousand_capita']))]#todo check this is correct
+                    
+                    data_to_change.loc[:, 'Stocks_per_thousand_capita'] = [gamma - (gamma * proportion_below_gamma) + ((gamma * proportion_below_gamma) / len(data_to_change['Stocks_per_thousand_capita'])) * i for i in range(len(data_to_change['Stocks_per_thousand_capita']))]
+
+                    # data_to_change['Stocks_per_thousand_capita'] = [gamma - (gamma * proportion_below_gamma) + ((gamma * proportion_below_gamma) / len(data_to_change['Stocks_per_thousand_capita'])) * i for i in range(len(data_to_change['Stocks_per_thousand_capita']))]#todo check this is correct
 
                     #add this back to the main dataframe
                     new_model_data_economy_scenario_ttype[new_model_data_economy_scenario_ttype['Date'] >= date_where_stocks_per_capita_passes_gamma] = data_to_change
@@ -582,3 +585,30 @@ def solve_logistic_for_gdp_per_capita(row):
 
     return gdp_per_capita
 
+
+def average_out_growth_rate_using_cagr(new_growth_forecasts,BASE_YEAR, economies_to_avg_growth_over_all_years_in_freight_for = ['19_THA']):
+
+    def calculate_cagr_from_factors(factors):
+        # Multiply all factors together
+        total_growth = factors.product()
+        
+        # Take the Nth root and subtract 1
+        return total_growth ** (1.0 / len(factors)) - 1
+
+    new_freight_growth_economies = new_growth_forecasts.loc[new_growth_forecasts['Economy'].isin(economies_to_avg_growth_over_all_years_in_freight_for)].copy()
+
+    # apply cagr on the growth factors, grouped by economy, transport type and scenario:
+    new_freight_growth_economies['Activity_growth_new'] = new_freight_growth_economies.groupby(['Economy', 'Scenario', 'Transport Type'])['Activity_growth_new'].apply(calculate_cagr_from_factors)
+
+    #############
+    early_period = range(BASE_YEAR+1, BASE_YEAR+7)
+    other_economies_early_growth = new_growth_forecasts.loc[~new_growth_forecasts['Economy'].isin(economies_to_avg_growth_over_all_years_in_freight_for) & (new_growth_forecasts['Date'].isin(period))].copy()
+    
+    other_economies_early_growth['Activity_growth_new'] = other_economies_early_growth.groupby(['Economy', 'Scenario', 'Transport Type'])['Activity_growth_new'].apply(calculate_cagr_from_factors)
+    
+    #############
+    other_data = new_growth_forecasts.loc[~new_growth_forecasts['Economy'].isin(economies_to_avg_growth_over_all_years_in_freight_for) & (~new_growth_forecasts['Date'].isin(period))].copy()
+    all_economies_data = pd.concat([new_freight_growth_economies, other_economies_early_growth, other_data], axis=0)
+    new_growth_forecasts = all_economies_data.copy()
+    
+    return new_growth_forecasts
