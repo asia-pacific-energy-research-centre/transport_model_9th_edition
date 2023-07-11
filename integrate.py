@@ -106,7 +106,7 @@ if ANALYSE_OUTPUT:
     
     exec(open("./workflow/plotting/compare_esto_energy_to_data.py").read())
     
-    plot_all_economy_graphs = False
+    plot_all_economy_graphs = True
     if plot_all_economy_graphs:
         #plot:
         all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)

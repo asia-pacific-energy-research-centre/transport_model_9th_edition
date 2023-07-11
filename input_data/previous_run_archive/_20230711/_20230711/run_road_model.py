@@ -6,11 +6,8 @@
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-import numpy as np
-from scipy.optimize import newton
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
-import functions
+import road_model_functions
 import logistic_fitting_functions
 #%%
 def run_road_model():
@@ -19,7 +16,7 @@ def run_road_model():
 
     growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
     
-    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
+    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     
     #if you want to analyse what is hapening in th model then set this to true and the model will output a dataframe wioth all the variables that are being calculated.
     ANALYSE_CHANGE_DATAFRAME = True
@@ -31,9 +28,9 @@ def run_road_model():
     if run_this:
         #RUN MODEL TO GET RESULTS FOR EACH YEAR
         for year in range(BASE_YEAR+1, END_YEAR+1):
-            main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block = functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False)
+            main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False)
 
-        main_dataframe = functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation, gompertz_function_diagnostics_dataframe)
+        main_dataframe = road_model_functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation, gompertz_function_diagnostics_dataframe)
 
         #save results as pickle for testing purposes
         main_dataframe.to_pickle('./intermediate_data/road_model/main_dataframe.pkl')
@@ -54,7 +51,7 @@ def run_road_model():
     # main_dataframe['Gompertz_gamma'] = 800
     # breakpoint()#seems we're getting activity estimates much higher for china than we should be.
     ONLY_PASSENGER_VEHICLES = False
-    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':3, 'mt': 6, 'ht': 8})
+    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':1.5, 'mt': 3, 'ht': 5})
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
     #so do a merge and only keep the new growth rates for the economies that have them
     new_growth_forecasts = growth_forecasts.copy()
@@ -64,11 +61,7 @@ def run_road_model():
     #######################################################################
     CLEAN_UP_GROWTH = True
     if CLEAN_UP_GROWTH:
-        
-        #some growth in the first 6 years will enmd up a bit weird because of the fitting we did. For now, we will fix that with a bit of smoothing, by averaging it out and then havign that value for the whole period:
-        period = range(BASE_YEAR+1, BASE_YEAR+7)
-        new_growth_forecasts_avg = new_growth_forecasts.loc[new_growth_forecasts['Date'].isin(period)].groupby(['Economy', 'Scenario', 'Transport Type'])['Activity_growth_new'].mean().reset_index()
-        new_growth_forecasts.loc[new_growth_forecasts['Date'].isin(period), 'Activity_growth_new'] = new_growth_forecasts.loc[new_growth_forecasts['Date'].isin(period)].merge(new_growth_forecasts_avg, on=['Economy', 'Scenario', 'Transport Type'], how='left')['Activity_growth_new_y']
+        new_growth_forecasts = logistic_fitting_functions.average_out_growth_rate_using_cagr(new_growth_forecasts,BASE_YEAR, economies_to_avg_growth_over_all_years_in_freight_for = ['19_THA'])
     #######################################################################
     #now where there is a new growth rate, use that, otherwise use the old one
     new_growth_forecasts['Activity_growth'] = new_growth_forecasts['Activity_growth_new'].fillna(new_growth_forecasts['Activity_growth'])
@@ -82,14 +75,14 @@ def run_road_model():
     growth_forecasts.to_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
     
     #######################################################################
-    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
+    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     #######################################################################
     #RUN MODEL AGAIN
     ####################################################################### 
     # breakpoint()
     #run model again with new growth rates for passenger vehicles (so replace growth_forecasts with activity_growth_estimates)
     for year in range(BASE_YEAR+1, END_YEAR+1):
-        main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block = functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False)
+        main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False)
 
     
     #######################################################################
@@ -102,7 +95,7 @@ def run_road_model():
     parameters_estimates.to_pickle('./intermediate_data/road_model/parameters_estimates.pkl')
 
     #save as csv for next step
-    main_dataframe = functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation, gompertz_function_diagnostics_dataframe)
+    main_dataframe = road_model_functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation, gompertz_function_diagnostics_dataframe)
 
     #save results as pickle for testing purposes
     main_dataframe.to_pickle('./intermediate_data/road_model/main_dataframe_growth_adjusted.pkl')
@@ -116,98 +109,3 @@ def run_road_model():
 
 
 
-# #######################################################################
-# #######################################################################
-# plot_this=True
-# if plot_this:
-#     main_dataframe_new = main_dataframe.copy()
-#     # main_dataframe_new = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth']].drop_duplicates(), on=['Economy','Date'], how='left')
-#     a = main_dataframe_new[['Activity','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive',
-#         'Scenario']]
-#     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
-#     a = a[(a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger')  & (a['Scenario'] == 'Target')  & (a['Economy'] == '20_USA')]#& (a['Date'] < 2100)#& (a['Drive'] == 'bev')
-
-#     #plot the sum of activity of 20_USA  for transport ype = passenger, with the activity growth on the right axis. 
-#     import plotly.express as px
-#     fig = px.line(a, x="Date", y="Activity", color='Drive', title='Activity of 20_USA for transport type = passenger')
-#     #and include the activity growth on the right axis
-#     fig.add_scatter(x=a['Date'].drop_duplicates(), y=a['Activity_growth'].drop_duplicates(), mode='lines', name='Activity growth', yaxis='y2')
-#     fig.update_layout(yaxis=dict(title='Activity'), yaxis2=dict(title='Activity growth', overlaying='y', side='right'))
-#     #write to html
-#     fig.write_html("20_USA_activity.html", auto_open=True)
-
-
-#     #and also plot stocks per capita for 20_USA
-#     # main_dataframe_new = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth','Population']].drop_duplicates(), on=['Economy','Date'], how='left')
-#     main_dataframe_new = main_dataframe.copy()
-#     #calcualte stocks per capita
-#     main_dataframe_new['Thousand_stocks_per_capita'] = main_dataframe_new['Stocks']/main_dataframe_new['Population']
-#     #convert to more readable units. We will convert back later if we need to #todo do we need to?
-#     main_dataframe_new['Stocks_per_thousand_capita'] = main_dataframe_new['Thousand_stocks_per_capita'] * 1000000
-
-#     main_dataframe_new['Gompertz_gamma'] = 800
-
-#     a = main_dataframe_new[['Stocks_per_thousand_capita','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive',
-#         'Scenario', 'Gompertz_gamma']]
-#     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
-#     a = a[(a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger')  & (a['Scenario'] == 'Target') & (a['Economy'] == '20_USA')]# & (a['Date'] < 2100)]#& (a['Drive'] == 'ice')
-
-#     #plot stocks per cpiat  and then activity growth on right axis
-#     fig = px.line(a, x="Date", y="Stocks_per_thousand_capita", color='Drive', title='Stocks per capita of 20_USA for transport type = passenger')
-#     #and include the activity growth on the right axis
-#     fig.add_scatter(x=a['Date'].drop_duplicates(), y=a['Activity_growth'].drop_duplicates(), mode='lines', name='Activity growth', yaxis='y2')
-#     fig.update_layout(yaxis=dict(title='Stocks per capita'), yaxis2=dict(title='Activity growth', overlaying='y', side='right'))
-#     #write to html
-#     fig.write_html("20_USA_stocks_per_capita.html", auto_open=True)
-
-
-
-
-
-
-
-
-# plot_this=False
-# if plot_this:
-#     main_dataframe_new = main_dataframe.copy()
-#     # main_dataframe_new = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth']].drop_duplicates(), on=['Economy','Date'], how='left')
-#     a = main_dataframe_new[['Activity','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive',
-#         'Scenario']]
-#     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
-#     a = a[(a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger')  & (a['Scenario'] == 'Target')  & (a['Economy'] == '20_USA')]#& (a['Date'] < 2100)#& (a['Drive'] == 'bev')
-
-#     #plot the sum of activity of 20_USA  for transport ype = passenger, with the activity growth on the right axis. 
-#     import plotly.express as px
-#     fig = px.line(a, x="Date", y="Activity", color='Drive', title='Activity of 20_USA for transport type = passenger')
-#     #and include the activity growth on the right axis
-#     fig.add_scatter(x=a['Date'].drop_duplicates(), y=a['Activity_growth'].drop_duplicates(), mode='lines', name='Activity growth', yaxis='y2')
-#     fig.update_layout(yaxis=dict(title='Activity'), yaxis2=dict(title='Activity growth', overlaying='y', side='right'))
-#     #write to html
-#     fig.write_html("20_USA_activity.html", auto_open=True)
-
-#     #and also plot stocks per capita for 20_USA
-#     main_dataframe_new = main_dataframe.copy()#merge(growth_forecasts[['Economy','Date','Activity_growth','Population']].drop_duplicates(), on=['Economy','Date'], how='left')
-
-#     #calcualte stocks per capita
-#     main_dataframe_new['Thousand_stocks_per_capita'] = main_dataframe_new['Stocks']/main_dataframe_new['Population']
-#     #convert to more readable units. We will convert back later if we need to #todo do we need to?
-#     main_dataframe_new['Stocks_per_thousand_capita'] = main_dataframe_new['Thousand_stocks_per_capita'] * 1000000
-
-#     main_dataframe_new['Gompertz_gamma'] = 800
-
-#     a = main_dataframe_new[['Stocks_per_thousand_capita','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive',
-#         'Scenario', 'Gompertz_gamma']]
-#     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
-#     a = a[(a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger')  & (a['Scenario'] == 'Target') & (a['Economy'] == '20_USA')]# & (a['Date'] < 2100)]#& (a['Drive'] == 'ice')
-
-#     #plot stocks per cpiat  and then activity growth on right axis
-#     fig = px.line(a, x="Date", y="Stocks_per_thousand_capita", color='Drive', title='Stocks per capita of 20_USA for transport type = passenger')
-#     #and include the activity growth on the right axis
-#     fig.add_scatter(x=a['Date'].drop_duplicates(), y=a['Activity_growth'].drop_duplicates(), mode='lines', name='Activity growth', yaxis='y2')
-#     fig.update_layout(yaxis=dict(title='Stocks per capita'), yaxis2=dict(title='Activity growth', overlaying='y', side='right'))
-#     #write to html
-#     fig.write_html("20_USA_stocks_per_capita.html", auto_open=True)
-
-
-
-# %%
