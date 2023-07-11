@@ -413,7 +413,7 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
         def calc_mean_if_not_summable(df, value_cols,categorical_cols,non_summable_value_cols=non_summable_value_cols):
             #identifcy means
             mean_cols = []
-            value_cols_copy = value_cols.copy()
+            value_cols_copy = value_cols
             for col in value_cols_copy:
                 if col in non_summable_value_cols:
                     mean_cols = mean_cols + [col]

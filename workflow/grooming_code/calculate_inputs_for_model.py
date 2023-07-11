@@ -111,17 +111,27 @@ def calculate_inputs_for_model(INDEX_COLS):
         print('If the bar is postive then it means the energy is lower than the calculated energy from activity and efficiency. Essentially efficiency is too low or the activity is too high')
     breakpoint()
     RECALCUALTE_THESE =True#until we ahve more confidence in inputs this is the best way to do it
+    RECLAUCLATE_TO_MATCH_ESTO = True
     if RECALCUALTE_THESE:
-        #RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
-        road_model_input_wide['Activity'] = road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'] * road_model_input_wide['Stocks']
-        road_model_input_wide['Travel_km'] = road_model_input_wide['Mileage'] * road_model_input_wide['Stocks']
-        road_model_input_wide['Energy'] = road_model_input_wide['Activity'] / road_model_input_wide['Efficiency']
-        #PLEASE NOTE THAT THIS NAY END UP RESULTING IN WACKY NUMBERS.ITS A QUICK FIX FOR NOW
+        if not RECLAUCLATE_TO_MATCH_ESTO:
+            #RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
+            road_model_input_wide['Activity'] = road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'] * road_model_input_wide['Stocks']
+            road_model_input_wide['Travel_km'] = road_model_input_wide['Mileage'] * road_model_input_wide['Stocks']
+            road_model_input_wide['Energy'] = road_model_input_wide['Activity'] / road_model_input_wide['Efficiency']
+            #PLEASE NOTE THAT THIS NAY END UP RESULTING IN WACKY NUMBERS.ITS A QUICK FIX FOR NOW
+        else:
+            road_model_input_wide['Activity'] = road_model_input_wide['Energy'] * road_model_input_wide['Efficiency']
+            road_model_input_wide['Travel_km'] = road_model_input_wide['Activity'] / road_model_input_wide['Occupancy_or_load']
+            road_model_input_wide['Stocks'] = road_model_input_wide['Activity'] / (road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'])
     
     ##########
     #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)
     #insert average age column in road_model_input_wide. the average age will be set to 10 for all vehicles except those where drive is bev, phev_g, phev_d and fcev. Those will have an average age of 1
-    road_model_input_wide['Average_age'] = 10
+    #depening on the economy make it younger or older:
+    old_vehicle_economies = ['19_THA']
+    old_age = 15
+    new_age = 10
+    road_model_input_wide['Average_age'] = road_model_input_wide['Economy'].map(lambda x: old_age if x in old_vehicle_economies else new_age)
     road_model_input_wide.loc[(road_model_input_wide['Drive'].isin(['bev', 'phev_g', 'phev_d', 'fcev'])), 'Average_age'] = 1  
     
     #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)

@@ -199,6 +199,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         change_dataframe['Average_age'] = change_dataframe['Average_age'] - (std_deviation_share * change_dataframe['Average_age'] * change_dataframe['Turnover_rate'])
         
         change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed'])
+        #increase age by 1 year to simulate the fact that the cars are 1 year older
+        change_dataframe['Average_age'] = change_dataframe['Average_age'] + 1
         
     #########TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
     
