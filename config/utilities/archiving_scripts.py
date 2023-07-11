@@ -22,11 +22,15 @@ def create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID):
     else:
         archive_folder_name = 'input_data/previous_run_archive/' + FILE_DATE_ID
         #since FILE_DATE_ID might not be the actual day, we need to create a subfolder for the actual day
-        import datetime
-        new_FILE_DATE_ID = '_{}'.format(datetime.datetime.now().strftime("%Y%m%d"))#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
-        archive_folder_name = 'input_data/previous_run_archive/' + FILE_DATE_ID +'/'+ new_FILE_DATE_ID
         
-        if not os.path.exists(archive_folder_name):
+        if os.path.exists(archive_folder_name):
+            import datetime
+            new_FILE_DATE_ID = '_{}'.format(datetime.datetime.now().strftime("%Y%m%d"))#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
+            archive_folder_name = 'input_data/previous_run_archive/' + FILE_DATE_ID +'/'+ new_FILE_DATE_ID
+        
+            if not os.path.exists(archive_folder_name):
+                os.mkdir(archive_folder_name)
+        else:
             os.mkdir(archive_folder_name)
     return archive_folder_name
 
@@ -35,9 +39,9 @@ def archive_lots_of_files(archive_folder_name):
     #t omake thigns simple while we havent got a clear idea of what we need we will just load and save the model inputs and fuel mixing data
 
     #Major model inputs:
-    activity_growth = pd.read_csv('intermediate_data/model_inputs/activity_growth.csv')
-    non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input.csv')
-    road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input.csv')
+    activity_growth = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
+    non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
+    road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
 
     #load user input for fuel mixing 
     demand_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')

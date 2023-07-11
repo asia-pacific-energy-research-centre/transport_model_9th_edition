@@ -5,7 +5,7 @@ import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'/transport_model_9th_edition')
 from runpy import run_path
-FILE_DATE_ID = '_20230610'
+
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
 import plotly

@@ -26,7 +26,7 @@ economy_scenario_concordance = model_concordances[['Economy', 'Scenario']].drop_
 def remap_vehicle_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']):
 
     #also group and sum by the following vehicle type cmbinations:
-    vehicle_type_combinations = {'lt':'lpv', 'suv':'lpv', 'car':'lpv', 'ht':'trucks', 'mt':'trucks', 'bus':'bus', '2w':'2w', 'lcv':'lcv'}
+    vehicle_type_combinations = {'lt':'lpv', 'suv':'lpv', 'car':'lpv', 'ht':'trucks', 'mt':'trucks', 'bus':'bus', '2w':'2w', 'lcv':'lcv', 'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
     
     df['Vehicle Type new'] = df['Vehicle Type'].map(vehicle_type_combinations)
     #drop then rename vehicle type
@@ -37,15 +37,15 @@ def remap_vehicle_types(df, value_col='Value', index_cols = ['Scenario', 'Econom
     return df
     
 def remap_drive_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']):
-    drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'phev', 'phev_g':'phev', 'bev':'bev', 'fcev':'fcev', 'cng':'gas', 'lpg':'gas'}
+    drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'phev', 'phev_g':'phev', 'bev':'bev', 'fcev':'fcev', 'cng':'gas', 'lpg':'gas',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
     df["Drive new"] = df['Drive'].map(drive_type_combinations)
     df['Drive'] = df['Drive new']
     df.drop(columns=['Drive new'], inplace=True)
     df = df.groupby(index_cols).sum().reset_index()
     return df
 ###################################################
-def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
-    # breakpoint()
+def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+    # #breakpoint()
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
 
     #and filter so data is less than GRAPHING_END_YEAR
@@ -105,7 +105,7 @@ def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
             
             title = f'Sales and stocks shares for passenger vehicles (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
+            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
@@ -114,15 +114,18 @@ def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
             
             title = f'Sales and stocks shares for freight vehicles (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
+            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
             #############
-    return fig_dict
+    
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(plot_data['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
 
 
-def plot_share_of_vehicle_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def plot_share_of_vehicle_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
     #This data is in terms of transport type, so will need to normalise it to vehicle type by summing up the shares for each vehicle type and dividing individual shares by their sum
 
@@ -182,8 +185,8 @@ def plot_share_of_vehicle_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit
             
             title = f'Shares for passenger (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
-            #breakpoint()
+            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+            ##breakpoint()
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
             
@@ -191,14 +194,16 @@ def plot_share_of_vehicle_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit
             
             title = f'Shares for freight (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
+            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
             #############
-    return fig_dict
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(plot_data['Drive'].unique().tolist())
+    return fig_dict,color_preparation_list
             
-def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
     
     #This data is in terms of transport type but obv still shwo drive type, so just dropo vehicle type and we good
@@ -250,7 +255,7 @@ def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANS
             
             title = f'Shares for passenger (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
+            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
@@ -259,19 +264,21 @@ def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANS
             
             title = f'Shares for freight (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash')
+            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
             #############
-    return fig_dict
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(plot_data['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
 ###################################################
 
 
 
 ###################################################
 
-def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     #load in data and recreate plot, as created in all_economy_graphs
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
@@ -298,17 +305,19 @@ def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_co
             #sort by date
             # energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.sort_values(by='Date')
             #now plot
-            fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel')
+            fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
             #add units to y col
             title_text = 'Energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
             # fig.update_yaxes(title_text='Energy ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0]))
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['energy_use_by_fuel_type'] = [fig, title_text]
-    return fig_dict
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
+    return fig_dict, color_preparation_list
 
 
-def create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
         
@@ -337,25 +346,27 @@ def create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to
             
             # #also if stocks of 2w are more than 50% of total stocks then recategorise the vehicle types a bit
             # if stocks_by_vehicle_type_economy.loc[stocks_by_vehicle_type_economy['Vehicle Type']=='2w']['Value'].sum() > 0.5*stocks_by_vehicle_type_economy.loc[stocks_by_vehicle_type_economy['Vehicle Type']!='2w']['Value'].sum():
-            # breakpoint()
+            # #breakpoint()
             stocks_by_vehicle_type_economy = remap_vehicle_types(stocks_by_vehicle_type_economy, value_col='Value', index_cols = ['Date', 'Vehicle Type','Unit'])
             
             #sort by date
             # stocks_by_vehicle_type_economy = stocks_by_vehicle_type_economy.sort_values(by='Date')
             #now plot
-            fig = px.line(stocks_by_vehicle_type_economy, x='Date', y='Value', color='Vehicle Type')#, title='Freight Tonne Km by Drive Type')
+            fig = px.line(stocks_by_vehicle_type_economy, x='Date', y='Value', color='Vehicle Type', color_discrete_map=colors_dict)
             title_text = 'Vehicle stocks ({})'.format(stocks_by_vehicle_type_economy['Unit'].unique()[0])
             #add units to y col
             # fig.update_yaxes(title_text='Freight Tonne Km ({})'.format(stocks_by_vehicle_type_economy['Unit'].unique()[0]))
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['vehicle_type_stocks'] = [fig, title_text]
-    return fig_dict
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(stocks_by_vehicle_type_economy['Vehicle Type'].unique().tolist())
+    return fig_dict, color_preparation_list
 
 
-def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     # model_output_detailed.pkl
-
+    breakpoint()
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
         
@@ -382,16 +393,18 @@ def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_
             #sort by date
             # freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive_economy.sort_values(by='Date')
             #now plot
-            fig = px.area(freight_tonne_km_by_drive_economy, x='Date', y='freight_tonne_km', color='Drive')#, title='Freight Tonne Km by Drive Type')
+            fig = px.area(freight_tonne_km_by_drive_economy, x='Date', y='freight_tonne_km', color='Drive',color_discrete_map=colors_dict)
             title_text = 'Freight Tonne Km ({})'.format(freight_tonne_km_by_drive_economy['Unit'].unique()[0])
             #add units to y col
             # fig.update_yaxes(title_text='Freight Tonne Km ({})'.format(freight_tonne_km_by_drive_economy['Unit'].unique()[0]))
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['freight_tonne_km_by_drive'] = [fig, title_text]
-    return fig_dict
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(freight_tonne_km_by_drive_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
 
-def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
@@ -419,20 +432,22 @@ def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conc
             #sort by date
             # passenger_km_by_drive_economy = passenger_km_by_drive_economy.sort_values(by='Date')
             #now plot
-            fig = px.area(passenger_km_by_drive_economy, x='Date', y='passenger_km', color='Drive')#, title='Passenger Km by Drive Type')
+            fig = px.area(passenger_km_by_drive_economy, x='Date', y='passenger_km', color='Drive', color_discrete_map=colors_dict)
             #add units to y col
             title_text = 'Passenger Km by Drive Type ({})'.format(passenger_km_by_drive_economy['Unit'].unique()[0])
             # fig.update_yaxes(title_text='Passenger Km ({})'.format(passenger_km_by_drive_economy['Unit'].unique()[0]))
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['passenger_km_by_drive'] = [fig,title_text]
-    return fig_dict
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(passenger_km_by_drive_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
 
 
-def activity_growth(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def activity_growth(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
-    #breakpoint()
+    ##breakpoint()
     for scenario in economy_scenario_concordance['Scenario'].unique():
         
         model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
@@ -469,21 +484,24 @@ def activity_growth(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordanc
             activity_growth_economy = activity_growth.loc[activity_growth['Economy']==economy].copy()
 
             #now plot
-            fig = px.line(activity_growth_economy, x='Date', y='Macro_growth',color='Measure',line_dash='Transport Type')#, title='Activity Growth')
+            fig = px.line(activity_growth_economy, x='Date', y='Macro_growth',color='Measure',line_dash='Transport Type', color_discrete_map=colors_dict)
             #add units to y col
             title_text = 'Activity Growth ({})'.format(activity_growth_economy['Unit'].unique()[0])
             fig.update_yaxes(title_text=title_text)#not working for some reason
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['activity_growth'] = [fig, title_text]
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(activity_growth_economy['Measure'].unique().tolist())
 
-    return fig_dict
+    return fig_dict, color_preparation_list
 
-def activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
-    # breakpoint()
-    breakpoint()
+    # #breakpoint()
+    #breakpoint()
     original_model_output_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv')
     
     #grab only the Activity then sum it by economy, scenario and date
@@ -518,7 +536,15 @@ def activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordan
         freight_km = calc_index(model_output_detailed[['freight_tonne_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'freight_tonne_km')
         passenger_km = calc_index(model_output_detailed[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
         original_model_output_8th_scenario = calc_index(original_model_output_8th_scenario,'Activity_8th')
-        breakpoint()
+        #breakpoint()
+        #set 'line_dash' to 'solid' in passenger_km and freight_km, then set to 'dash' in original_model_output_8th_scenario and  population and gdp
+        passenger_km['line_dash'] = 'solid'
+        freight_km['line_dash'] = 'solid'
+        original_model_output_8th_scenario['line_dash'] = 'dash'
+        population['line_dash'] = 'dash'
+        gdp['line_dash'] = 'dash'
+        
+        
         #concat all the data together then melt:
         index_data = pd.concat([population, gdp, freight_km, passenger_km,original_model_output_8th_scenario], axis=0)
         
@@ -535,17 +561,19 @@ def activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordan
             index_data_economy = index_data.loc[index_data['Economy']==economy].copy()
 
             #now plot
-            fig = px.line(index_data_economy, x='Date', y='Value',color='Measure')#, title='Activity Growth')
-            #add units to y col
+            fig = px.line(index_data_economy, x='Date', y='Value',color='Measure', line_dash='line_dash',color_discrete_map=colors_dict)
             title_text = 'Indexed Activity Data ({})'.format(index_data_economy['Unit'].unique()[0])
             fig.update_yaxes(title_text=title_text)#not working for some reason
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['activity_indexed'] = [fig, title_text]
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(index_data_economy['Measure'].unique().tolist())
 
-    return fig_dict
+    return fig_dict, color_preparation_list
 
-def plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     #plot supply side fuel mixing
     
     # supply_side_fuel_mixing_plot = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name))
@@ -578,7 +606,7 @@ def plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
             supply_side_fuel_mixing_plot_economy = supply_side_fuel_mixing_plot_scenario.loc[supply_side_fuel_mixing_plot_scenario['Economy']==economy].copy()
 
             title = 'Supply side fuel mixing for ' + scenario + ' scenario'
-            fig = px.line(supply_side_fuel_mixing_plot_economy, x="Date", y="Supply_side_fuel_share", color='New_fuel',  title=title)
+            fig = px.line(supply_side_fuel_mixing_plot_economy, x="Date", y="Supply_side_fuel_share", color='New_fuel',  title=title, color_discrete_map=colors_dict)
 
             #add units to y col
             title_text = 'Supply side fuel mixing ({})'.format(supply_side_fuel_mixing_plot_economy['Unit'].unique()[0])
@@ -586,9 +614,12 @@ def plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['fuel_mixing'] = [fig, title_text]
-    return fig_dict
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(supply_side_fuel_mixing_plot_economy['New_fuel'].unique().tolist())
+    return fig_dict, color_preparation_list
 
-def create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     #load in data from r'output_data\for_other_modellers\estimated_number_of_chargers.csv' and plot 'sum_of_fast_chargers_needed','sum_of_slow_chargers_needed' as a staked bar chart
     chargers = pd.read_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv')
     
@@ -604,7 +635,7 @@ def create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conco
             chargers_economy = chargers_scenario.loc[chargers_scenario['Economy']==economy].copy()
 
             title = 'Expected slow and fast public chargers needed for' + scenario + ' scenario'
-            fig = px.bar(chargers_economy, x="Date", y=['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'], color_discrete_sequence=['#636EFA', '#EF553B'], title=title)
+            fig = px.bar(chargers_economy, x="Date", y=['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'], title=title, color_discrete_map=colors_dict)
 
             #add units to y col
             title_text = 'Public chargers (millions)'
@@ -612,5 +643,8 @@ def create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conco
 
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['charging'] = [fig, title_text]
-    return fig_dict
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'])
+    return fig_dict, color_preparation_list
         

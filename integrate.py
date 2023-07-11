@@ -81,6 +81,8 @@ apply_fuel_mix_supply_side.apply_fuel_mix_supply_side()
 import clean_model_output
 clean_model_output.clean_model_output()
 
+exec(open("./workflow/create_output_for_outlook_data_system.py").read())
+
 #%%
 import estimate_charging_requirements
 estimate_charging_requirements.estimate_kw_of_required_chargers()
@@ -101,14 +103,17 @@ if ANALYSE_OUTPUT:
     # exec(open("./workflow/plotting/all_economy_graphs.py").read())
     #unfortunately at the moment i have written this to be run from data formatted within all_economy_graphs.py, but that takes ages t run.
     exec(open("./workflow/plotting/create_assumptions_dashboards.py").read())
-    plot_all_economy_graphs = True
+    
+    exec(open("./workflow/plotting/compare_esto_energy_to_data.py").read())
+    
+    plot_all_economy_graphs = False
     if plot_all_economy_graphs:
         #plot:
         all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
     
 #%%
 import utility_functions
-utility_functions.copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR, output_folder_path='output_data/for_other_modellers')
+utility_functions.copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR, SCENARIOS_LIST,output_folder_path='output_data/for_other_modellers')
 
 #%%
 ARCHIVE_INPUT_DATA = True

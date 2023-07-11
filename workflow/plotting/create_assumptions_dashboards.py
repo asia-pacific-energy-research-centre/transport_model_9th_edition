@@ -19,7 +19,7 @@ from plotly.subplots import make_subplots
 import plotly.io as pio
 import pandas as pd
 import assumptions_dashboard_plotting_scripts
-DROP_NON_ROAD_TRANSPORT = True
+DROP_NON_ROAD_TRANSPORT = False
 SALES_SHARE_PLOT_TYPE ='share_of_vehicle_type'
 #%%
 #load in concordances
@@ -33,6 +33,65 @@ model_concordances = pd.read_csv('config/concordances_and_config_data/computer_g
 #extract economy and scenario from df then drop dupes
 economy_scenario_concordance = model_concordances[['Economy', 'Scenario']].drop_duplicates().reset_index(drop=True)
 #%%
+#print every unique name/labels used in the plots and match it to a color. the colors will be themed so that things like electricity and bev's are always the same color
+#following done with this chatgpt:https://chat.openai.com/share/d39fec42-e2b2-497a-8826-30a59bd09940
+colors_dict = {
+    # Electric vehicles and related items (green shades)
+    'bev': '#008000',  # green
+    'bev 2w': '#32CD32',  # limegreen
+    'bev lpv': '#7CFC00',  # lawngreen
+    'bev lcv': '#ADFF2F',  # greenyellow
+    'bev bus': '#98FB98',  # palegreen
+    'bev trucks': '#228B22',  # forestgreen
+    '17_electricity': '#008000',  # green
+    'sum_of_fast_chargers_needed': '#3CB371',  # mediumseagreen
+    'sum_of_slow_chargers_needed': '#66CDAA',  # mediumaquamarine
+
+    # Gas vehicles (blue shades)
+    'gas': '#0000FF',  # blue
+    '07_09_lpg': '#1E90FF',  # dodgerblue
+    '08_01_natural_gas': '#00008B',  # darkblue
+
+    # Oil vehicles and related items (red shades)
+    'ice': '#FF0000',  # red
+    'ice_d': '#B22222',  # firebrick
+    'ice_g': '#CD5C5C',  # indianred
+    '07_01_motor_gasoline': '#8B0000',  # darkred
+    '07_07_gas_diesel_oil': '#FA8072',  # salmon
+
+    # Fuel cell vehicles and related items (purple shades)
+    'fcev': '#800080',  # purple
+    'fcev trucks': '#EE82EE',  # violet
+    'fcev bus': '#DA70D6',  # orchid
+    'fcev lpv': '#9932CC',  # darkorchid
+    'fcev lcv': '#9400D3',  # darkviolet
+    '16_x_hydrogen': '#BA55D3',  # mediumorchid
+
+    # Biofuels (orange shades)
+    '16_06_biodiesel': '#FFA500',  # orange
+    '16_05_biogasoline': '#FF8C00',  # darkorange
+    '16_07_bio_jet_kerosene': '#FF4500',  # orangered
+
+    # Unique fuel types, non-road vehicles and related items (cyan shades)
+    '01_x_coal_thermal': '#00FFFF',  # cyan
+    '07_08_fuel_oil': '#20B2AA',  # lightseagreen
+    '07_02_aviation_gasoline': '#48D1CC',  # mediumturquoise
+    'non-road': '#40E0D0',  # turquoise
+    '07_x_jet_fuel': '#00CED1',  # darkturquoise
+
+    # Other categories
+    'Population_index': '#808080',  # grey
+    'passenger_km_index': '#FF0000',  # red
+    'Gdp_index': '#A9A9A9',  # darkgray
+    'Activity_8th_index': '#D3D3D3',  # lightgray
+    'freight_tonne_km_index': '#0000FF',  # blue
+    '2w': '#000000',  # black
+    'lpv': '#FFD700',  # gold
+    'lcv': '#ADFF2F',  # greenyellow
+    'trucks': '#FF4500',  # orangered
+    'bus': '#FF1493',  # deeppink
+    'phev': '#FFFF00',  # yellow
+}
 
 
 plots = ['energy_use_by_fuel_type','passenger_km_by_drive', 'freight_tonne_km_by_drive',  'vehicle_type_stocks',
@@ -61,28 +120,31 @@ def prepare_fig_dict(plots,ECONOMIES_TO_PLOT_FOR,economy_scenario_concordance):
                     fig_dict[economy][scenario][plot] = None
     return fig_dict
 #%%
-def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, colors_dict):
     
+    color_preparation_list = []
     fig_dict = prepare_fig_dict(plots,ECONOMIES_TO_PLOT_FOR,economy_scenario_concordance)
     #get the plots:
     #create sales share plots
-    fig_dict = create_sales_share_plots(fig_dict, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = create_sales_share_plots(fig_dict, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #create energy use by fuel type plots
-    fig_dict = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #create freight tonne km by drive plots
-    fig_dict = assumptions_dashboard_plotting_scripts.freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #create passenger km by drive plots
-    fig_dict = assumptions_dashboard_plotting_scripts.passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #create activity growth plots
-    # fig_dict = activity_growth(fig_dict)
+    # fig_dict, color_preparation_list = activity_growth(fig_dict)
     
-    fig_dict = assumptions_dashboard_plotting_scripts.activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #insertt fuel mixing plots
-    fig_dict = assumptions_dashboard_plotting_scripts.plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #charging:
-    fig_dict = assumptions_dashboard_plotting_scripts.create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     #vehicle_type_stocks
-    fig_dict = assumptions_dashboard_plotting_scripts.create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+    fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+    
+    check_colors_in_color_preparation_list(color_preparation_list, colors_dict)
     #now create the dashboards:
     for economy in fig_dict.keys():
         for scenario in fig_dict[economy].keys():
@@ -123,17 +185,31 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON
     return fig_dict
 
 #%%
-def create_sales_share_plots(fig_dict, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance):
+def create_sales_share_plots(fig_dict, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     if SALES_SHARE_PLOT_TYPE == 'share_of_transport_type':
-        fig_dict = assumptions_dashboard_plotting_scripts.plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     elif SALES_SHARE_PLOT_TYPE == 'share_of_vehicle_type':
         
-        fig_dict = assumptions_dashboard_plotting_scripts.plot_share_of_vehicle_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_share_of_vehicle_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     elif SALES_SHARE_PLOT_TYPE == 'sum_of_vehicle_types_by_transport_type':
-        fig_dict = assumptions_dashboard_plotting_scripts.share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
-    return fig_dict
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+    return fig_dict,color_preparation_list
 
+
+def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
+    #filter out duplicates and then check what values are not in the colors_dict (which is what we set the colors in the charts with). If colors are missing then just add them manually.
+    flattened_list = [item for sublist in color_preparation_list for item in sublist]
+    color_preparation_list = list(set(flattened_list))
+    missing_colors = []
+    for color in color_preparation_list:
+        if color not in colors_dict.keys():
+            missing_colors.append(color)
+    if len(missing_colors)>0:
+        print(f'The following colors are missing from the colors_dict: \n {missing_colors}')
+    #save them to a csv so we can add them to the colors_dict later too
+    pd.DataFrame(missing_colors).to_csv('plotting_output/dashboards/missing_colors.csv')
     
+        
 #%%
-create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance)
+create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict)
 #%%
