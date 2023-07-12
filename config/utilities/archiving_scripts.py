@@ -126,6 +126,10 @@ def zip_up_folder(archive_folder_name):
     else:
         output_file = 'C:/Users/Finbar Maunsell/Documents'
 
-    # create a zip archive
+    # create a zip archive with file date id
+    output_file = output_file + FILE_DATE_ID
+    #if it is already there then delete it
+    if os.path.exists(output_file + '.zip'):
+        os.remove(output_file + '.zip')
     shutil.make_archive(output_file, 'zip', archive_folder_name)
     print(f'Zipped up {archive_folder_name} to {output_file}.zip')

@@ -22,8 +22,8 @@ import utility_functions
 #do a bar chart faceted by  medium and transport type. x axis is year and source. y axis is energy?
 
 #find latest date for our energy data that was cleaned in transpoirt data system:
-date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'EGEDA_transport_output')
-energy_use_esto = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/EGEDA_transport_outputDATE{date_id}.csv')
+date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'model_input_9th_cleaned')
+energy_use_esto = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/model_input_9th_cleanedDATE{date_id}.csv')
 
 
 original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))#cols 	Date	Economy	Scenario	Transport Type	Vehicle Type	Drive	Medium	Fuel	Energy
@@ -36,7 +36,8 @@ original_model_output_with_fuels = original_model_output_with_fuels[original_mod
 #TRANSPORT EGEDA
 #LETS DO A FULL ANALYSIS OF HOW ENERGY USE IS CORRELATED WITH THE GROWTH RATES LIEK ABOVE, SINCE WE HAVE ENEGRY USE FOR HISTORICAL DATA.
 #we will just grab '19 Total' for now
-energy_use = energy_use_esto[energy_use_esto['Fuel_Type'] == '19 Total']
+energy_use = energy_use_esto[energy_use_esto['Fuel_Type'] == '19_total']
+#%%
 #double check that the sum of medium=nan is equal to the sum of all the other mediums
 # energy_use[energy_use['Medium'].isna()]['Value'].sum() == energy_use[energy_use['Medium'].notna()]['Value'].sum()#True
 #filter for medium = nan

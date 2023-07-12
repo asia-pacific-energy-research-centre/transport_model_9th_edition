@@ -13,6 +13,10 @@ from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 # FILE_DATE_ID = '_20230606'
 
+import sys
+sys.path.append("./workflow")
+import utility_functions
+
 def calculate_inputs_for_model(INDEX_COLS):
     #load data
     transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
@@ -109,7 +113,6 @@ def calculate_inputs_for_model(INDEX_COLS):
         fig = px.bar(test_road_model_input_wide, x="Vehicle Type", y="Energy_check_diff_abs_mean", color="Drive", barmode="group")
         fig.show()
         print('If the bar is postive then it means the energy is lower than the calculated energy from activity and efficiency. Essentially efficiency is too low or the activity is too high')
-    breakpoint()
     RECALCUALTE_THESE =True#until we ahve more confidence in inputs this is the best way to do it
     RECLAUCLATE_TO_MATCH_ESTO = True
     if RECALCUALTE_THESE:
@@ -120,17 +123,49 @@ def calculate_inputs_for_model(INDEX_COLS):
             road_model_input_wide['Energy'] = road_model_input_wide['Activity'] / road_model_input_wide['Efficiency']
             #PLEASE NOTE THAT THIS NAY END UP RESULTING IN WACKY NUMBERS.ITS A QUICK FIX FOR NOW
         else:
+            breakpoint()
+            #pull in esto data and recalcualte activity and energy based on esto data. we will just get the sum of energy use for each medium and scale against the esto data:
+            #find latest date for our energy data that was cleaned in transpoirt data system:
+            # mean_energy_before = road_model_input_wide[(road_model_input_wide.Economy=='19_THA')&(road_model_input_wide.Date==2017)].groupby(['Medium']).mean().reset_index()
+            date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'model_input_9th_cleaned')
+            energy_use_esto = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/model_input_9th_cleanedDATE{date_id}.csv')
+            energy_use = energy_use_esto[energy_use_esto['Fuel_Type'] == '19_total']
+            energy_use = energy_use[['Date','Economy','Medium', 'Value']]
+            #reformat date to be in year only
+            energy_use['Date'] = energy_use['Date'].apply(lambda x: x[:4])
+            #make into int
+            energy_use['Date'] = energy_use['Date'].astype(int)
+
+            total_road_energy_use = road_model_input_wide[road_model_input_wide['Scenario'] == 'Reference'].groupby(['Date','Economy','Scenario', 'Medium']).sum().reset_index().copy()
+            #JOIN TO ROAD_MODEL_INPUT_WIDE 
+            energy_use_adjustment = pd.merge(energy_use, total_road_energy_use, how='right', left_on=['Date', 'Economy', 'Medium'], right_on=['Date', 'Economy', 'Medium'])
+            #calculate adjustment factor as Value_esto / Energy (so that we can multiply the road_model_input_wide by this factor)
+            energy_use_adjustment['adjustment_factor'] = energy_use_adjustment['Value'] / energy_use_adjustment['Energy']
+            #repalce nas with 1s
+            energy_use_adjustment['adjustment_factor'] = energy_use_adjustment['adjustment_factor'].fillna(1)
+            #same for infs
+            energy_use_adjustment['adjustment_factor'] = energy_use_adjustment['adjustment_factor'].replace([np.inf, -np.inf], 1)
+            #drop columns we dont need then merge back to road_model_input_wide to do the adjustment
+            energy_use_adjustment = energy_use_adjustment[['Date', 'Economy', 'Medium', 'adjustment_factor']]
+            road_model_input_wide = pd.merge(road_model_input_wide, energy_use_adjustment, how='left', left_on=['Date', 'Economy', 'Medium'], right_on=['Date', 'Economy', 'Medium'])
+            breakpoint()
+            #adjust energy
+            road_model_input_wide['Energy'] = road_model_input_wide['Energy'] * road_model_input_wide['adjustment_factor']
+            #drop adjustment factor
+            road_model_input_wide = road_model_input_wide.drop(columns=['adjustment_factor'])
+            
             road_model_input_wide['Activity'] = road_model_input_wide['Energy'] * road_model_input_wide['Efficiency']
             road_model_input_wide['Travel_km'] = road_model_input_wide['Activity'] / road_model_input_wide['Occupancy_or_load']
             road_model_input_wide['Stocks'] = road_model_input_wide['Activity'] / (road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'])
-    
+            
+            # mean_energy_after = road_model_input_wide[(road_model_input_wide.Economy=='19_THA')&(road_model_input_wide.Date==2017)].groupby(['Medium']).mean().reset_index()
     ##########
     #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)
     #insert average age column in road_model_input_wide. the average age will be set to 10 for all vehicles except those where drive is bev, phev_g, phev_d and fcev. Those will have an average age of 1
     #depening on the economy make it younger or older:
     old_vehicle_economies = ['19_THA']
-    old_age = 15
-    new_age = 10
+    old_age = 10
+    new_age = 5
     road_model_input_wide['Average_age'] = road_model_input_wide['Economy'].map(lambda x: old_age if x in old_vehicle_economies else new_age)
     road_model_input_wide.loc[(road_model_input_wide['Drive'].isin(['bev', 'phev_g', 'phev_d', 'fcev'])), 'Average_age'] = 1  
     

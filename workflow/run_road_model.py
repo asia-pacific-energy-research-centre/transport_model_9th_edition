@@ -15,7 +15,6 @@ def run_road_model():
     road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
 
     growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
-    
     main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe,previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     
     #if you want to analyse what is hapening in th model then set this to true and the model will output a dataframe wioth all the variables that are being calculated.

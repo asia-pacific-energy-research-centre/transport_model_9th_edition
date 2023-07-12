@@ -26,7 +26,7 @@ save_pickle = True
 #get all useful graphs and put them in one folder
 useful_graphs = []
 
-beginning_year = 2019
+beginning_year = 2017
 end_year = GRAPHING_END_YEAR
 
 #plot all data in model_output_all:

@@ -277,7 +277,6 @@ def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANS
 
 
 ###################################################
-
 def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     #load in data and recreate plot, as created in all_economy_graphs
     #loop through scenarios and grab the data for each scenario:
@@ -302,16 +301,29 @@ def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_co
         for economy in ECONOMIES_TO_PLOT_FOR:
             #filter to economy
             energy_use_by_fuel_type_economy = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Economy']==economy].copy()
-            #sort by date
-            # energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.sort_values(by='Date')
+            
+            # calculate total 'Energy' for each 'Fuel' 
+            total_energy_per_fuel = energy_use_by_fuel_type_economy.groupby('Fuel')['Energy'].sum()
+
+            # Create an ordered category of 'Fuel' labels sorted by total 'Energy'
+            energy_use_by_fuel_type_economy['Fuel'] = pd.Categorical(
+                energy_use_by_fuel_type_economy['Fuel'],
+                categories = total_energy_per_fuel.sort_values(ascending=False).index,
+                ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Fuel' column:
+            energy_use_by_fuel_type_economy.sort_values(by='Fuel', inplace=True)
+            
             #now plot
             fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+            
             #add units to y col
             title_text = 'Energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
-            # fig.update_yaxes(title_text='Energy ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0]))
-
+            
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['energy_use_by_fuel_type'] = [fig, title_text]
+            
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
     color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
     return fig_dict, color_preparation_list
@@ -366,7 +378,7 @@ def create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to
 
 def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
     # model_output_detailed.pkl
-    breakpoint()
+    # breakpoint()
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
         
@@ -390,6 +402,19 @@ def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_
             #filter to economy
             freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive.loc[freight_tonne_km_by_drive['Economy']==economy].copy()
             
+            # calculate total 'freight_tonne_km' for each 'Drive' 
+            total_freight_per_drive = freight_tonne_km_by_drive_economy.groupby('Drive')['freight_tonne_km'].sum()
+
+            # Create an ordered category of 'Drive' labels sorted by total 'freight_tonne_km'
+            freight_tonne_km_by_drive_economy['Drive'] = pd.Categorical(
+                freight_tonne_km_by_drive_economy['Drive'],
+                categories = total_freight_per_drive.sort_values(ascending=False).index,
+                ordered=True
+            )
+
+            # Now you can sort your DataFrame by the 'Drive' column:
+            freight_tonne_km_by_drive_economy.sort_values(by='Drive', inplace=True)
+
             #sort by date
             # freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive_economy.sort_values(by='Date')
             #now plot
@@ -429,7 +454,20 @@ def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conc
             #filter to economy
             passenger_km_by_drive_economy = passenger_km_by_drive.loc[passenger_km_by_drive['Economy']==economy].copy()
             
+            # calculate total 'passenger_km' for each 'Drive' 
+            total_passenger_per_drive = passenger_km_by_drive_economy.groupby('Drive')['passenger_km'].sum()
+
+            # Create an ordered category of 'Drive' labels sorted by total 'passenger_km'
+            passenger_km_by_drive_economy['Drive'] = pd.Categorical(
+            passenger_km_by_drive_economy['Drive'],
+            categories = total_passenger_per_drive.sort_values(ascending=False).index,
+            ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Drive' column:
+            passenger_km_by_drive_economy.sort_values(by='Drive', inplace=True)
             #sort by date
+
             # passenger_km_by_drive_economy = passenger_km_by_drive_economy.sort_values(by='Date')
             #now plot
             fig = px.area(passenger_km_by_drive_economy, x='Date', y='passenger_km', color='Drive', color_discrete_map=colors_dict)

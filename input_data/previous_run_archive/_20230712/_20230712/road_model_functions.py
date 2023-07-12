@@ -18,7 +18,7 @@ import numpy as np
 
 def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block, testing = False):
     print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
-    
+    breakpoint()
     #extract the user inputs dataframes from the dictionary
     Vehicle_sales_share = user_inputs_df_dict['Vehicle_sales_share']
     Occupancy_or_load_growth = user_inputs_df_dict['Occupancy_or_load_growth']
@@ -41,12 +41,13 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #######################################################################
     #do some quick checks on data:
-    
+    if year > 2038:
+        breakpoint()
     #check if activity matches sum of activity when you calcualte it as (change_dataframe['Activity']/( change_dataframe['Mileage'] * change_dataframe['Occupancy_or_load']))
     test_data_frame = change_dataframe.copy()
     test_data_frame['Activity_check'] = test_data_frame['Mileage'] * test_data_frame['Occupancy_or_load'] * test_data_frame['Stocks']
     if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']):
-        throw_error=False
+        throw_error=True
         percent_difference = ((sum(test_data_frame['Activity_check'].dropna()) - sum(test_data_frame['Activity'].dropna()))/sum(test_data_frame['Activity'].dropna())) * 100
         if abs(percent_difference) > 0.5:
             if throw_error:
@@ -74,14 +75,28 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         change_dataframe['Average_age'] = change_dataframe['Average_age'].replace(np.nan, 1)
         #and replace 0s too
         change_dataframe['Average_age'] = change_dataframe['Average_age'].replace(0, 1)
-        def calculate_turnover_rate(avg_age, k=0.7, x0=12.5):
+        #####################
+        #set midpoint in the df based on whether the economy is old or new
+        old_vehicle_economies = ['19_THA']#increase x0 (midpoint) for these economies to make the turnover rate growth start later in the life of the vehicle
+        midpoint_new = 12.5
+        midpoint_old = midpoint_new+5
+        #put the midpoint in the df
+        change_dataframe['Midpoint_age'] = midpoint_new
+        change_dataframe['Midpoint_age'] = change_dataframe['Midpoint_age'].map(lambda x: midpoint_old if x in old_vehicle_economies else midpoint_new)
+
+        def calculate_turnover_rate(avg_age, midpoint, k=0.7):
+            
             # k = 0.7 #this is the steepness of the curve (increase it to speed up the turnover rate growth with age)
             # x0 = 12.5 #this is the midpoint of the curve (increase it to make the turnover rate growth start later in the life of the vehicle)
-            return 1 / (1 + np.exp(-k * (avg_age - x0)))
+            return 1 / (1 + np.exp(-k * (avg_age - midpoint)))
         # Calculate turnover rates based on average age
         # ev_turnover = calculate_turnover_rate(ev_mean_age, k, x0)
         # ice_turnover = calculate_turnover_rate(ice_mean_age, k, x0)
-        change_dataframe['Turnover_rate'] = change_dataframe['Average_age'].apply(calculate_turnover_rate)
+        new_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies) == False]
+        new_economies_df['Turnover_rate'] = new_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_new))
+        old_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies)]
+        old_economies_df['Turnover_rate'] = old_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_old))
+        change_dataframe = pd.concat([new_economies_df, old_economies_df])
         #CALCULATE PREVIOUSLY AVAILABLE STOCKS AS SUM OF STOCKS AND SURPLUS STOCKS
         change_dataframe['Original_stocks'] = change_dataframe['Stocks'] + change_dataframe['Surplus_stocks']
     #####################TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
@@ -311,15 +326,15 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
         
     #separate user inputs into different dataframes
-    gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna()#note we keep gamma in main df,. 'Gompertz_alpha', 'Gompertz_beta',
+    gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna().copy()#note we keep gamma in main df,. 'Gompertz_alpha', 'Gompertz_beta',
     #add values for BASE YEAR. THey can be the values from the first year of the model
     gompertz_parameters = pd.concat([gompertz_parameters, gompertz_parameters[gompertz_parameters['Date']==BASE_YEAR+1].replace(BASE_YEAR+1, BASE_YEAR)], ignore_index=True)
-    Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates()
-    Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates()
-    Turnover_rate_growth = road_model_input[['Economy','Scenario','Vehicle Type', 'Transport Type', 'Drive', 'Date', 'Turnover_rate_growth']].drop_duplicates()
+    Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates().copy()
+    Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates().copy()
+    Turnover_rate_growth = road_model_input[['Economy','Scenario','Vehicle Type', 'Transport Type', 'Drive', 'Date', 'Turnover_rate_growth']].drop_duplicates().copy()
     New_vehicle_efficiency_growth = road_model_input[['Economy','Scenario', 
-    'Vehicle Type', 'Transport Type', 'Drive', 'Date', 'New_vehicle_efficiency_growth']].drop_duplicates()
-    Mileage_growth = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Mileage_growth']].drop_duplicates()
+    'Vehicle Type', 'Transport Type', 'Drive', 'Date', 'New_vehicle_efficiency_growth']].drop_duplicates().copy()
+    Mileage_growth = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Mileage_growth']].drop_duplicates().copy()
 
     #put the dataframes into a dictionary to pass into the funciton togetehr:
     user_inputs_df_dict = {'Vehicle_sales_share':Vehicle_sales_share, 'Occupancy_or_load_growth':Occupancy_or_load_growth, 'Turnover_rate_growth':Turnover_rate_growth, 'New_vehicle_efficiency_growth':New_vehicle_efficiency_growth, 'Mileage_growth':Mileage_growth, 'gompertz_parameters':gompertz_parameters}
@@ -328,7 +343,7 @@ def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
     road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'Turnover_rate_growth', 'New_vehicle_efficiency_growth','Mileage_growth',  'Gompertz_gamma'], axis=1)#'Gompertz_alpha', 'Gompertz_beta',
 
     #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
-    previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == BASE_YEAR,:]
+    previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == BASE_YEAR,:].copy()
     main_dataframe = previous_year_main_dataframe.copy()
     change_dataframe_aggregation = pd.DataFrame()
     gompertz_function_diagnostics_dataframe = pd.DataFrame()
