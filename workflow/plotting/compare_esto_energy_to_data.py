@@ -29,7 +29,7 @@ energy_use_esto = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA
 original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))#cols 	Date	Economy	Scenario	Transport Type	Vehicle Type	Drive	Medium	Fuel	Energy
 #grab scenario only = Reference
 original_model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Scenario'] == 'Reference']
-
+original_model_output_with_fuels_all_fuels = original_model_output_with_fuels.copy()
 #%%
 # cols: ['Economy', 'Fuel_Type', 'Date', 'Value', 'Transport Type', 'Frequency','Unit', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive','Medium']
 
@@ -37,6 +37,10 @@ original_model_output_with_fuels = original_model_output_with_fuels[original_mod
 #LETS DO A FULL ANALYSIS OF HOW ENERGY USE IS CORRELATED WITH THE GROWTH RATES LIEK ABOVE, SINCE WE HAVE ENEGRY USE FOR HISTORICAL DATA.
 #we will just grab '19 Total' for now
 energy_use = energy_use_esto[energy_use_esto['Fuel_Type'] == '19_total']
+energy_use_all_fuels = energy_use_esto[energy_use_esto['Fuel_Type'] != '19_total']
+
+#rename Fuel_Type to Fuel in energy_use_all_fuels
+energy_use_all_fuels = energy_use_all_fuels.rename(columns={'Fuel_Type': 'Fuel'})
 #%%
 #double check that the sum of medium=nan is equal to the sum of all the other mediums
 # energy_use[energy_use['Medium'].isna()]['Value'].sum() == energy_use[energy_use['Medium'].notna()]['Value'].sum()#True
@@ -44,32 +48,54 @@ energy_use = energy_use_esto[energy_use_esto['Fuel_Type'] == '19_total']
 # energy_use = energy_use[energy_use['Medium'].isna()]
 #rename where medium = nan to 'Total'
 energy_use.loc[energy_use['Medium'].isna(), 'Medium'] = 'Total'
+energy_use_all_fuels.loc[energy_use_all_fuels['Medium'].isna(), 'Medium'] = 'Total'
 #drop nonneeded cols
 energy_use = energy_use.drop(columns=['Fuel_Type', 'Frequency', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive', 'Transport Type', 'Unit'])
+energy_use_all_fuels = energy_use_all_fuels.drop(columns=[ 'Frequency', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive', 'Transport Type', 'Unit'])
 # #pivot so we have a column for each medium
 # energy_use = energy_use.pivot(index=['Economy', 'Date'], columns='Medium', values='Value').reset_index()
 #while we are analysing medium we shjould also not aggregate into reigons, as certain economys focus on certain mediums more
 
 #reformat date to be in year only
 energy_use['Date'] = energy_use['Date'].apply(lambda x: x[:4])
+energy_use_all_fuels['Date'] = energy_use_all_fuels['Date'].apply(lambda x: x[:4])
 #make into int
 energy_use['Date'] = energy_use['Date'].astype(int)
+energy_use_all_fuels['Date'] = energy_use_all_fuels['Date'].astype(int)
 #rename Value to energy
 energy_use = energy_use.rename(columns={'Value': 'Energy'})
+energy_use_all_fuels = energy_use_all_fuels.rename(columns={'Value': 'Energy'})
 #%%
 #sum original_model_output_with_fuels by Date	Economy	Scenario	Medium
 original_model_output_with_fuels = original_model_output_with_fuels.groupby(['Date', 'Economy', 'Medium']).sum().reset_index()
+original_model_output_with_fuels_all_fuels = original_model_output_with_fuels_all_fuels.groupby(['Date', 'Economy', 'Fuel', 'Medium']).sum().reset_index()
 
+#filter out fuels in energy_use_all_fuels that arentr in original_model_output_with_fuels_all_fuels. but keep them so  we can check there are none we want:
+fuels_to_remove = energy_use_all_fuels[~energy_use_all_fuels['Fuel'].isin(original_model_output_with_fuels_all_fuels['Fuel'].unique())]['Fuel'].unique().tolist()
+#keep 01_x_thermal_coal
+fuels_to_remove.remove('01_x_thermal_coal')
+#drop teh fuels
+energy_use_all_fuels = energy_use_all_fuels[~energy_use_all_fuels['Fuel'].isin(fuels_to_remove)]
 #%%
 #extract only similar Dates
 original_model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Date'].isin(energy_use['Date'].unique())]
 energy_use = energy_use[energy_use['Date'].isin(original_model_output_with_fuels['Date'].unique())]
+
+original_model_output_with_fuels_all_fuels = original_model_output_with_fuels_all_fuels[original_model_output_with_fuels_all_fuels['Date'].isin(original_model_output_with_fuels['Date'].unique())]
+energy_use_all_fuels = energy_use_all_fuels[energy_use_all_fuels['Date'].isin(original_model_output_with_fuels['Date'].unique())]
+
 #keep only data after 2015
 original_model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Date'] >= 2015]
+original_model_output_with_fuels_all_fuels = original_model_output_with_fuels_all_fuels[original_model_output_with_fuels_all_fuels['Date'] >= 2015]
+
 #%%
 #conat:
 original_model_output_with_fuels['origin'] = 'model'
 energy_use['origin'] = 'esto'
+
+original_model_output_with_fuels_all_fuels['origin'] = 'model'
+energy_use_all_fuels['origin'] = 'esto'
+#%%
 #conat them
 original_model_output_with_fuels = pd.concat([original_model_output_with_fuels, energy_use])
 for economy in original_model_output_with_fuels['Economy'].unique():
@@ -84,3 +110,34 @@ title = 'Line chart of energy use by medium for each economy - model vs esto'
 fig = px.line(original_model_output_with_fuels, x='Date', y='Energy', color='Medium', facet_col='Economy', facet_col_wrap=3, line_dash='origin', title=title, markers=True)
 fig.write_html(f'plotting_output/diagnostics/esto_vs_model_energy_use/{title}.html')
 #%%
+#conat them
+original_model_output_with_fuels_all_fuels = pd.concat([original_model_output_with_fuels_all_fuels, energy_use_all_fuels])
+for economy in original_model_output_with_fuels_all_fuels['Economy'].unique():
+    #by economy create a line chart of energy use. make the color the origin, the line dash the origin and facet the medium
+    title = f'Line chart of energy use by medium and fuel for {economy} - model vs esto'
+
+    fig = px.line(original_model_output_with_fuels_all_fuels[original_model_output_with_fuels_all_fuels['Economy'] == economy], x='Date', y='Energy', color='Fuel', facet_col='Medium', facet_col_wrap=2, line_dash='origin', title=title, markers=True)
+    fig.write_html(f'plotting_output/diagnostics/esto_vs_model_energy_use/{title}.html')
+    
+
+
+#by economy create a line chart of energy use. make the color the origin, the line dash the origin and facet the medium
+title = 'Line chart of energy use by medium and fuel for each economy - model vs esto'
+#sum up all mediums
+original_model_output_with_fuels_all_fuels = original_model_output_with_fuels_all_fuels.groupby(['Date', 'Economy', 'Fuel', 'origin']).sum().reset_index()
+fig = px.line(original_model_output_with_fuels_all_fuels, x='Date', y='Energy', color='Fuel', facet_col='Economy', facet_col_wrap=3, line_dash='origin', title=title, markers=True)
+fig.write_html(f'plotting_output/diagnostics/esto_vs_model_energy_use/{title}.html')
+
+#%%
+#filter for only 2017 in original_model_output_with_fuels_all_fuels and calcaaulte the diff between model and esto. then plot that as a bar, by economy, by fuel.
+original_model_output_with_fuels_all_fuels_2017 = original_model_output_with_fuels_all_fuels[original_model_output_with_fuels_all_fuels['Date'] == 2017]
+#pivot the data
+original_model_output_with_fuels_all_fuels_2017 = original_model_output_with_fuels_all_fuels_2017.pivot(index=['Economy', 'Fuel'], columns='origin', values='Energy').reset_index()
+#calculate the diff
+original_model_output_with_fuels_all_fuels_2017['diff'] = original_model_output_with_fuels_all_fuels_2017['esto'] - original_model_output_with_fuels_all_fuels_2017['model']
+#plot the diff
+title = 'Diff between model and esto energy use by fuel for each economy in 2017'
+fig = px.bar(original_model_output_with_fuels_all_fuels_2017, x='Economy', y='diff', color='Fuel', title=title)
+fig.write_html(f'plotting_output/diagnostics/esto_vs_model_energy_use/{title}.html')
+
+# %%

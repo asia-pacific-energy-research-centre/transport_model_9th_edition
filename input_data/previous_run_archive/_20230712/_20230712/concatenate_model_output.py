@@ -18,8 +18,9 @@ def concatenate_model_output():
     road_model_output = pd.read_csv('intermediate_data/road_model/{}'.format(model_output_file_name))
     non_road_model_output = pd.read_csv('intermediate_data/non_road_model/{}'.format(model_output_file_name))
     # non_road_model_output = pd.read_csv('intermediate_data/non_road_model/main_dataframe_years_2017_to_2030_DATE20220822_2124.csv')
-
-    
+    # #sum up energy use for 19_THA
+    # a = road_model_output.groupby(['Date', 'Economy']).sum().reset_index().copy()
+    # b = a[a.Economy=='19_THA']
     #also we want to include any data for previous years to the Base Year, if we have it.There mmight end up being some NAs in some cols, but that's ok, we can just ignore them
     road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
     non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')

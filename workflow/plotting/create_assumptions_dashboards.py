@@ -40,7 +40,7 @@ colors_dict = {
     'bev': '#008000',  # green
     'bev 2w': '#006400',  # darkgreen
     'bev lpv': '#32CD32',  # limegreen
-    'bev lcv': '#ADFF2F',  # greenyellow
+    'bev lcv': '#32CD32',  # limegreen
     'bev bus': '#7CFC00',  # lawngreen
     'bev trucks': '#66CDAA',  # mediumaquamarine
     '17_electricity': '#008000',  # green
@@ -69,9 +69,10 @@ colors_dict = {
     '16_x_hydrogen': '#BA55D3',  # mediumorchid
 
     # Biofuels (orange shades)
-    '16_06_biodiesel': '#FFA500',  # original orange
-    '16_05_biogasoline': '#FF7F50',  # coral
-    '16_07_bio_jet_kerosene': '#FF6347',  # tomato
+    '16_06_biodiesel': '#FFFF00',  # yellow
+    '16_05_biogasoline': '#FFAA00',  # darkyellow
+
+    '16_07_bio_jet_kerosene': '#40E0D0',  # turquoise
 
     # Unique fuel types, non-road vehicles and related items (cyan shades)
     '01_x_coal_thermal': '#00FFFF',  # cyan
@@ -166,9 +167,10 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON
                 for i, plot in enumerate(fig_dict[economy][scenario].keys()):
                     row = int(i/cols)+1
                     col = i%cols+1
-                    
+                    breakpoint()
                     #add the traceas for entire fig_i to the fig. This is because we are suing plotly express which returns a fig with multiple traces, however, plotly subplots only accepts one trace per subplot
                     for trace in fig_dict[economy][scenario][plot][0]['data']:
+                        #we need to change the line_dash in the sales shares data and this is the only way i could find how:
                         fig.add_trace(trace, row=row, col=col) 
                     # fig.update_layout(fig_dict[economy][scenario][plot]['layout'])
                     # fig.add_trace(fig_dict[economy][scenario][plot], row=row, col=col)
@@ -210,7 +212,6 @@ def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
     #save them to a csv so we can add them to the colors_dict later too
     pd.DataFrame(missing_colors).to_csv('plotting_output/dashboards/missing_colors.csv')
     
-        
 #%%
 create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict)
 #%%

@@ -120,7 +120,7 @@ def calculate_inputs_for_model(INDEX_COLS):
             #RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
             road_model_input_wide['Activity'] = road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'] * road_model_input_wide['Stocks']
             road_model_input_wide['Travel_km'] = road_model_input_wide['Mileage'] * road_model_input_wide['Stocks']
-            road_model_input_wide['Energy'] = road_model_input_wide['Activity'] / road_model_input_wide['Efficiency']
+            road_model_input_wide['Energy'] = road_model_input_wide['Travel_km'] / road_model_input_wide['Efficiency']
             #PLEASE NOTE THAT THIS NAY END UP RESULTING IN WACKY NUMBERS.ITS A QUICK FIX FOR NOW
         else:
             breakpoint()
@@ -154,8 +154,8 @@ def calculate_inputs_for_model(INDEX_COLS):
             #drop adjustment factor
             road_model_input_wide = road_model_input_wide.drop(columns=['adjustment_factor'])
             
-            road_model_input_wide['Activity'] = road_model_input_wide['Energy'] * road_model_input_wide['Efficiency']
-            road_model_input_wide['Travel_km'] = road_model_input_wide['Activity'] / road_model_input_wide['Occupancy_or_load']
+            road_model_input_wide['Travel_km'] = road_model_input_wide['Energy'] * road_model_input_wide['Efficiency']
+            road_model_input_wide['Activity'] = road_model_input_wide['Travel_km'] * road_model_input_wide['Occupancy_or_load']
             road_model_input_wide['Stocks'] = road_model_input_wide['Activity'] / (road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'])
             
             # mean_energy_after = road_model_input_wide[(road_model_input_wide.Economy=='19_THA')&(road_model_input_wide.Date==2017)].groupby(['Medium']).mean().reset_index()
