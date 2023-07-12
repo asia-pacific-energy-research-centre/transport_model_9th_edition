@@ -111,9 +111,9 @@ def calculate_inputs_for_model(INDEX_COLS):
         print('If the bar is postive then it means the energy is lower than the calculated energy from activity and efficiency. Essentially efficiency is too low or the activity is too high')
     breakpoint()
     RECALCUALTE_THESE =True#until we ahve more confidence in inputs this is the best way to do it
-    RECLAUCLATE_TO_MATCH_ESTO = True
+    RECLAUCLATE_TO_MATCH_ENERGY = True
     if RECALCUALTE_THESE:
-        if not RECLAUCLATE_TO_MATCH_ESTO:
+        if not RECLAUCLATE_TO_MATCH_ENERGY:
             #RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
             road_model_input_wide['Activity'] = road_model_input_wide['Mileage'] * road_model_input_wide['Occupancy_or_load'] * road_model_input_wide['Stocks']
             road_model_input_wide['Travel_km'] = road_model_input_wide['Mileage'] * road_model_input_wide['Stocks']
