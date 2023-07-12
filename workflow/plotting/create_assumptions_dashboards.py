@@ -38,11 +38,11 @@ economy_scenario_concordance = model_concordances[['Economy', 'Scenario']].drop_
 colors_dict = {
     # Electric vehicles and related items (green shades)
     'bev': '#008000',  # green
-    'bev 2w': '#32CD32',  # limegreen
-    'bev lpv': '#7CFC00',  # lawngreen
+    'bev 2w': '#006400',  # darkgreen
+    'bev lpv': '#32CD32',  # limegreen
     'bev lcv': '#ADFF2F',  # greenyellow
-    'bev bus': '#98FB98',  # palegreen
-    'bev trucks': '#228B22',  # forestgreen
+    'bev bus': '#7CFC00',  # lawngreen
+    'bev trucks': '#66CDAA',  # mediumaquamarine
     '17_electricity': '#008000',  # green
     'sum_of_fast_chargers_needed': '#3CB371',  # mediumseagreen
     'sum_of_slow_chargers_needed': '#66CDAA',  # mediumaquamarine
@@ -56,8 +56,9 @@ colors_dict = {
     'ice': '#FF0000',  # red
     'ice_d': '#B22222',  # firebrick
     'ice_g': '#CD5C5C',  # indianred
-    '07_01_motor_gasoline': '#8B0000',  # darkred
-    '07_07_gas_diesel_oil': '#FA8072',  # salmon
+    
+    '07_01_motor_gasoline': '#B22222',  # firebrick
+    '07_07_gas_diesel_oil': '#CD5C5C',  # indianred
 
     # Fuel cell vehicles and related items (purple shades)
     'fcev': '#800080',  # purple
@@ -68,9 +69,9 @@ colors_dict = {
     '16_x_hydrogen': '#BA55D3',  # mediumorchid
 
     # Biofuels (orange shades)
-    '16_06_biodiesel': '#FFA500',  # orange
-    '16_05_biogasoline': '#FF8C00',  # darkorange
-    '16_07_bio_jet_kerosene': '#FF4500',  # orangered
+    '16_06_biodiesel': '#FFA500',  # original orange
+    '16_05_biogasoline': '#FF7F50',  # coral
+    '16_07_bio_jet_kerosene': '#FF6347',  # tomato
 
     # Unique fuel types, non-road vehicles and related items (cyan shades)
     '01_x_coal_thermal': '#00FFFF',  # cyan
@@ -85,11 +86,11 @@ colors_dict = {
     'Gdp_index': '#A9A9A9',  # darkgray
     'Activity_8th_index': '#D3D3D3',  # lightgray
     'freight_tonne_km_index': '#0000FF',  # blue
-    '2w': '#000000',  # black
-    'lpv': '#FFD700',  # gold
-    'lcv': '#ADFF2F',  # greenyellow
-    'trucks': '#FF4500',  # orangered
-    'bus': '#FF1493',  # deeppink
+    '2w': '#FF0000',  # red
+    'lpv': '#FF0000',  # red
+    'lcv': '#0000FF',  # blue
+    'trucks': '#0000FF',  # blue
+    'bus': '#FF0000',  # red
     'phev': '#FFFF00',  # yellow
 }
 
