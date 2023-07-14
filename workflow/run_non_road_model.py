@@ -198,6 +198,7 @@ def run_non_road_model():
 
 #%%
 # run_non_road_model()
+#%%
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='freight_tonne_km',kind='bar')
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='Activity',kind='bar')
     # model_input_wide[(model_input_wide['Date']==2017) & (model_input_wide['Economy']=='20_USA')].groupby(['Medium','Economy']).sum().reset_index().plot(x='Medium',y='Energy',kind='bar') 

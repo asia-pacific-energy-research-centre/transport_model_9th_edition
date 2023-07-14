@@ -12,6 +12,9 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 
 model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
 
+#drop dates after 2070
+model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']<=2070].copy()
+
 #load in EBT framework:
 model_variables = pd.read_excel('./config/9th_EBT_schema.xlsx', sheet_name='9th_EBT_schema', header = 2)
 #cols 'scenarios', 'economy', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'
@@ -482,7 +485,9 @@ if new_final_df.isna().sum().sum() > 0:
     nans = new_final_df[new_final_df.isna().any(axis=1)]
     raise ValueError(f'There are nans in the final df. Please check {nans}')
 # %%
-
+#pivot the date column and order/rename the columns liek: 'scenarios', 'economy', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'
+new_final_df = new_final_df.pivot(index=['Economy', 'Scenario', 'fuels', 'subfuels', 'subsectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'], columns='Date', values='Energy').reset_index()
+new_final_df.rename(columns={'Economy':'economy', 'Scenario':'scenarios', 'subsectors':'sectors'}, inplace=True)
 #save this file to output_data\for_other_modellers
 new_final_df.to_csv(F'output_data/for_other_modellers/transport_energy_use{FILE_DATE_ID}.csv', index=False)
 #%%

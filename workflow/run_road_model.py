@@ -61,6 +61,12 @@ def run_road_model():
     CLEAN_UP_GROWTH = True
     if CLEAN_UP_GROWTH:
         new_growth_forecasts = logistic_fitting_functions.average_out_growth_rate_using_cagr(new_growth_forecasts,BASE_YEAR, economies_to_avg_growth_over_all_years_in_freight_for = ['19_THA'])
+        
+        #also, since we have currently estomated growth to be too high, set passneger transport growth to be the sae as the new freight growth
+        new_growth_forecasts_passenger = new_growth_forecasts.loc[new_growth_forecasts['Transport Type']=='freight'].copy()
+        new_growth_forecasts_passenger['Transport Type'] = 'passenger'
+        new_growth_forecasts =new_growth_forecasts.loc[new_growth_forecasts['Transport Type']!='passenger'].copy()
+        new_growth_forecasts = pd.concat([new_growth_forecasts, new_growth_forecasts_passenger])
     #######################################################################
     #now where there is a new growth rate, use that, otherwise use the old one
     new_growth_forecasts['Activity_growth'] = new_growth_forecasts['Activity_growth_new'].fillna(new_growth_forecasts['Activity_growth'])

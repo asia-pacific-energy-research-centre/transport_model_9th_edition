@@ -72,8 +72,8 @@ original_model_output_with_fuels_all_fuels = original_model_output_with_fuels_al
 
 #filter out fuels in energy_use_all_fuels that arentr in original_model_output_with_fuels_all_fuels. but keep them so  we can check there are none we want:
 fuels_to_remove = energy_use_all_fuels[~energy_use_all_fuels['Fuel'].isin(original_model_output_with_fuels_all_fuels['Fuel'].unique())]['Fuel'].unique().tolist()
-#keep 01_x_thermal_coal
-fuels_to_remove.remove('01_x_thermal_coal')
+# #rename '01_x_thermal_coal' in energy_use_all_fuels to '01_x_coal_thermal
+# energy_use_all_fuels.loc[energy_use_all_fuels['Fuel'] == '01_x_thermal_coal', 'Fuel'] = '01_x_coal_thermal'
 #drop teh fuels
 energy_use_all_fuels = energy_use_all_fuels[~energy_use_all_fuels['Fuel'].isin(fuels_to_remove)]
 #%%

@@ -72,6 +72,7 @@ except NameError:
 #%%
 #state important modelling variables
 BASE_YEAR= 2017
+OUTLOOK_BASE_YEAR = 2020
 END_YEAR = 2100
 GRAPHING_END_YEAR = 2070
 USE_LOGISTIC_FUNCTION=True

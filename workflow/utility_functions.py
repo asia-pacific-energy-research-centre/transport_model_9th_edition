@@ -18,8 +18,10 @@ def copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR
     #dashboard fiels:
     for economy in ECONOMIES_TO_PLOT_FOR:
         for scenario in SCENARIOS_LIST:
-          useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard.html')
-          output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard.html')
+          useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard_detailed.html')
+          output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard_detailed.html')
+          useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard_presentation.html')
+          output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard_presentation.html')
     
     # chargers: output_data\for_other_modellers\estimated_number_of_chargers.csv
     #this one si already put there automatically so ignore it

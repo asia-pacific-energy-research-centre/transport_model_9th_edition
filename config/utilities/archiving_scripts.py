@@ -94,7 +94,7 @@ def archive_lots_of_files(archive_folder_name):
 
     recursively_save_file('config/concordances_and_config_data/computer_generated_concordances', archive_folder_name, '.csv', exclude_archive_folder=True)
 
-    zip_up_folder(archive_folder_name)
+    # zip_up_folder(archive_folder_name)
     
     
 def recursively_save_file(source_dir, dest_dir, file_extension, exclude_archive_folder=True):

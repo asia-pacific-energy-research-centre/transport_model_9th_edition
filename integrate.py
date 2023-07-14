@@ -66,7 +66,7 @@ import run_road_model
 run_road_model.run_road_model()
 # exec(open("./workflow/1_run_non_road_model.py").read())
 import run_non_road_model
-run_non_road_model.run_non_road_model()
+run_non_road_model.run_non_road_model()# sometimes this doesnt work. dont know why.
 # exec(open("./workflow/2_concatenate_model_output.py").read())
 import concatenate_model_output
 concatenate_model_output.concatenate_model_output()

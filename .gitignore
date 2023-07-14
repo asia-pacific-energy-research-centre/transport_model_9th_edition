@@ -12,11 +12,12 @@
 *.png
 *.jpg
 *.html
+
 #####################
 
 #anything in archive folders doesnt need to be tracked:
 **/archive 
-
+**/previous_run_archive
 #####################
 #env folders dont need to be tracked:
 env_transport_model/*
