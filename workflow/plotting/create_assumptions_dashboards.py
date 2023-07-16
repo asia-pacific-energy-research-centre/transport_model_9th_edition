@@ -5,6 +5,7 @@
 #PLEASE NOTE THAT THIS NEEDS TO BE RUN AFTER THE all_economy_graphs.py and create_sales_share_data.py scripts, as that script creates the data that this script uses to create the dashboard
 #%%
 #%%
+
 #set working directory as one folder back so that config works
 import os
 import re
@@ -240,7 +241,7 @@ SALES_SHARE_PLOT_TYPE = 'share_of_vehicle_type_by_transport_type_on_one_graph' #
 plots = ['energy_use_by_fuel_type','passenger_km_by_drive', 'freight_tonne_km_by_drive',  'vehicle_type_stocks', 'drive_share_both', 'activity_indexed','fuel_mixing', 'charging', 'lmdi']#activity_growth
 ####################################'
 hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
-
+#%%
 create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names)
 #%%
 

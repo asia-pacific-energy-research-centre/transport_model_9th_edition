@@ -16,9 +16,9 @@ import numpy as np
 #%%
 
 
-def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block, testing = False):
+def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block, testing = False, old_vehicle_economies = ['19_THA']):
     print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
-    breakpoint()
+    # breakpoint()
     #extract the user inputs dataframes from the dictionary
     Vehicle_sales_share = user_inputs_df_dict['Vehicle_sales_share']
     Occupancy_or_load_growth = user_inputs_df_dict['Occupancy_or_load_growth']
@@ -41,15 +41,43 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #######################################################################
     #do some quick checks on data:
-    if year > 2038:
-        breakpoint()
+    # if year > 2038:
+    #     
     #check if activity matches sum of activity when you calcualte it as (change_dataframe['Activity']/( change_dataframe['Mileage'] * change_dataframe['Occupancy_or_load']))
     test_data_frame = change_dataframe.copy()
     test_data_frame['Activity_check'] = test_data_frame['Mileage'] * test_data_frame['Occupancy_or_load'] * test_data_frame['Stocks']
-    if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']):
+    #why dont all othese equal each otehr???
+    # #also check test_data_frame['Activity'] the other way
+    test_data_frame['Activity_check2'] = test_data_frame['Energy'] *  test_data_frame['Efficiency'] * test_data_frame['Occupancy_or_load']
+    test_data_frame['Activity_check_diff'] = test_data_frame['Activity_check'] - test_data_frame['Activity_check2']
+    
+    #what could be wrong:
+    #stocks
+    #energy
+    
+    
+    # input_data_new_road['Travel_km'] = input_data_new_road['Energy'] * input_data_new_road['Efficiency']
+
+    # input_data_new_road['Activity'] = input_data_new_road['Travel_km'] * input_data_new_road['Occupancy_or_load']
+
+    # input_data_new_road['Stocks'] = input_data_new_road['Activity'] / (input_data_new_road['Mileage'] * input_data_new_road['Occupancy_or_load'])
+
+
+    if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']) or not np.allclose(test_data_frame['Activity_check2'], test_data_frame['Activity']):
         throw_error=True
-        percent_difference = ((sum(test_data_frame['Activity_check'].dropna()) - sum(test_data_frame['Activity'].dropna()))/sum(test_data_frame['Activity'].dropna())) * 100
-        if abs(percent_difference) > 0.5:
+        a_check = sum(test_data_frame['Activity_check'].dropna())+1
+        a_original = 1+sum(test_data_frame['Activity'].dropna())
+        percent_difference = ((a_check - a_original) / a_original)*100
+        
+        a_check2 = sum(test_data_frame['Activity_check2'].dropna())+1
+        a_original2 = 1+sum(test_data_frame['Activity'].dropna())
+        percent_difference2 = ((a_check2 - a_original2) / a_original2)*100
+        # #extract the rows where the activity is not equal to Activity_check
+        # bad_rows = test_data_frame[test_data_frame['Activity_check'] != test_data_frame['Activity']]
+        # #find the diff in each row
+        # bad_rows['diff'] = bad_rows['Activity_check'] - bad_rows['Activity']
+        if abs(percent_difference) > 0.5 or abs(percent_difference2) > 0.5:
+            breakpoint()
             if throw_error:
                 raise ValueError('ERROR: Activity does not match sum of activity. percent_difference = {}'.format(percent_difference)) 
             else:
@@ -77,7 +105,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         change_dataframe['Average_age'] = change_dataframe['Average_age'].replace(0, 1)
         #####################
         #set midpoint in the df based on whether the economy is old or new
-        old_vehicle_economies = ['19_THA']#increase x0 (midpoint) for these economies to make the turnover rate growth start later in the life of the vehicle
+        #old_vehicle_economies = ['19_THA']increase x0 (midpoint) for these economies to make the turnover rate growth start later in the life of the vehicle
         midpoint_new = 12.5
         midpoint_old = midpoint_new+5
         #put the midpoint in the df
@@ -92,11 +120,14 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         # Calculate turnover rates based on average age
         # ev_turnover = calculate_turnover_rate(ev_mean_age, k, x0)
         # ice_turnover = calculate_turnover_rate(ice_mean_age, k, x0)
-        new_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies) == False]
+        new_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies) == False].copy()  
         new_economies_df['Turnover_rate'] = new_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_new))
-        old_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies)]
+
+        old_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies)].copy()
         old_economies_df['Turnover_rate'] = old_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_old))
+
         change_dataframe = pd.concat([new_economies_df, old_economies_df])
+
         #CALCULATE PREVIOUSLY AVAILABLE STOCKS AS SUM OF STOCKS AND SURPLUS STOCKS
         change_dataframe['Original_stocks'] = change_dataframe['Stocks'] + change_dataframe['Surplus_stocks']
     #####################TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
@@ -112,7 +143,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #if 'Activity_growth', 'Gdp_per_capita', 'Population' is in df, drop em
     change_dataframe = change_dataframe.drop(['Activity_growth', 'Gdp_per_capita','Gdp', 'Population'], axis=1, errors='ignore')
-    # breakpoint()
+    # 
     # print('check if there aRE any nans in activity grwoth. t seems there are fro freight but i cant find any patterns')
     #join on activity growth
     change_dataframe = change_dataframe.merge(growth_forecasts[['Date', 'Transport Type', 'Economy','Scenario','Gdp','Activity_growth', 'Gdp_per_capita', 'Population']], on=['Economy', 'Date', 'Scenario','Transport Type'], how='left')#note that pop and gdp per capita are loaded on earlier.
@@ -166,6 +197,9 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #replace na's where there is 0/0 above
     change_dataframe['Percent_of_transport_type_stocks_worth_of_activity_not_used'] = change_dataframe['Percent_of_transport_type_stocks_worth_of_activity_not_used'].replace(np.nan, 0)
 
+    #TEMP TEST (trying to prevent stocks from going negative)
+    #if percent of transport type stocks worth of activity not used is greater than 1, set it to 1, as if it is greater than one then the stocks will go negative, as the 'stocks not used' is greater than the stocks available!
+    change_dataframe['Percent_of_transport_type_stocks_worth_of_activity_not_used'] = np.where(change_dataframe['Percent_of_transport_type_stocks_worth_of_activity_not_used'] > 1, 1, change_dataframe['Percent_of_transport_type_stocks_worth_of_activity_not_used'])
     #######################################################################
     #Now we will start working with inidivudal rows, for each vehicle type and drive combination.
     #######################################################################
@@ -179,7 +213,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #Also, if there is already a Vehicle_sales_share column from the prev year, remove it (we keep the vehicle sales shbare in the change dataframe because its an extra interesting output)
     if 'Vehicle_sales_share' in change_dataframe.columns:
         change_dataframe.drop(columns=['Vehicle_sales_share'], inplace=True)
-    # breakpoint()
+    # 
     # #get change_dataframe where the vehicle type is ht and drive is bev
     # a = change_dataframe.loc[(change_dataframe['Vehicle Type'] == 'ht') & (change_dataframe['Drive'] == 'bev')]
     change_dataframe = change_dataframe.merge(Vehicle_sales_share, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Date'], how='left')
@@ -252,10 +286,10 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #CALCUALTE NEW ENERGY CONSUMPTION. 
     #note that this is not split by fuel yet, it is just the total energy consumption for the vehicle/drive type.
     change_dataframe['Energy'] = change_dataframe['Travel_km'] / change_dataframe['Efficiency'] 
-
+    
     #if numerator and denominator are 0, then energy ends up as nan, so we will set this to 0
     change_dataframe.loc[(change_dataframe['Travel_km'] == 0) & (change_dataframe['Efficiency'] == 0), 'Energy'] = 0
-
+    # breakpoint()
     #######################################################################
 
     #finalisation processes
@@ -274,7 +308,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     else:
         addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]
 
-    # breakpoint()
+    # 
     #add new year to the main dataframe.
     main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])
     previous_year_main_dataframe = addition_to_main_dataframe.copy()
@@ -306,11 +340,12 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     else:
         
         if testing:
+            breakpoint()
             # a = main_dataframe.merge(growth_forecasts[['Economy','Date','Activity_growth']].drop_duplicates(), on=['Economy','Date'], how='left')
             # a = a[['Activity','Activity_growth','Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive','Scenario']]
             # #     #grab vehicle type = ldv, transport type = passenger, drive = bev, scenario = Target
             # a = a[(a['Economy']=='20_USA') & (a['Vehicle Type'] == 'ldv') & (a['Transport Type'] == 'passenger') & (a['Drive'] == 'bev') & (a['Scenario'] == 'Target')].drop_duplicates()
-            breakpoint()
+            
     #     #plot the sum of activity of 20_USA  for transport ype = passenger, with the activity growth on the right axis. 
     #     import plotly.express as px
     #     fig = px.line(a, x="Date", y="Activity", color='Drive', title='Activity of 20_USA for transport type = passenger')
@@ -323,12 +358,12 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     return main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, gompertz_function_diagnostics_dataframe, previous_10_year_block
     
 
-def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
+def prepare_road_model_inputs(BASE_YEAR_x,road_model_input,low_ram_computer=True):
         
     #separate user inputs into different dataframes
     gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna().copy()#note we keep gamma in main df,. 'Gompertz_alpha', 'Gompertz_beta',
     #add values for BASE YEAR. THey can be the values from the first year of the model
-    gompertz_parameters = pd.concat([gompertz_parameters, gompertz_parameters[gompertz_parameters['Date']==BASE_YEAR+1].replace(BASE_YEAR+1, BASE_YEAR)], ignore_index=True)
+    gompertz_parameters = pd.concat([gompertz_parameters, gompertz_parameters[gompertz_parameters['Date']==BASE_YEAR_x+1].replace(BASE_YEAR_x+1, BASE_YEAR_x)], ignore_index=True)
     Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates().copy()
     Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates().copy()
     Turnover_rate_growth = road_model_input[['Economy','Scenario','Vehicle Type', 'Transport Type', 'Drive', 'Date', 'Turnover_rate_growth']].drop_duplicates().copy()
@@ -343,14 +378,14 @@ def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
     road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'Turnover_rate_growth', 'New_vehicle_efficiency_growth','Mileage_growth',  'Gompertz_gamma'], axis=1)#'Gompertz_alpha', 'Gompertz_beta',
 
     #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
-    previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == BASE_YEAR,:].copy()
+    previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == BASE_YEAR_x,:].copy()
     main_dataframe = previous_year_main_dataframe.copy()
     change_dataframe_aggregation = pd.DataFrame()
     gompertz_function_diagnostics_dataframe = pd.DataFrame()
 
     #give option to run the process on a low RAM computer. If True then the loop will be split into 10 year blocks, saving each block in a csv, then starting again with an empty main datafrmae for the next 10 years block. If False then the loop will be run on all years without saving intermediate results.
     if low_ram_computer:
-        previous_10_year_block = BASE_YEAR
+        previous_10_year_block = BASE_YEAR_x
         low_ram_computer_files_list = []
         #remove files from main_dataframe_10_year_blocks for previous runs
         for file in glob.glob(os.path.join('intermediate_data/main_dataframe_10_year_blocks/', '*.csv')):

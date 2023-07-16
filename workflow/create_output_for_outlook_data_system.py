@@ -188,94 +188,6 @@ unique_sectors = model_output_all_with_fuels[['Medium','Transport Type', 'Vehicl
 #create a 4 tierd  dictionary to map the sectors in the model output to the sectors in the model variables
 #%%
 
-medium_mapping = {'air': '15_01_domestic_air_transport', 'road': '15_02_road', 'rail': '15_03_rail', 'ship': '15_04_domestic_navigation'}
-transport_type_mapping = {'passenger': 'passenger', 'freight': 'freight'}
-vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_02_01_two_wheeler','all':'x'}
-vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', 'all':'x'}
-
-drive_mapping_inversed = {'x':'all',
-    '15_02_01_01_01_diesel_engine': 'ice_d', 
-    '15_02_01_01_02_gasoline_engine': 'ice_g', 
-    '15_02_01_01_03_battery_ev': 'bev', 
-    '15_02_01_01_04_compressed_natual_gas': 'cng', 
-    '15_02_01_01_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_01_01_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_01_01_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_01_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_01_02_01_diesel_engine': 'ice_d', 
-    '15_02_01_02_02_gasoline_engine': 'ice_g', 
-    '15_02_01_02_03_battery_ev': 'bev', 
-    '15_02_01_02_04_compressed_natual_gas': 'cng', 
-    '15_02_01_02_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_01_02_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_01_02_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_02_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_01_03_01_diesel_engine': 'ice_d', 
-    '15_02_01_03_02_gasoline_engine': 'ice_g', 
-    '15_02_01_03_03_battery_ev': 'bev', 
-    '15_02_01_03_04_compressed_natual_gas': 'cng', 
-    '15_02_01_03_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_01_03_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_01_03_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_03_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_01_04_01_diesel_engine': 'ice_d', 
-    '15_02_01_04_02_gasoline_engine': 'ice_g', 
-    '15_02_01_04_03_battery_ev': 'bev', 
-    '15_02_01_04_04_compressed_natual_gas': 'cng', 
-    '15_02_01_04_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_01_04_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_01_04_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_04_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_02_01_01_diesel_engine': 'ice_d', 
-    '15_02_02_01_02_gasoline_engine': 'ice_g', 
-    '15_02_02_01_03_battery_ev': 'bev', 
-    '15_02_02_01_04_compressed_natual_gas': 'cng', 
-    '15_02_02_01_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_02_01_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_02_01_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_02_01_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_02_02_01_diesel_engine': 'ice_d', 
-    '15_02_02_02_02_gasoline_engine': 'ice_g', 
-    '15_02_02_02_03_battery_ev': 'bev', 
-    '15_02_02_02_04_compressed_natual_gas': 'cng', 
-    '15_02_02_02_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_02_02_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_02_02_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_02_02_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_02_03_01_diesel_engine': 'ice_d', 
-    '15_02_02_03_02_gasoline_engine': 'ice_g', 
-    '15_02_02_03_03_battery_ev': 'bev', 
-    '15_02_02_03_04_compressed_natual_gas': 'cng', 
-    '15_02_02_03_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_02_03_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_02_03_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_02_03_08_fuel_cell_ev': 'fcev', 
-
-    '15_02_02_04_01_diesel_engine': 'ice_d', 
-    '15_02_02_04_02_gasoline_engine': 'ice_g', 
-    '15_02_02_04_03_battery_ev': 'bev', 
-    '15_02_02_04_04_compressed_natual_gas': 'cng', 
-    '15_02_02_04_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_02_04_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_02_04_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_02_04_08_fuel_cell_ev': 'fcev',
-
-    '15_02_01_05_01_diesel_engine': 'ice_d', 
-    '15_02_01_05_02_gasoline_engine': 'ice_g', 
-    '15_02_01_05_03_battery_ev': 'bev', 
-    '15_02_01_05_04_compressed_natual_gas': 'cng', 
-    '15_02_01_05_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_01_05_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_01_05_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_05_08_fuel_cell_ev': 'fcev'
-}
-
 for row in unique_sectors.iterrows():
     transport_type = row[1]['Transport Type']
     vehicle_type = row[1]['Vehicle Type']
@@ -424,21 +336,6 @@ fuels_df = pd.DataFrame(fuels_df, columns=['Fuel'])
 # 20_total_renewables
 # 21_modern_renewables
 
-subfuels_mapping = {'17_electricity':'x', '07_07_gas_diesel_oil':'07_07_gas_diesel_oil', '07_01_motor_gasoline':'07_01_motor_gasoline',
-       '08_01_natural_gas':'08_01_natural_gas', '16_x_hydrogen':'16_x_hydrogen', '07_09_lpg':'07_09_lpg',
-       '07_02_aviation_gasoline':'07_02_aviation_gasoline', '07_x_jet_fuel':'07_x_jet_fuel', '01_x_coal_thermal':'01_x_coal_thermal',
-       '07_08_fuel_oil':'07_08_fuel_oil', '07_x_other_petroleum_products':'07_x_other_petroleum_products',
-       '16_06_biodiesel':'16_06_biodiesel', '16_05_biogasoline':'16_05_biogasoline', '16_x_efuel':'16_x_efuel',
-       '16_07_bio_jet_kerosene':'16_07_bio_jet_kerosene'}
-    
-#now map fuels to subfuels. All will need to be mapped, but in most cases it will be to a more broad category than it currently is. eg. 07_07_gas_diesel_oil will be mapped to 07_petroleum_products just like 07_01_motor_gasoline is.
-fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_petroleum_products', '07_01_motor_gasoline':'07_petroleum_products',
-       '08_01_natural_gas':'08_gas', '16_x_hydrogen':'16_others', '07_09_lpg':'07_petroleum_products',
-       '07_02_aviation_gasoline':'07_petroleum_products', '07_x_jet_fuel':'07_petroleum_products', '01_x_coal_thermal':'01_coal',
-       '07_08_fuel_oil':'07_petroleum_products', '07_x_other_petroleum_products':'07_petroleum_products',
-       '16_06_biodiesel':'16_others', '16_05_biogasoline':'16_others', '16_x_efuel':'16_others',
-       '16_07_bio_jet_kerosene':'16_others'}
-
 #now map the df to these:
 fuels_df['subfuels'] = fuels_df['Fuel'].map(subfuels_mapping)
 fuels_df['fuels'] = fuels_df['Fuel'].map(fuels_mapping)
@@ -453,7 +350,7 @@ new_final_df = new_final_df.merge(fuels_df, on='Fuel', how='left')
 new_final_df = new_final_df.merge(unique_sectors_mapping_df, on=['Medium','Transport Type', 'Vehicle Type', 'Drive'], how='left')
 
 #%%
-show_nas = False
+show_nas = True
 if show_nas:
     # # new_final_df.columns Index(['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type',
     #        'Drive', 'Medium', 'Fuel', 'Energy', 'subfuels', 'fuels', 'sub4sectors',
@@ -466,6 +363,9 @@ if show_nas:
     #print count of nans for each economy
     print(nan_energy_df.groupby('Economy').count()['Date'])
 # %%
+
+#set nas to 0s
+new_final_df['Energy'] = new_final_df['Energy'].fillna(0)
 #finalise df:
 #drop unneccesary cols 'Transport Type', 'Vehicle Type',
 #        'Drive', 'Medium', 'Fuel'

@@ -1,7 +1,7 @@
 """This file is intended to be able ot be used in the beginnning of any jupyter ntoebook to set the config variables for the model. This helps to reduce clutter, as that is a big issue for notebooks. So if you ever need to chnage conifgurations, just change this. """
 #to make the code in this library clear we will name every variable that is stated in here with all caps
 #%%
-
+FILE_DATE_ID ='_20230715'
 #import common libraries 
 import pandas as pd 
 import numpy as np
@@ -152,3 +152,192 @@ model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_deman
 #AND A model_concordances_all_file_name
 # model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
 #%%
+
+
+
+#ESTO/9th_EBT to transport model mappings:
+medium_mapping = {'air': '15_01_domestic_air_transport', 'road': '15_02_road', 'rail': '15_03_rail', 'ship': '15_04_domestic_navigation', 'pipeline':'15_05_pipeline_transport', 'nonspecified': '15_06_nonspecified_transport'}
+
+transport_type_mapping = {'passenger': 'passenger', 'freight': 'freight'}
+
+vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_02_01_two_wheeler','all':'x'}
+
+vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', 'all':'x'}
+
+drive_mapping_inversed = {'x':'all',
+    '15_02_01_01_01_diesel_engine': 'ice_d', 
+    '15_02_01_01_02_gasoline_engine': 'ice_g', 
+    '15_02_01_01_03_battery_ev': 'bev', 
+    '15_02_01_01_04_compressed_natual_gas': 'cng', 
+    '15_02_01_01_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_01_01_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_01_01_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_01_01_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_01_02_01_diesel_engine': 'ice_d', 
+    '15_02_01_02_02_gasoline_engine': 'ice_g', 
+    '15_02_01_02_03_battery_ev': 'bev', 
+    '15_02_01_02_04_compressed_natual_gas': 'cng', 
+    '15_02_01_02_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_01_02_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_01_02_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_01_02_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_01_03_01_diesel_engine': 'ice_d', 
+    '15_02_01_03_02_gasoline_engine': 'ice_g', 
+    '15_02_01_03_03_battery_ev': 'bev', 
+    '15_02_01_03_04_compressed_natual_gas': 'cng', 
+    '15_02_01_03_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_01_03_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_01_03_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_01_03_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_01_04_01_diesel_engine': 'ice_d', 
+    '15_02_01_04_02_gasoline_engine': 'ice_g', 
+    '15_02_01_04_03_battery_ev': 'bev', 
+    '15_02_01_04_04_compressed_natual_gas': 'cng', 
+    '15_02_01_04_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_01_04_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_01_04_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_01_04_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_02_01_01_diesel_engine': 'ice_d', 
+    '15_02_02_01_02_gasoline_engine': 'ice_g', 
+    '15_02_02_01_03_battery_ev': 'bev', 
+    '15_02_02_01_04_compressed_natual_gas': 'cng', 
+    '15_02_02_01_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_02_01_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_02_01_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_02_01_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_02_02_01_diesel_engine': 'ice_d', 
+    '15_02_02_02_02_gasoline_engine': 'ice_g', 
+    '15_02_02_02_03_battery_ev': 'bev', 
+    '15_02_02_02_04_compressed_natual_gas': 'cng', 
+    '15_02_02_02_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_02_02_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_02_02_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_02_02_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_02_03_01_diesel_engine': 'ice_d', 
+    '15_02_02_03_02_gasoline_engine': 'ice_g', 
+    '15_02_02_03_03_battery_ev': 'bev', 
+    '15_02_02_03_04_compressed_natual_gas': 'cng', 
+    '15_02_02_03_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_02_03_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_02_03_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_02_03_08_fuel_cell_ev': 'fcev', 
+
+    '15_02_02_04_01_diesel_engine': 'ice_d', 
+    '15_02_02_04_02_gasoline_engine': 'ice_g', 
+    '15_02_02_04_03_battery_ev': 'bev', 
+    '15_02_02_04_04_compressed_natual_gas': 'cng', 
+    '15_02_02_04_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_02_04_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_02_04_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_02_04_08_fuel_cell_ev': 'fcev',
+
+    '15_02_01_05_01_diesel_engine': 'ice_d', 
+    '15_02_01_05_02_gasoline_engine': 'ice_g', 
+    '15_02_01_05_03_battery_ev': 'bev', 
+    '15_02_01_05_04_compressed_natual_gas': 'cng', 
+    '15_02_01_05_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_01_05_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_01_05_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_01_05_08_fuel_cell_ev': 'fcev'
+}
+
+subfuels_mapping = {'17_electricity':'x', '07_07_gas_diesel_oil':'07_07_gas_diesel_oil', '07_01_motor_gasoline':'07_01_motor_gasoline',
+'08_01_natural_gas':'08_01_natural_gas', 
+'16_x_hydrogen':'16_x_hydrogen',
+'07_09_lpg':'07_09_lpg',
+'07_02_aviation_gasoline':'07_02_aviation_gasoline', '07_x_jet_fuel':'07_x_jet_fuel', 
+'01_x_thermal_coal':'01_coal',
+'07_08_fuel_oil':'07_08_fuel_oil', '07_x_other_petroleum_products':'07_x_other_petroleum_products',
+'16_06_biodiesel':'16_06_biodiesel', 
+'16_05_biogasoline':'16_05_biogasoline', 
+'16_x_efuel':'16_x_efuel',
+'16_07_bio_jet_kerosene':'16_07_bio_jet_kerosene', 
+'16_x_ammonia': '16_x_ammonia',
+'07_06_kerosene':'07_06_kerosene'}
+    
+#now map fuels to subfuels. All will need to be mapped, but in most cases it will be to a more broad category than it currently is. eg. 07_07_gas_diesel_oil will be mapped to 07_petroleum_products just like 07_01_motor_gasoline is.
+fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_petroleum_products', '07_01_motor_gasoline':'07_petroleum_products',
+'07_06_kerosene':'07_petroleum_products',
+'08_01_natural_gas':'08_gas', 
+'16_x_hydrogen':'16_others', 
+'07_09_lpg':'07_petroleum_products',
+'07_02_aviation_gasoline':'07_petroleum_products', '07_x_jet_fuel':'07_petroleum_products', 
+'01_x_thermal_coal':'01_coal',
+'07_08_fuel_oil':'07_petroleum_products', '07_x_other_petroleum_products':'07_petroleum_products',
+'16_06_biodiesel':'16_others', 
+'16_05_biogasoline':'16_others', 
+'16_x_efuel':'16_others',
+'16_07_bio_jet_kerosene':'16_others',  
+'16_x_ammonia': '16_others'}
+
+
+
+# array(['01_01_coking_coal', '01_x_thermal_coal', '01_05_lignite', 'x',
+#        '06_01_crude_oil', '06_02_natural_gas_liquids',
+#        '06_x_other_hydrocarbons', '07_01_motor_gasoline',
+#        '07_02_aviation_gasoline', '07_03_naphtha', '07_x_jet_fuel',
+#        '07_06_kerosene', '07_07_gas_diesel_oil', '07_08_fuel_oil',
+#        '07_09_lpg', '07_10_refinery_gas_not_liquefied', '07_11_ethane',
+#        '07_x_other_petroleum_products', '08_01_natural_gas', '08_02_lng',
+#        '08_03_gas_works_gas', '12_01_of_which_photovoltaics',
+#        '12_x_other_solar', '15_01_fuelwood_and_woodwaste',
+#        '15_02_bagasse', '15_03_charcoal', '15_04_black_liquor',
+#        '15_05_other_biomass', '16_01_biogas', '16_02_industrial_waste',
+#        '16_03_municipal_solid_waste_renewable',
+#        '16_04_municipal_solid_waste_nonrenewable', '16_05_biogasoline',
+#        '16_06_biodiesel', '16_07_bio_jet_kerosene',
+#        '16_08_other_liquid_biofuels', '16_09_other_sources',
+#        '16_x_ammonia', '16_x_hydrogen'], dtype=object)
+#map the above so they map to the following fuels:
+# array(['07_07_gas_diesel_oil', '17_electricity', '07_01_motor_gasoline',
+#        '08_01_natural_gas', '16_x_hydrogen', '07_09_lpg',
+#        '07_02_aviation_gasoline', '07_08_fuel_oil', '07_x_jet_fuel',
+#        '07_06_kerosene', '01_x_thermal_coal', '16_x_ammonia',
+#        '07_x_other_petroleum_products', '16_06_biodiesel', '16_x_efuel',
+#        '16_05_biogasoline'], dtype=object)
+temp_esto_subfuels_to_new_subfuels_mapping = {#one day we should get the EBT code to simplify the subfuels in here but for now just use this mapping:
+    '01_x_thermal_coal': '01_coal',
+    '01_05_lignite': '01_coal',
+    'x': 'x',
+    '07_01_motor_gasoline': '07_01_motor_gasoline',
+    '07_02_aviation_gasoline': '07_02_aviation_gasoline',
+    '07_x_jet_fuel': '07_x_jet_fuel',
+    '07_06_kerosene': '07_06_kerosene',
+    '07_07_gas_diesel_oil': '07_07_gas_diesel_oil',
+    '07_08_fuel_oil': '07_08_fuel_oil',
+    '07_09_lpg': '07_09_lpg',
+    '07_11_ethane': '07_x_other_petroleum_products',
+    '07_x_other_petroleum_products': '07_x_other_petroleum_products',
+    '08_01_natural_gas': '08_01_natural_gas',
+    '08_02_lng': '08_01_natural_gas',
+    '08_03_gas_works_gas': '08_01_natural_gas',
+    '16_01_biogas': '16_01_biogas',
+    '16_05_biogasoline': '16_05_biogasoline',
+    '16_06_biodiesel': '16_06_biodiesel',
+    '16_07_bio_jet_kerosene': '16_07_bio_jet_kerosene',
+    '16_08_other_liquid_biofuels': '16_09_other_sources',
+    '16_09_other_sources': '16_09_other_sources',
+    '16_x_ammonia': '16_x_ammonia',
+    '16_x_hydrogen': '16_x_hydrogen',
+    '01_01_coking_coal': '01_coal',
+    '06_01_crude_oil': '06_crude_oil_and_ngl',
+    '06_02_natural_gas_liquids': '06_crude_oil_and_ngl'
+}
+
+# #where subfuel is x then map Fuel based on teh value in the fuels column. If the fuel is not in the mapping then throw an error
+x_subfuel_mappings = {
+    '16_others': '16_09_other_sources',
+    '17_electricity': '17_electricity',
+    '03_peat':'01_coal',
+    '08_gas': '08_01_natural_gas',
+    '07_petroleum_products': '07_x_other_petroleum_products',
+    '01_coal': '01_coal',
+    '02_coal_products': '01_coal',
+    '06_crude_oil_and_ngl': '06_crude_oil_and_ngl'}
+    

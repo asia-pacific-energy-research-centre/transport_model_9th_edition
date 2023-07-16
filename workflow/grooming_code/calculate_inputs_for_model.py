@@ -17,11 +17,15 @@ import sys
 sys.path.append("./workflow")
 import utility_functions
 
-def calculate_inputs_for_model(INDEX_COLS):
+import adjust_data_to_match_esto
+
+def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,filter_to_just_base_year=False,advance_base_year=False, adjust_data_to_match_esto_testing=True):
     #load data
     transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
 
-    
+    # if filter_to_just_base_year:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
+    #     #filter so the data is from OUTLOOK_BASE_YEAR and back
+    #     transport_dataset = transport_dataset[transport_dataset['Date'] <= OUTLOOK_BASE_YEAR]
     #remove uneeded columns
     unneeded_cols =['Unit','Dataset', 'Data_available', 'Frequency']
     transport_dataset.drop(unneeded_cols, axis=1, inplace=True)
@@ -78,43 +82,8 @@ def calculate_inputs_for_model(INDEX_COLS):
     non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] > 0), 'Stocks'] = 1
     non_road_model_input_wide.loc[(non_road_model_input_wide['Energy'] == 0), 'Stocks'] = 0
 
-
-    
-    test = False
-    if test:
-        #check that road stocks and activity match each other when usign  (change_dataframe['Activity']/( change_dataframe['Mileage'] * change_dataframe['Occupancy_or_load'])). 
-        #if they arent then plot the average difference for each vehicle type and drve type. (ignore economy or scenario). THen later on we can decide how we fix it:
-        test_road_model_input_wide = road_model_input_wide.copy()
-        test_road_model_input_wide['Activity_check'] = test_road_model_input_wide['Mileage'] * test_road_model_input_wide['Occupancy_or_load'] * test_road_model_input_wide['Stocks']
-        test_road_model_input_wide['Activity_check_diff'] = test_road_model_input_wide['Activity_check'] - test_road_model_input_wide['Activity']
-        test_road_model_input_wide['Activity_check_diff_abs'] = test_road_model_input_wide['Activity_check_diff'].abs()
-        #calcaulte average difference for each vehicle type and drive type and plot it
-        test_road_model_input_wide['Activity_check_diff_abs_mean'] = test_road_model_input_wide['Activity_check_diff_abs'].groupby([test_road_model_input_wide['Vehicle Type'], test_road_model_input_wide['Drive']]).transform('mean')
-        #drop duplicates
-        test_road_model_input_wide = test_road_model_input_wide.drop_duplicates(subset=['Vehicle Type', 'Drive'])
-
-        #plot using plotly
-        import plotly.express as px
-        fig = px.bar(test_road_model_input_wide, x="Vehicle Type", y="Activity_check_diff_abs_mean", color="Drive", barmode="group")
-        fig.show()
-
-        print('If the bar is postive then it means the activity is lower than the calculated activity from stocks, mileage and occupancy. Essentially Stocks are too high. ')
-        #test if efficiency * Energy = activity
-        test_road_model_input_wide['Energy_check'] = test_road_model_input_wide['Activity'] / test_road_model_input_wide['Efficiency']
-        test_road_model_input_wide['Energy_check_diff'] = test_road_model_input_wide['Energy_check'] - test_road_model_input_wide['Energy']
-        test_road_model_input_wide['Energy_check_diff_abs'] = test_road_model_input_wide['Energy_check_diff'].abs()
-        #calcaulte average difference for each vehicle type and drive type and plot it
-        test_road_model_input_wide['Energy_check_diff_abs_mean'] = test_road_model_input_wide['Energy_check_diff_abs'].groupby([test_road_model_input_wide['Vehicle Type'], test_road_model_input_wide['Drive']]).transform('mean')
-        #drop duplicates
-        test_road_model_input_wide = test_road_model_input_wide.drop_duplicates(subset=['Vehicle Type', 'Drive'])
-
-        #plot using plotly
-        import plotly.express as px
-        fig = px.bar(test_road_model_input_wide, x="Vehicle Type", y="Energy_check_diff_abs_mean", color="Drive", barmode="group")
-        fig.show()
-        print('If the bar is postive then it means the energy is lower than the calculated energy from activity and efficiency. Essentially efficiency is too low or the activity is too high')
     RECALCUALTE_THESE =True#until we ahve more confidence in inputs this is the best way to do it
-    RECLAUCLATE_TO_MATCH_ESTO = True
+    RECLAUCLATE_TO_MATCH_ESTO = False
     if RECALCUALTE_THESE:
         if not RECLAUCLATE_TO_MATCH_ESTO:
             #RECALCUALTE ACTIVITY AND THEN ENERGY BASED ON THE VALUES FOR STOCKS
@@ -175,17 +144,29 @@ def calculate_inputs_for_model(INDEX_COLS):
     # gdp_cap = growth_forecasts[['Date', 'Economy', 'Transport Type', 'Population', 'Gdp_per_capita']].drop_duplicates()
 
     # road_model_input_wide =  pd.merge(road_model_input_wide, gdp_cap, how='left', on=['Date', 'Transport Type', 'Economy'])
+    
+    DECREASE_GROWTH_FORECASTS = False
+    if DECREASE_GROWTH_FORECASTS:
+        PROPORTION_OF_GROWTH = 0.5
+        #we want to decrease growth by a proportion fpr each year. So we will minus one from the growth and then times by PROPORTION_OF_GROWTH
+        growth_forecasts_wide['Activity_growth'] = (growth_forecasts_wide['Activity_growth'] - 1) * PROPORTION_OF_GROWTH + 1
+    
 
+    if RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN:
+        #use teh funcitons in adjust_data_to_match_esto.py to adjust the energy use to match the esto data in the MODEL_BASE_YEAR. To do this we will have needed to run the model up ot htat year already, and saved the results. We will then use the results to adjust the energy use to match the esto data. This is so that we can make sure that stocks and energy are about what youd expect, i think. 
+        #breakpoint()
+        road_model_input_wide, non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=advance_base_year, TESTING=adjust_data_to_match_esto_testing, TEST_ECONOMY='19_THA')
+        
+        supply_side_fuel_mixing_new.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv', index=False)
+    
     breakpoint()
     #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
     road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide.csv', index=False)
     non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv', index=False)
     growth_forecasts_wide.to_csv('intermediate_data/model_inputs/growth_forecasts.csv', index=False)
-    
-
+        
     
 
 #%%
-
-# calculate_inputs_for_model(INDEX_COLS)
+calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True, adjust_data_to_match_esto_testing=True)
 #%%

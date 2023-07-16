@@ -12,16 +12,7 @@ from plotly.subplots import make_subplots
 import plotly.io as pio
 import pandas as pd
 
-#load in concordances
-#import measure to unit concordance
-measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
-#convert to dict
-measure_to_unit_concordance_dict = measure_to_unit_concordance.set_index('Measure')['Magnitude_adjusted_unit'].to_dict()#use this to convert measures to units eg measure_to_unit_concordance_dict[y_column]
-
-#load in measures concodrdance 
-model_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name))
-#extract economy and scenario from df then drop dupes
-economy_scenario_concordance = model_concordances[['Economy', 'Scenario']].drop_duplicates().reset_index(drop=True)
+from sklearn.preprocessing import StandardScaler
 
 def remap_vehicle_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']):
 
@@ -639,8 +630,17 @@ def activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordan
         # #first grasb only the data we need for this:
         # model_output_detailed_growth = model_output_detailed[['Economy', 'Scenario', 'Date', 'Population', 'Gdp']].copy().drop_duplicates()
         #srot by date
+        # def calc_index(df, col):
+        #     df = df.sort_values(by='Date')
+        #     df['Value'] = df[col]/df[col].iloc[0]
+        #     df['Measure'] = '{}_index'.format(col)
+        #     df.drop(columns=[col], inplace=True)
+        #     return df
+
         def calc_index(df, col):
+            scaler = StandardScaler()
             df = df.sort_values(by='Date')
+            df[col] = scaler.fit_transform(df[[col]])
             df['Value'] = df[col]/df[col].iloc[0]
             df['Measure'] = '{}_index'.format(col)
             df.drop(columns=[col], inplace=True)

@@ -176,10 +176,12 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     #load groomed data from transport data system
     
     new_transport_data_system_df = pd.read_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
+    #drop non road
+    new_transport_data_system_df = new_transport_data_system_df.loc[new_transport_data_system_df['Medium']=='road']
     #calcualte nomral;ised sales share for each transport type. so for each economy,  transport type and date, we want to know the share of sales for each row.
     #this means we ahve to calcualte the sales by finding the difference between the stock in the current year and the stock in the previous year.
     #this could rersult in issues because we may have gaps in our data. but for now we will just assume that we have data for every year and see how it goes:
-
+    breakpoint()
     sales = estimate_transport_data_system_sales_share(new_transport_data_system_df, INDEX_COLS,SCENARIOS_LIST,YEARS_TO_KEEP_AFTER_BASE_YEAR)
 
     #extract dictionary from csv
