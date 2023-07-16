@@ -8,18 +8,16 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+import adjust_data_to_match_esto
 #%%
 def import_transport_system_data():
     
     #import data from the transport data system and extract what we need from it.
     # We can use the model_concordances_measures concordance file to determine what we need to extract from the transport data system. This way we dont rely on things like dataset names.
 
-
-    
     model_concordances_measures = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_base_year_measures_file_name))
 
 
-    
     #load transport data  from the transport data system which is out of this repo but is in the same folder as this repo #file name is like DATE20221214_interpolated_combined_data_concordance
 
     #transport datasystem currently usees a diff file date id structure where it ahs no _ at  the start so we need to remove that#TODO: change the transport data system to use the same file date id structure as the model
@@ -241,6 +239,8 @@ def import_transport_system_data():
     new_transport_data_system_df.to_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID), index=False)
 
 
+#TODO need to update thids
+
 def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #we added drive types to non road. now we need to make sure that the input from datasyustem contains them. 
     #essentailly, the input datasystem data will contain a row for each non road medium (air, rail, ship) and the drive and vehicle types will be 'all'. 
@@ -257,44 +257,45 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))
 
 
-    date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'model_input_9th_cleaned')
-    esto_non_road = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/model_input_9th_cleanedDATE{date_id}.csv')
-
-
-    esto_non_road = esto_non_road.rename(columns={'Fuel_Type': 'Fuel', 'Value': 'Energy'})
-
-    #drop these fuels and then check for any otehrs that are missing
-    esto_fuels_to_remove = ['01_coal',
-    '07_petroleum_products',
-    '19_total',
-    '21_modern_renewables',
-    '08_gas',
-    '02_coal_products',
-    '01_01_coking_coal',
-    '01_05_lignite',
-    '06_01_crude_oil',
-    '06_crude_oil_and_ngl',
-    '03_peat',
-    '08_03_gas_works_gas',
-    '16_others',
-    '20_total_renewables',
-    '06_02_natural_gas_liquids']
-    esto_non_road = esto_non_road[~esto_non_road['Fuel'].isin(esto_fuels_to_remove)]
+    # date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'model_input_9th_cleaned')
+    # esto_non_road = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/model_input_9th_cleanedDATE{date_id}.csv')
+    energy_use_esto = adjust_data_to_match_esto.format_9th_input_energy_from_esto()
     
-    esto_non_road['Date'] = esto_non_road['Date'].apply(lambda x: x[:4])
-    esto_non_road['Date'] = esto_non_road['Date'].astype(int)
+    #keep medium in rail, air and ship
+    esto_non_road = energy_use_esto[energy_use_esto.Medium.isin(['rail', 'air', 'ship'])].copy()
+    
+    # energy_use_esto = energy_use_esto.rename(columns={'Fuel_Type': 'Fuel', 'Value': 'Energy'})
+
+    # #drop these fuels and then check for any otehrs that are missing
+    # esto_fuels_to_remove = ['01_coal',
+    # '07_petroleum_products',
+    # '19_total',
+    # '21_modern_renewables',
+    # '08_gas',
+    # '02_coal_products',
+    # '01_01_coking_coal',
+    # '01_05_lignite',
+    # '06_01_crude_oil',
+    # '06_crude_oil_and_ngl',
+    # '03_peat',
+    # '08_03_gas_works_gas',
+    # '16_others',
+    # '20_total_renewables',
+    # '06_02_natural_gas_liquids']
+    # esto_non_road = esto_non_road[~esto_non_road['Fuel'].isin(esto_fuels_to_remove)]
+    
+    # esto_non_road['Date'] = esto_non_road['Date'].apply(lambda x: x[:4])
+    # esto_non_road['Date'] = esto_non_road['Date'].astype(int)
 
     # #filter for data in years great or = to BASE_YEAR
     # esto_non_road = esto_non_road[esto_non_road['Date'] >= BASE_YEAR]
 
     #drop economy in APEC '22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE'
-    esto_non_road = esto_non_road.loc[~esto_non_road['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE', 'APEC'])].copy()
+    # esto_non_road = esto_non_road.loc[~esto_non_road['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE', 'APEC'])].copy()
 
-    #drop nonneeded cols
-    esto_non_road = esto_non_road.drop(columns=['Frequency', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive', 'Transport Type', 'Unit'])
+    # #drop nonneeded cols
+    # esto_non_road = esto_non_road.drop(columns=['Frequency', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive', 'Transport Type', 'Unit'])
 
-    #keep medium in rail, air and ship
-    esto_non_road = esto_non_road[esto_non_road.Medium.isin(['rail', 'air', 'ship'])]
 
     model_concordances_fuels_non_road = model_concordances_fuels[model_concordances_fuels.Medium.isin(['rail', 'air', 'ship'])]
     model_concordances_fuels_non_road = model_concordances_fuels_non_road[[ 'Medium', 'Fuel', 'Drive']].drop_duplicates()
@@ -303,17 +304,24 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     esto_non_road_drives = pd.merge(esto_non_road, model_concordances_fuels_non_road, how='outer', on=['Medium', 'Fuel'])
 
     #also drop any fuels that are mixed in on the supply side only (i.e. biofuels):
-    supply_side_fuels = [ '16_07_bio_jet_kerosene','16_06_biodiesel',
-    '16_05_biogasoline']
-    esto_non_road_drives = esto_non_road_drives[~esto_non_road_drives.Fuel.isin(supply_side_fuels)]
+    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv').New_fuel.unique().tolist()
+    #TEMP
+    #IF 16_01_biogas ISNT IN THERE, ADD IT
+    if '16_01_biogas' not in supply_side_fuel_mixing_fuels:
+        print('######################\n 16_01_biogas not in supply_side_fuel_mixing_fuels. Adding it \n ################')
+        supply_side_fuel_mixing_fuels.append('16_01_biogas')
+    else:
+        print('REMOVE THIS LINE!')
+    esto_non_road_drives = esto_non_road_drives[~esto_non_road_drives.Fuel.isin(supply_side_fuel_mixing_fuels)]
     
     #if there are any nans in the following list then throw error:
-    new_fuels= ['16_x_ammonia']
-    if esto_non_road_drives[esto_non_road_drives.Date.isna()].Fuel.unique().tolist() != new_fuels:
+    # new_fuels= ['16_x_ammonia']
+    if len(esto_non_road_drives[esto_non_road_drives.Date.isna()]) > 0:
+        breakpoint()
         raise ValueError('There are some new fuels in the non road data that are not in the model concordances. Please add them {} to the model concordances'.format(esto_non_road_drives[esto_non_road_drives.Date.isna()].Fuel.unique().tolist()))
 
     #drop the rows where the fuel is not na but economy and Date are na (this is where the fuel is not in the esto data but is in the model concordances)
-    esto_non_road_drives = esto_non_road_drives[~((esto_non_road_drives.Fuel.notna()) & (esto_non_road_drives.Economy.isna()) & (esto_non_road_drives.Date.isna()))]
+    # esto_non_road_drives = esto_non_road_drives[~((esto_non_road_drives.Fuel.notna()) & (esto_non_road_drives.Economy.isna()) & (esto_non_road_drives.Date.isna()))]#ifgnore this because the dfata we are using is now the 9th eidtion model inport, so eveyr possible orw should be there with at least 0's or nas
 
     #and then find where we may  be missing some data in the conocrdances by findin where the drive is na but the fuel is not na, and the date is greater than OUTLOOK_BASE_YEAR-1
     missing_drives = esto_non_road_drives[esto_non_road_drives.Drive.isna() & esto_non_road_drives.Fuel.notna() & (esto_non_road_drives.Date >= OUTLOOK_BASE_YEAR)][['Medium', 'Fuel']].drop_duplicates()
@@ -334,37 +342,86 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #calc the ratio between passenger and freight
     transport_data_system_transport_type_splits['freight_ratio'] = transport_data_system_transport_type_splits['freight'] / (transport_data_system_transport_type_splits['passenger']+transport_data_system_transport_type_splits['freight'])
 
-    #if the Date is not only for 2017 then throw an erorr, because resty of code is predicated on this:
-    if not transport_data_system_transport_type_splits.Date.unique().tolist() == [2017]:
-        raise ValueError('The transport data system data for non road is not only for 2017. Please make sure it is only for 2017')
+    #if the Date is not only for BASE_YEAR then throw an erorr, because resty of code is predicated on this:
+    if not transport_data_system_transport_type_splits.Date.unique().tolist() == [BASE_YEAR]:
+        breakpoint()#why is this important actually? i think maybe its already done by the previoous fuinction?
+        raise ValueError(f'The transport data system data for non road is not only for {BASE_YEAR}. Please make sure it is only for {BASE_YEAR}')
+    
     transport_data_system_transport_type_splits = transport_data_system_transport_type_splits.drop(columns=['Date'])
     #filter for 2017 plus in the esto data (we need all dates for esto data since we need this energy use to be in the output data)
-    esto_non_road_drives = esto_non_road_drives[esto_non_road_drives.Date >= 2017]
-    breakpoint()
+    esto_non_road_drives = esto_non_road_drives[esto_non_road_drives.Date >= BASE_YEAR]
     #use freight ratio to pslit the esto data before we join it on:
     esto_non_road_drives_ttype_split = pd.merge(esto_non_road_drives, transport_data_system_transport_type_splits[['Economy', 'Medium', 'freight_ratio']], how='left', on=['Economy', 'Medium'])#'Date', #dropped date from here
-
+    #############
     #identify if there are any nas:
-    if esto_non_road_drives_ttype_split.freight_ratio.isna().any():
-        raise ValueError('There are some missing freight ratios in the transport data system dataset. Please make sure they are all present for each economy and medium')
+    allowed_rows = [#this is where the data just isnt in esto!
+        ['15_RP', 'air'],
+        ['02_BD', 'air'],
+        ['17_SIN', 'air'],
+        ['15_RP', 'rail'],
+        ['02_BD', 'rail'],
+        ['13_PNG', 'rail'],
+        ['17_SIN', 'rail'],
+        ['15_RP', 'ship'],
+        ['17_SIN', 'ship'],
+        ['02_BD', 'ship']
+    ]
+    allowed_rows = pd.DataFrame(allowed_rows, columns=['Economy', 'Medium'])
     
+    missing_values = esto_non_road_drives_ttype_split[esto_non_road_drives_ttype_split.freight_ratio.isna()][['Economy', 'Medium']].drop_duplicates()  
+    non_missing_values = esto_non_road_drives_ttype_split[esto_non_road_drives_ttype_split.freight_ratio.notna()][['Economy', 'Medium']].drop_duplicates()
+    if not missing_values.empty:
+        # Check if any missing rows are not in allowed rows
+        invalid_rows = missing_values.merge(allowed_rows, on=['Economy', 'Medium'], how='left', indicator=True)
+        invalid_rows = invalid_rows[invalid_rows['_merge'] == 'left_only']
+
+        if not invalid_rows.empty:
+            breakpoint()
+            raise ValueError('There are missing freight ratios in the transport data system dataset that are not allowed. Please make sure all data is present for each economy and medium.')
+    else:
+        # Check if any allowed rows have non-missing values
+        invalid_rows = allowed_rows.merge(non_missing_values, on=['Economy', 'Medium'], how='left', indicator=True)
+        invalid_rows = invalid_rows[invalid_rows['_merge'] == 'both']
+
+        if not invalid_rows.empty:
+            breakpoint()
+            raise ValueError('The following rows have non-na values in the freight ratio column. Please check the code because we didn\'t expect this: {}'.format(invalid_rows[['Economy', 'Medium']].values.tolist()))
+
+    #############
     #get passengernand freight energy
-    esto_non_road_drives_ttype_split['passenger'] = esto_non_road_drives_ttype_split['Energy'] * (1-esto_non_road_drives_ttype_split['freight_ratio'])
-    esto_non_road_drives_ttype_split['freight'] = esto_non_road_drives_ttype_split['Energy'] * esto_non_road_drives_ttype_split['freight_ratio']
+    esto_non_road_drives_ttype_split['passenger'] = esto_non_road_drives_ttype_split['Energy_esto'] * (1-esto_non_road_drives_ttype_split['freight_ratio'])
+    esto_non_road_drives_ttype_split['freight'] = esto_non_road_drives_ttype_split['Energy_esto'] * esto_non_road_drives_ttype_split['freight_ratio']
     
     #drop energy and then melt the df so we have a row for each transport type
-    esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.drop(columns=['Energy', 'freight_ratio'])
+    esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.drop(columns=['Energy_esto', 'freight_ratio'])
     esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.melt(id_vars=['Economy', 'Date', 'Medium', 'Fuel', 'Drive'], var_name='Transport Type', value_name='Energy')
     
     #now this can be joined to the transport_data_system_non_road and times by intensity to get the acitvity
     final_df = pd.merge(transport_data_system_non_road[['Economy', 'Date', 'Medium', 'Transport Type', 'Intensity']], esto_non_road_drives_ttype_split, how='left', on=['Economy', 'Date', 'Medium', 'Transport Type'])
 
     #drop where Drive is nan. this is where we didnt have any data in the esto data and so we dont wqant to cosider it in the model:
-    final_df = final_df.dropna(subset=['Drive'])
+    #ACTUALLY JUST CHECK IF THERE ARE ANY NANS IN THE DRIVE COL. IF THERE ARE THEN THROW AN ERROR. IM PRETTY SURE WE REQUIRE THAT THE ESTO DATA NEEDS TO HAVE ALL THE DATA?
+    if final_df.Drive.isna().any():
+        #drop allowed_rows and filter for Date >= BASE_YEAR and then check if there are any nans in the drive col still:
+        nas = final_df[final_df.Drive.isna()]
+        nas= nas.merge(allowed_rows, on=['Economy', 'Medium'], how='left', indicator=True)
+        nas = nas.loc[(nas['_merge'] == 'left_only') & (nas['Date'] >= BASE_YEAR) & (nas['Date'] <= OUTLOOK_BASE_YEAR)]
+        if not nas.empty:
+            breakpoint()
+            raise ValueError('There are some missing drive types in the transport data system dataset. Please make sure they are all present for each economy and medium {}'.format(nas))
+            # final_df = final_df.dropna(subset=['Drive'])
+        else:
+            #drop the rows where the drive is na
+            final_df = final_df.dropna(subset=['Drive'])
     #adust intensity where electi4ricty is being used:
-    electric_drive_types = [drive for drive in final_df.Drive.unique().tolist() if 'electric' in drive]
+    
+    electric_drive_types = [drive for drive in final_df.Drive.dropna().unique().tolist() if 'electric' in drive]
+
+    #set intensity to 0.5 for electric drive types
+    final_df['Intensity'] = final_df.apply(lambda row: set_electric_non_road_to_0_5_intensity(row,electric_drive_types), axis=1)
+    
     #where the drive is in electric_drive_types, set the intensity to 0.5 of the intensity 
-    final_df.loc[final_df['Drive'].isin(electric_drive_types), 'Intensity'] = final_df.loc[final_df['Drive'].isin(electric_drive_types)].Intensity * 0.5
+    # final_df.loc[final_df['Drive'].isin(electric_drive_types), 'Intensity'] = final_df.loc[final_df['Drive'].isin(electric_drive_types)].Intensity * 0.5
     #calc activity
     final_df['Activity'] = final_df['Energy'] / final_df['Intensity']
 
@@ -393,8 +450,12 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     return transport_data_system_df_new
 
     
-# %%
-    
+def set_electric_non_road_to_0_5_intensity(row,electric_drive_types):
+    #made in to a funciton for visibilty!
+    if row.Drive in electric_drive_types:
+        return row.Intensity * 0.5
+    else:
+        return row.Intensity
 #%%
-# import_transport_system_data()
+import_transport_system_data()
 #%%

@@ -103,27 +103,28 @@ def adjust_supply_side_fuel_share(energy_use_esto,supply_side_fuel_mixing):
 def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_non_specified_and_separate_pipeline = True, remove_annoying_fuels = True, TESTING=False):
     #FORMAT ENERGY USE DFS
     
-    
-    # #these are fuels that arent in the esto data because they arent reported on, so we just need to make sure that their sums are 0 in the mdoel input data
+    #WITH THIS I DONT THINK THERE IS ANYTHING WE NEED TO DO HERE ANBYNORE. AS THE ROWS ARE NOW IN THE DATA FROM EBT (EXCEPT anything that has changed from what i expect the ebt to have)
+    # #these are fuels that arent in the esto data because they arent reported on, so we just need to make sure that their sums are 0 in the mdoel input data, 
     # model_fuels_to_ignore = ['16_x_ammonia','16_x_efuel', '16_x_hydrogen', '16_07_bio_jet_kerosene','07_x_other_petroleum_products']
 
-    missing_fuels = [fuel for fuel in energy_use_output.Fuel.unique() if fuel not in energy_use_esto.Fuel.unique()] + [fuel for fuel in energy_use_esto.Fuel.unique() if fuel not in energy_use_output.Fuel.unique()]
+    # missing_fuels = [fuel for fuel in energy_use_output.Fuel.unique() if fuel not in energy_use_esto.Fuel.unique()] + [fuel for fuel in energy_use_esto.Fuel.unique() if fuel not in energy_use_output.Fuel.unique()]
 
-    missing_fuels = [fuel for fuel in missing_fuels if fuel not in model_fuels_to_ignore]
+    # missing_fuels = [fuel for fuel in missing_fuels if fuel not in model_fuels_to_ignore]
     
-    if len(missing_fuels)>0:
-        print('missing fuels in energy_use_esto')
-        print(missing_fuels)
-        raise ValueError('missing fuels in energy_use_esto')
+    # if len(missing_fuels)>0:
+    #     print('missing fuels in energy_use_esto')
+    #     print(missing_fuels)
+    #     raise ValueError('missing fuels in energy_use_esto')
 
-    #drop nonneeded cols
-    energy_use_esto = energy_use_esto.drop(columns=['Frequency', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive', 'Transport Type', 'Unit'])
+    # #drop nonneeded cols
+    # energy_use_esto = energy_use_esto.drop(columns=['Frequency', 'Source', 'Dataset', 'Measure', 'Vehicle Type', 'Drive', 'Transport Type', 'Unit'])
 
-    if not TESTING:
-        energy_use_esto['Date'] = energy_use_esto['Date'].apply(lambda x: x[:4])
-        energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
-    #drop economy in APEC '22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE'
-    energy_use_esto = energy_use_esto.loc[~energy_use_esto['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE', 'APEC'])].copy()
+    # if not TESTING:
+    #     energy_use_esto['Date'] = energy_use_esto['Date'].apply(lambda x: x[:4])
+    #     energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
+    # #drop economy in APEC '22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE'
+    # energy_use_esto = energy_use_esto.loc[~energy_use_esto['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE', 'APEC'])].copy()
+    spread_non_specified_and_separate_pipeline=False#for now ignoring this
     if spread_non_specified_and_separate_pipeline:
         #separate pipeline and nonspecified mediums in energy use esto. they will be dealt with by the transport model at a later date
         energy_use_esto_pipeline = energy_use_esto.loc[energy_use_esto['Medium'] == 'pipeline'].copy()
@@ -148,26 +149,26 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     else:
         energy_use_esto_pipeline = pd.DataFrame()
         
-    ##############
-    #add the fuels in model_fuels_to_ignore for each unique Economy and Date:
-    #Create a new DataFrame for the new fuels.
-    new_fuels = pd.DataFrame()
-    #Get unique Economy-Date combinations.
-    economy_date_combinations = energy_use_esto[['Economy', 'Date']].drop_duplicates()
-    #Iterate through each unique combination of Economy and Date.
-    for _, row in economy_date_combinations.iterrows():
-        economy, date = row['Economy'], row['Date']
         
-        #For each fuel to ignore, create a new row with the current Economy and Date.
-        for fuel in model_fuels_to_ignore:
-            new_row = {'Economy': economy, 'Date': date, 'Fuel': fuel, 
-                    'Energy': 0} 
-            new_fuels = pd.concat([new_fuels, pd.DataFrame(new_row, index=[0])])
+    ##############
+    
+    # #Create a new DataFrame for the new fuels.
+    # new_fuels = pd.DataFrame()
+    # #Get unique Economy-Date combinations.
+    # economy_date_combinations = energy_use_esto[['Economy', 'Date']].drop_duplicates()
+    # #Iterate through each unique combination of Economy and Date.
+    # for _, row in economy_date_combinations.iterrows():
+    #     economy, date = row['Economy'], row['Date']
+        
+    #     #For each fuel to ignore, create a new row with the current Economy and Date.
+    #     for fuel in model_fuels_to_ignore:
+    #         new_row = {'Economy': economy, 'Date': date, 'Fuel': fuel, 
+    #                 'Energy': 0} 
+    #         new_fuels = pd.concat([new_fuels, pd.DataFrame(new_row, index=[0])])
 
     #Concatenate the new fuels with the original DataFrame.
-    energy_use_esto = pd.concat([energy_use_esto, new_fuels])
+    # energy_use_esto = pd.concat([energy_use_esto, new_fuels])
     
-    energy_use_esto = energy_use_esto.groupby(['Economy', 'Medium','Date', 'Fuel']).sum().reset_index()
     ##############NOW HANDLE THE OUTPUT FROM MODEL
     
     # #We have to adjust the non road mediums drive type to its more specific verison. So pull in model concordances and adjsut them:
@@ -185,11 +186,7 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     
     #NOW CLEAN UP ENERGY_USE_OUTPUT
     energy_use_output_ref = energy_use_output.loc[energy_use_output['Scenario'] == 'Reference'].copy()
-    
-    #and drop any drive in demand side fuel mixing as its to complicated to decrease tehir energy use like we will do. 
-    demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
-    energy_use_output_ref = energy_use_output_ref.loc[~energy_use_output_ref['Drive'].isin(demand_side_fuel_mixing_drives)].copy()
-    
+        
     energy_use_output_ref = energy_use_output_ref.drop(columns=[ 'Vehicle Type', 'Drive', 'Transport Type']).groupby(['Economy', 'Date', 'Medium', 'Fuel']).sum().reset_index()
     #GRAB DATA ONLY FOR DATES WITH WHICH WE HAVE ESTO DATA
     energy_use_output_ref = energy_use_output_ref.loc[energy_use_output_ref['Date'].isin(energy_use_esto['Date'].unique())].copy()
@@ -199,21 +196,28 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     #NOW find the ratio between energy use in the model and energy use in the esto data. So merge the dfs and then find it
     
     energy_use_merged = energy_use_esto.merge(energy_use_output_ref, on=['Economy', 'Date', 'Medium','Fuel'], how='left', suffixes=('_esto', '_model'))
-    #reaplce nans in Energy_esto and Energy	_model with 0
-    energy_use_merged['Energy_esto'] = energy_use_merged['Energy_esto'].fillna(0)
-    energy_use_merged['Energy_model'] = energy_use_merged['Energy_model'].fillna(0)
+    
+    #reaplce nans in Energy_esto and Energy	_model with 0. tehy are nan because they arent in the model
+    # energy_use_merged['Energy_esto'] = energy_use_merged['Energy_esto'].fillna(0)
+    # energy_use_merged['Energy_model'] = energy_use_merged['Energy_model'].fillna(0)
+    #actually, for now, if theres any nans let the uyser know:
+    if energy_use_merged['Energy_esto'].isna().sum() > 0:
+        nans = energy_use_merged.loc[energy_use_merged['Energy_esto'].isna(), ['Economy', 'Date', 'Medium','Fuel']].drop_duplicates()
+        raise ValueError('There are nans in energy_use_esto for the following rows: {}'.format(nans))
+    if energy_use_merged['Energy_model'].isna().sum() > 0:
+        nans = energy_use_merged.loc[energy_use_merged['Energy_model'].isna(), ['Economy', 'Date', 'Medium','Fuel']].drop_duplicates()
+        raise ValueError('There are nans in energy_use_model for the following rows: {}'.format(nans))
+        
     #calcaulte ratio so that ratio times energy in the model = eneerhy in the esto data. Then we will timesz this ratio by energy uise in the model to get the new energy use (and the effect of timesing by the ratio will be that the total difference for that ['Economy', 'Date', 'Medium','Fuel'] spread equally among all rows for that ['Economy', 'Date', 'Medium','Fuel') (except for supply side fuel mixing fuels, which we will handle separately, and demand side fuel mixing fuels, which we will drop as they are too ahrd to handle)
     #breakpoint()
     energy_use_merged['ratio'] = energy_use_merged['Energy_esto']/energy_use_merged['Energy_model']
     
-    # #set the biofuels ratio to 1 as they are ahdnled by supply side fuel mixing
-    # energy_use_merged.loc[energy_use_merged['Fuel'].isin(['16_06_biodiesel', '16_05_biogasoline']), 'ratio'] = 1
-    #drop any supply side fuel mixing fuels:
-    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')['New_fuel'].unique().tolist()
-    energy_use_merged = energy_use_merged.loc[~energy_use_merged['Fuel'].isin(supply_side_fuel_mixing_fuels)].copy()
-    
-    #and drop any fuels we want to ignore
     #where ratio becomes inf then this means that ESTO has >0 energy use and the model has 0 energy use. This is because the model didnt assume any use at that point in time. So create anotehr col and call it 'addition' and put the Energy_esto value in ther to be split among its users later:
+    #but first,m print what fuel, medium, economy combos have this issue:
+    inf_rows = energy_use_merged.loc[energy_use_merged['ratio'] == np.inf, ['Fuel', 'Medium', 'Economy']].drop_duplicates()
+    print('The following fuel, medium, economy combos have inf ratio, meaning the model had 0 energy use but the esto data had >0 energy use. This is because the model didnt assume any use at that point in time. So create anotehr col and call it addition and put the Energy_esto value in ther to be split among its users later:')
+    print(inf_rows)
+    
     energy_use_merged['addition'] = 0
     energy_use_merged.loc[energy_use_merged['ratio'] == np.inf, 'addition'] = energy_use_merged.loc[energy_use_merged['ratio'] == np.inf, 'Energy_esto']
     #then replace the inf with 1
@@ -232,7 +236,6 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     #CLEAN INPUT DATA 
     #get dates that match the esto data:
     input_data_new = input_data_based_on_previous_model_run.loc[input_data_based_on_previous_model_run['Date'].isin(energy_use_merged['Date'].unique())].copy()
-    input_data_new = input_data_new.loc[input_data_new['Scenario'] == 'Reference'].copy()
     #Edit the Drives for mediums base don fuel, using concordances:
     #thjois wont work because this df doesnt ahve fuel col
     # #We have to adjust the non road mediums drive type to its more specific verison. So pull in model concordances and adjsut them:
@@ -249,55 +252,94 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     
     
     
-    
-    #we want to merge with energy_use_merged to get the ratio, however input data doesnt contain a fuel col. BUT we can map to the same index cols in energy_use_output then merge.
-    index_cols = ['Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive']
-    index_cols_df = energy_use_output.loc[energy_use_output['Scenario'] == 'Reference'].copy()
-    #drop Scenario
-    index_cols_df = index_cols_df.drop(columns=['Scenario'])
-    #and drop any drive in demand side fuel mixing as its to complicated to decrease tehir energy use like we will do. (we also did this in energy_use_output_ref, but we need to do it here again too)
-    demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
-    index_cols_df = index_cols_df.loc[~index_cols_df['Drive'].isin(demand_side_fuel_mixing_drives)].copy()
+    #TODO WHY ARE WE DOING THIS. WHY NOT MERGE TO energy_use_output?
+    # #we want to merge with energy_use_merged to get the ratio, however the detailed input data which we need for its efficiency data and others doesnt contain a fuel col. BUT we can map to the same index cols in energy_use_output then merge.
+    # index_cols = ['Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive']
+    # index_cols_df = energy_use_output.loc[energy_use_output['Scenario'] == 'Reference'].copy()
+    # #drop Scenario
+    # index_cols_df = index_cols_df.drop(columns=['Scenario'])
+    # #and drop any drive in demand side fuel mixing as its to complicated to decrease tehir energy use like we will do. (we also did this in energy_use_output_ref, but we need to do it here again too)
+    # demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
+    # index_cols_df = index_cols_df.loc[~index_cols_df['Drive'].isin(demand_side_fuel_mixing_drives)].copy()
 
-    #drop nonnecessary cols from energy_use_merged
-    if not TESTING:
-        energy_use_merged = energy_use_merged.drop(columns=['Energy_esto', 'Energy_model'])
+    # #drop nonnecessary cols from energy_use_merged
+    # if not TESTING:
+    #     energy_use_merged = energy_use_merged.drop(columns=['Energy_esto', 'Energy_model'])
     
-    #now do the merge
-    index_cols_merge = energy_use_merged.merge(index_cols_df.drop(columns=['Energy']), on=['Economy', 'Date','Medium', 'Fuel'], how='left')
+    # #now do the merge
+    # index_cols_merge = energy_use_merged.merge(index_cols_df.drop(columns=['Energy']), on=['Economy', 'Date','Medium', 'Fuel'], how='left')
 
     # #make sure there are no duplcaites when you drop the fuel column. thi would cause unexpected results (it occurs where there are multiple fuels for the same index cols - which can be expected because things lik rail use coal, elec and diesel)
-    index_cols_merge = index_cols_merge[index_cols_merge.Date>=BASE_YEAR]
-    dupes = index_cols_merge[index_cols_merge.duplicated(subset=index_cols)]
-    if len(dupes) > 0:
-        breakpoint()
-        raise ValueError('duplicates in index_cols_merge')
+    # index_cols_merge = index_cols_merge[index_cols_merge.Date>=BASE_YEAR]
+    # dupes = index_cols_merge[index_cols_merge.duplicated(subset=index_cols)]
+    # if len(dupes) > 0:
+    #     breakpoint()
+    #     raise ValueError('duplicates in index_cols_merge')
 
-    input_data_new = input_data_new.merge(index_cols_merge, on=index_cols, how='left')
+    # input_data_new = input_data_new.merge(index_cols_merge, on=index_cols, how='left')
 
     #drop Fuel
-    input_data_new = input_data_new.drop(columns=['Fuel'])
-
+    # input_data_new = input_data_new.drop(columns=['Fuel'])
+    ##################
+    
+    #merge energy_use_merged to energy_use_output using a right merge and times the ratio by the energy use in the model to get the new energy use (and the effect of timesing by the ratio will be that the total difference for that ['Economy', 'Date', 'Medium','Fuel'] spread equally among all rows for that ['Economy', 'Date', 'Medium','Fuel') (except for supply side fuel mixing fuels, which we will handle separately, and demand side fuel mixing fuels, which we will drop as they are too ahrd to handle)
+    energy_use_merged_merged = energy_use_merged.merge(energy_use_output, on=['Economy', 'Date', 'Medium','Fuel'], how='right')
+    
+    #first, drop any supply side fuel mixing fuels as thier energy use is handled separately
+    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')['New_fuel'].unique().tolist()
+    energy_use_merged_merged = energy_use_merged_merged.loc[~energy_use_merged_merged['Fuel'].isin(supply_side_fuel_mixing_fuels)].copy()
+    #then for any phevs sum their electricity row for each economy and date, then minus that off the bev electricity. NOTE that this only works because phevs are currently a small share of use and decreaing their enegry use in elec would probably have a minimal effect. if they were bigger we'd have to find some way to handle this properly
+    demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
+    if set(demand_side_fuel_mixing_drives) != set(['phev_d', 'phev_g']):
+        raise ValueError('demand_side_fuel_mixing_drives has changed')
+    phev_elec = energy_use_merged_merged.loc[energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])].groupby(['Economy', 'Date', 'Scenario']).sum().reset_index()
+    phev_elec['decrease'] = phev_elec['Energy'] - (phev_elec['Energy'] * phev_elec['ratio'])#wer will decrease bev energy use by this much after applying the ratio to it.
+    phev_elec['Drive'] = 'bev'
+    phev_elec['Transport Type'] = 'passenger'
+    #drop electiricty rows for phev
+    energy_use_merged_merged = energy_use_merged_merged.loc[~(energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])&energy_use_merged_merged['Fuel'].isin(['17_electricity']))].copy()
+    
+    #lastly idenifty any nas. they are probably okay bnut useful to observe for nwo:
+    nas = energy_use_merged_merged.loc[energy_use_merged_merged.isna().any(axis=1)]
+    if len(nas) > 0:
+        breakpoint()
+        print(nas)
+    
     #not sure about this one but where ratio is na it is because we either removed it or it wasnt in the estpo data, i think? anyway, set it to 1 and later we can work out whetehr to keep it or not
-    do_this = True
-    if do_this:
-        input_data_new['ratio'] = input_data_new['ratio'].fillna(1)
+    # do_this = True
+    # if do_this:
+    #     input_data_new['ratio'] = input_data_new['ratio'].fillna(1)
         
     #do the ratio times enegry calc":
-    input_data_new['Energy'] = input_data_new['Energy']*input_data_new['ratio']
+    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy']*energy_use_merged_merged['ratio']
 
     #additions need to be split equally where they are made. do this using the proprtion of each energy use out of the total energy use for that fuel, medium, economy and date to do this:
-    input_data_new['proportion_of_group'] = input_data_new.groupby(['Economy', 'Date', 'Medium'])['Energy'].transform(lambda x: x/x.sum())
+    energy_use_merged_merged['proportion_of_group'] = energy_use_merged_merged.groupby(['Economy', 'Date', 'Medium'])['Energy'].transform(lambda x: x/x.sum())
 
-    input_data_new['addition'] = input_data_new['addition']*input_data_new['proportion_of_group'].replace(np.nan, 0)
+    energy_use_merged_merged['addition'] = energy_use_merged_merged['addition']*energy_use_merged_merged['proportion_of_group'].replaenergy_use_merged_merged(np.nan, 0)
     #now need to add any additions to the Energy. this is where the ratio was inf because the model had 0 energy use but the esto data had >0. so we will add the esto data energy use to the model data energy use and just times by a ratio of 1
-    input_data_new['Energy'] = input_data_new['Energy'] + input_data_new['addition'].replace(np.nan, 0)
-
-
-
+    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy'] + energy_use_merged_merged['addition'].replace(np.nan, 0)
+    
+    #now deccrease teh bev energy use by the phev electriicty amount we calculated earlier
+    energy_use_merged_merged = energy_use_merged_merged.merge(phev_elec[['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type', 'decrease']], on=['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type'], how='left')
+    #where decrease is nan, set it to 0, then decrease it
+    energy_use_merged_merged['decrease'] = energy_use_merged_merged['decrease'].fillna(0)
+    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy'] - energy_use_merged_merged['decrease']
+    #drop decrease
+    energy_use_merged_merged = energy_use_merged_merged.drop(columns=['decrease'])
+    
+    # #replicate the dfs for the other scenarios
+    # energy_use_merged_merged_copy = energy_use_merged_merged.copy()
+    # for scenario in scenario_list:
+    #     energy_use_merged_merged_copy['Scenario'] = scenario
+    #     energy_use_merged_merged = pd.concat([energy_use_merged_merged, energy_use_merged_merged_copy])
+    #####################################
+    
+    #Now join on the efficiency, Occupancy_or_load, Mileage, inteisntiy from the detailed data so we can calcualte the new inputs for the model:
+    energy_use_merged_merged = energy_use_merged_merged.merge(input_data_new[['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Efficiency', 'Occupancy_or_load', 'Mileage', 'Intensity']], on=['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], how='left')
     #split into medium = road and not, then recalcualte the other measures. for road we will calcuialte travel km and activity and stocks, wehreas for non road we will just recalcualte energy use using itnsntiy instead of effcieincy
     #road:
-    input_data_new_road = input_data_new.loc[input_data_new['Medium'] == 'road'].copy()
+    input_data_new_road = energy_use_merged_merged.loc[energy_use_merged_merged['Medium'] == 'road'].copy()
 
     input_data_new_road['Travel_km'] = input_data_new_road['Energy'] * input_data_new_road['Efficiency']
 
@@ -307,9 +349,9 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
 
     #drop unneeded cols
     input_data_new_road = input_data_new_road.drop(columns=['ratio','addition','proportion_of_group'])
-    
+    breakpoint()#what otehr cols do we drotp
     #non road:
-    input_data_new_non_road = input_data_new.loc[input_data_new['Medium'] != 'road'].copy()
+    input_data_new_non_road = energy_use_merged_merged.loc[energy_use_merged_merged['Medium'] != 'road'].copy()
     input_data_new_non_road = input_data_new_non_road.drop(columns=['ratio','addition','proportion_of_group'])
     input_data_new_non_road['Activity'] = input_data_new_non_road['Energy'] * input_data_new_non_road['Intensity']
     
@@ -318,6 +360,7 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
 
     #drop cols unneeded for non road, by filtering tfor the same cols that are in non_road_model_input_wide
     input_data_new_non_road = input_data_new_non_road.loc[:, input_data_new_non_road.columns.isin(non_road_model_input_wide.columns)].copy()
+    breakpoint()#is this right
 
     ###############
     #replicate the dfs for the other scenarios
@@ -336,54 +379,66 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     #     #show where they are
     #     print(nas)
     ##########
-    #now, this is meant to be the output used by run road model and non road. we nmeed ot merge it inot the outputs from calculate_inputs_for_model.py so that it can be used by run_road_model.py and run_non_road_model.py. 
-    #so we'll melt both the new input data and the orignal input data for road and non road, so that the measures are in one col and the values are in another. then we can merge them on the measures col and  replace values where they are new, then pivot bacc to wide format
-    #breakpoint()
-    input_data_new_non_road = input_data_new_non_road.melt(id_vars=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive'], var_name='Measure', value_name='Value')
-    non_road_model_input = non_road_model_input_wide.melt(id_vars=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], var_name='Measure', value_name='Value')
-    #join to original input data
-    non_road_all = non_road_model_input.merge(input_data_new_non_road, on=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive', 'Measure'], how='left', suffixes=('', '_new'))
+    
+    #now, waht we have is meant to be the input used by run road model and non road. we nmeed ot merge it to the other inputs needed for it to be used by run_road_model.py and run_non_road_model.py. 
+    # missing_cols_road = [col for col in road_model_input_wide.columns if col not in input_data_new_road.columns]
+    # missing_cols_non_road = [col for col in non_road_model_input_wide.columns if col not in input_data_new_non_road.columns]
+    breakpoint()#what if non road missing cols are empty can we jsut carry on? or probably  throw an error if NOT empty
+    #merge and add tehse missing cols back on usaing the original input data:
+    road_all_wide = road_model_input_wide.merge(input_data_new_road, on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Drive', 'Scenario'], how='left', suffixes=('', '_new'))
+    breakpoint()#check what new cols there are
+    #drop cols that end with _new
+    road_all_wide = road_all_wide.loc[:,~road_all_wide.columns.str.endswith('_new')].copy()
+    
+    non_road_all_wide = input_data_new_non_road.copy()
+    
+    # #so we'll melt both the new input data and the orignal input data for road and non road, so that the measures are in one col and the values are in another. then we can merge them on the measures col and  replace values where they are new, then pivot bacc to wide format
+    # #breakpoint()
+    # input_data_new_non_road = input_data_new_non_road.melt(id_vars=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive'], var_name='Measure', value_name='Value')
+    # non_road_model_input = non_road_model_input_wide.melt(id_vars=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], var_name='Measure', value_name='Value')
+    # #join to original input data
+    # non_road_all = non_road_model_input.merge(input_data_new_non_road, on=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive', 'Measure'], how='left', suffixes=('', '_new'))
 
-    #for the measures we havent already calcualted suing new energy, we should fillna with the old values.
-    measures_to_not_fillna = ['Activity', 'Energy']
-    non_road_all_measures_to_fillna = non_road_all.loc[~non_road_all['Measure'].isin(measures_to_not_fillna)].copy()
-    non_road_all_measures_to_fillna['Value'] = non_road_all_measures_to_fillna['Value_new'].fillna(non_road_all_measures_to_fillna['Value'])
-    non_road_other = non_road_all.loc[non_road_all['Measure'].isin(measures_to_not_fillna)].copy()
-    non_road_other['Value'] = non_road_other['Value_new']
-    non_road_all = pd.concat([non_road_all_measures_to_fillna, non_road_other]).copy()
+    # #for the measures we havent already calcualted suing new energy, we should fillna with the old values.
+    # measures_to_not_fillna = ['Activity', 'Energy']
+    # non_road_all_measures_to_fillna = non_road_all.loc[~non_road_all['Measure'].isin(measures_to_not_fillna)].copy()
+    # non_road_all_measures_to_fillna['Value'] = non_road_all_measures_to_fillna['Value_new'].fillna(non_road_all_measures_to_fillna['Value'])
+    # non_road_other = non_road_all.loc[non_road_all['Measure'].isin(measures_to_not_fillna)].copy()
+    # non_road_other['Value'] = non_road_other['Value_new']
+    # non_road_all = pd.concat([non_road_all_measures_to_fillna, non_road_other]).copy()
+    
+    # #drop Value_new
+    # non_road_all = non_road_all.drop(columns=['Value_new'])
+    # #pivot back to wide format
+    # non_road_all_wide = non_road_all.pivot_table(index=['Date', 'Economy', 'Medium', 'Transport Type', 'Drive','Vehicle Type',  'Scenario'], columns='Measure', values='Value').reset_index()
+    # # breakpoint()
+    # ########
+    # #do same for road
+    # input_data_new_road_long = input_data_new_road.melt(id_vars=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Drive'], var_name='Measure', value_name='Value')
+    # road_model_input = road_model_input_wide.melt(id_vars=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'],  var_name='Measure', value_name='Value')
+    # #join to original input data
+    # road_all = road_model_input.merge(input_data_new_road_long, on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type', 'Drive', 'Measure'], how='left', suffixes=('', '_new'))
+
+    # #for the measures we havent already calcualted suing new energy, we should fillna with the old values. otherwise only use the new values.
+    # measures_to_not_fillna = ['Activity', 'Stocks', 'Travel_km', 'Energy']
+    # road_all_measures_to_fillna = road_all.loc[~road_all['Measure'].isin(measures_to_not_fillna)].copy()
+    # road_all_measures_to_fillna['Value'] = road_all_measures_to_fillna['Value_new'].fillna(road_all_measures_to_fillna['Value'])
+    # road_other = road_all.loc[road_all['Measure'].isin(measures_to_not_fillna)].copy()
+    # road_other['Value'] = road_other['Value_new']
+    # road_all = pd.concat([road_all_measures_to_fillna, road_other]).copy()
     
     #drop Value_new
-    non_road_all = non_road_all.drop(columns=['Value_new'])
+    # road_all = road_all.drop(columns=['Value_new'])
     #pivot back to wide format
-    non_road_all_wide = non_road_all.pivot_table(index=['Date', 'Economy', 'Medium', 'Transport Type', 'Drive','Vehicle Type',  'Scenario'], columns='Measure', values='Value').reset_index()
-    # breakpoint()
-    ########
-    #do same for road
-    input_data_new_road_long = input_data_new_road.melt(id_vars=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Drive'], var_name='Measure', value_name='Value')
-    road_model_input = road_model_input_wide.melt(id_vars=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'],  var_name='Measure', value_name='Value')
-    #join to original input data
-    road_all = road_model_input.merge(input_data_new_road_long, on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type', 'Drive', 'Measure'], how='left', suffixes=('', '_new'))
-
-    #for the measures we havent already calcualted suing new energy, we should fillna with the old values. otherwise only use the new values.
-    measures_to_not_fillna = ['Activity', 'Stocks', 'Travel_km', 'Energy']
-    road_all_measures_to_fillna = road_all.loc[~road_all['Measure'].isin(measures_to_not_fillna)].copy()
-    road_all_measures_to_fillna['Value'] = road_all_measures_to_fillna['Value_new'].fillna(road_all_measures_to_fillna['Value'])
-    road_other = road_all.loc[road_all['Measure'].isin(measures_to_not_fillna)].copy()
-    road_other['Value'] = road_other['Value_new']
-    road_all = pd.concat([road_all_measures_to_fillna, road_other]).copy()
-    
-    #drop Value_new
-    road_all = road_all.drop(columns=['Value_new'])
-    #pivot back to wide format
-    road_all_wide = road_all.pivot_table(index=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'], columns='Measure', values='Value').reset_index()
+    # road_all_wide = road_all.pivot_table(index=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'], columns='Measure', values='Value').reset_index()
 
     ##########TESTINGOVER###############
-    #remove Activity_growth freom both road and non road as its been a bit corrupted by the above process
-    road_all_wide = road_all_wide.drop(columns=['Activity_growth'])
-    non_road_all_wide = non_road_all_wide.drop(columns=['Activity_growth'])
+    # #remove Activity_growth freom both road and non road as its been a bit corrupted by the above process
+    # road_all_wide = road_all_wide.drop(columns=['Activity_growth'])
+    # non_road_all_wide = non_road_all_wide.drop(columns=['Activity_growth'])
     #then add it back fromroad_model_input_wide amnd non_road_model_input_wide:
-    road_all_wide = road_all_wide.merge(road_model_input_wide[['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive', 'Activity_growth']], on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'], how='left')
-    non_road_all_wide = non_road_all_wide.merge(non_road_model_input_wide[['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive', 'Activity_growth']], on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'], how='left')
+    # road_all_wide = road_all_wide.merge(road_model_input_wide[['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive', 'Activity_growth']], on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'], how='left')
+    # non_road_all_wide = non_road_all_wide.merge(non_road_model_input_wide[['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive', 'Activity_growth']], on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Scenario', 'Drive'], how='left')
     
         
     return road_all_wide, non_road_all_wide
@@ -449,6 +504,7 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     else:
         diff = diff.loc[(diff.Date>=BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
     print(diff['Energy'].sum() - diff['Energy_esto'].sum())
+    
     diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
     if advance_base_year:
         diff2 = diff2.loc[(diff2.Date>BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
@@ -497,7 +553,11 @@ def format_9th_input_energy_from_esto():
     #load the 9th data
     date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
     energy_use_esto = pd.read_csv(f'input_data/9th_model_inputs/model_df_wide_{date_id}.csv')
-
+    #TEMP replace 15_PHL with 15_RP and 17_SGP with 17_SIN in the eocnomy col. make sure to let user know they can klet hyguga know:
+    if len(energy_use_esto.loc[energy_use_esto['economy'].isin(['15_PHL', '17_SGP'])]) > 0:
+        print('########################\n\n there are some economies in the esto data that are not in the model data. we will replace 15_PHL with 15_RP and 17_SGP with 17_SIN. AKA TELL HYUGA wats up \n\n########################')
+    energy_use_esto['economy'] = energy_use_esto['economy'].replace({'15_PHL': '15_RP', '17_SGP': '17_SIN'})
+    
     #reverse the mappings:
     medium_mapping_reverse = {v: k for k, v in medium_mapping.items()}
 
@@ -518,8 +578,14 @@ def format_9th_input_energy_from_esto():
     #where subfuel is x then set Fuel to the value in fuels column:
     energy_use_esto.loc[energy_use_esto['subfuels'] == 'x', 'Fuel'] = energy_use_esto['fuels'].map(x_subfuel_mappings)
     if len(energy_use_esto.loc[energy_use_esto['Fuel'].isna()]) > 0:
-        breakpoint()
-        raise ValueError('there are nans in Fuel because there was an x in subfuel and the fuel was not in the x_subfuel_mapping, {}'.format(energy_use_esto.loc[energy_use_esto['Fuel'].isna(), 'fuels'].unique()))
+        
+        # drop anyrows where the fuels column is 06_crude_oil_and_ngl, as we are going to remove that column on the input data side anyway (i.e. tell hyuga to drop it)
+        nas = energy_use_esto.loc[energy_use_esto['Fuel'].isna()].loc[~energy_use_esto['fuels'].isin(['06_crude_oil_and_ngl'])]
+        if len(nas) > 0:
+            raise ValueError('there are nans in Fuel because there was an x in subfuel and the fuel was not in the x_subfuel_mapping, {}'.format(energy_use_esto.loc[energy_use_esto['Fuel'].isna(), 'fuels'].unique()))
+        else:
+            #write big warnign just to rmeind you to remind hyuga to drop 06_crude_oil_and_ngl!
+            print('##########################\n\n there are nans in Fuel because there was an x in subfuel and the fuel was not in the x_subfuel_mapping, but they are all 06_crude_oil_and_ngl, so we will drop that column on the input data side. AKA TELL HYUGA TO DROP 06_crude_oil_and_ngl\n\n##########################')
 
     #map the medium to the sub1sector then drop the fuel and sectors cols since weve dfone all the mapping we can:
     energy_use_esto['Medium'] = energy_use_esto['sub1sectors'].map(medium_mapping_reverse)
@@ -536,10 +602,11 @@ def format_9th_input_energy_from_esto():
     # #drop any 0's or nas:
     energy_use_esto = energy_use_esto.loc[energy_use_esto['Energy_esto'] > 0].copy()
 
-    #drop data that is less than the BASE_YEAR
+    #drop data that is less than the BASE_YEAR and more than OUTLOOK_BASE_YEAR
     energy_use_esto['Date'] = energy_use_esto['Date'].apply(lambda x: x[:4])
     energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
     energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'] >= BASE_YEAR].copy()
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'] <= OUTLOOK_BASE_YEAR].copy()
 
     #drop '22_SEA', '23_NEA', '23b_ONEA', '24_OAM','24b_OOAM', '25_OCE', 'APEC' Economys
     energy_use_esto = energy_use_esto.loc[~energy_use_esto['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM','24b_OOAM', '25_OCE', 'APEC'])].copy()
@@ -583,10 +650,22 @@ def format_9th_input_energy_from_esto():
     outer_join = concordances_fuels.merge(energy_use_esto_fuel_medium, on=['Fuel', 'Medium'], how='outer', indicator=True)
 
     #TODO MAKE THIS ACTIVIE ONCE WE HAVE THE CONCORDANCES FOR THE NEW FUELS AND MEDIUMS
-    # #where merge is 'left_only' then throw an error:
-    # left_only = outer_join.loc[outer_join['_merge'] == 'left_only']
-    # if len(left_only) > 0:
-    #     breakpoint()
+    # #where merge is 'left_only' then throw an error. this is wherte a fuel is used in tthe model but isnt in esto. for now we will add these as 0 rows to the data but let the user now with a very visible message!
+    left_only = outer_join.loc[outer_join['_merge'] == 'left_only']
+    # ignored_fuels_and_mediums = ['07_x_other_petroleum_products', '16_09_other_sources', '07_02_aviation_gasoline', '07_06_kerosene', '07_08_fuel_oil']
+    if len(left_only) > 0:
+        # energy_use_esto_new = energy_use_esto.copy()
+        #for each row in left_only, add a row to energy_use_esto_new with the fuel and medium and energy set to 0, for every economy and date:
+        for index, row in left_only.iterrows():
+            for economy in energy_use_esto['Economy'].unique():
+                for date in energy_use_esto['Date'].unique():
+                    energy_use_esto_new_df_row = pd.DataFrame({'Economy': [economy], 'Date': [date], 'Medium': [row['Medium']], 'Fuel': [row['Fuel']], 'Energy_esto': [0]})
+                    #concat to energy_use_esto
+                    energy_use_esto = pd.concat([energy_use_esto, energy_use_esto_new_df_row])
+            print('###############################\n')
+            print('there is a fuel/medium combination in the model that is not in the esto data. These should at least have values = to 0. it is {} and {}'.format(row['Fuel'], row['Medium']))
+            
+        
     #     raise ValueError('there are some fuel/medium combinations in energy_use_esto that are not in the concordances_fuels {}'.format(left_only))
     #where merge is right only, this is where a fuel is used in esto but not asccoiunted for in the model. The suer will have to deal with it manually:
     # right_only = outer_join.loc[outer_join['_merge'] == 'right_only']
@@ -596,6 +675,7 @@ def format_9th_input_energy_from_esto():
 
     #and now drop pipeline and nonspecified from energy_use_esto:
     energy_use_esto = energy_use_esto.loc[~energy_use_esto['Medium'].isin(['nonspecified', 'pipeline'])].copy()
+    energy_use_esto = energy_use_esto.groupby(['Economy', 'Medium','Date', 'Fuel']).sum().reset_index()
     return energy_use_esto
 
 

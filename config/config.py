@@ -1,7 +1,7 @@
 """This file is intended to be able ot be used in the beginnning of any jupyter ntoebook to set the config variables for the model. This helps to reduce clutter, as that is a big issue for notebooks. So if you ever need to chnage conifgurations, just change this. """
 #to make the code in this library clear we will name every variable that is stated in here with all caps
 #%%
-FILE_DATE_ID ='_20230715'
+# FILE_DATE_ID ='_20230715'
 #import common libraries 
 import pandas as pd 
 import numpy as np
@@ -325,9 +325,9 @@ temp_esto_subfuels_to_new_subfuels_mapping = {#one day we should get the EBT cod
     '16_09_other_sources': '16_09_other_sources',
     '16_x_ammonia': '16_x_ammonia',
     '16_x_hydrogen': '16_x_hydrogen',
-    '01_01_coking_coal': '01_coal',
-    '06_01_crude_oil': '06_crude_oil_and_ngl',
-    '06_02_natural_gas_liquids': '06_crude_oil_and_ngl'
+    '01_01_coking_coal': '01_coal'#,
+    # '06_01_crude_oil': '06_crude_oil_and_ngl',
+    # '06_02_natural_gas_liquids': '06_crude_oil_and_ngl'
 }
 
 # #where subfuel is x then map Fuel based on teh value in the fuels column. If the fuel is not in the mapping then throw an error
@@ -338,6 +338,7 @@ x_subfuel_mappings = {
     '08_gas': '08_01_natural_gas',
     '07_petroleum_products': '07_x_other_petroleum_products',
     '01_coal': '01_coal',
-    '02_coal_products': '01_coal',
-    '06_crude_oil_and_ngl': '06_crude_oil_and_ngl'}
+    '02_coal_products': '01_coal'#,
+    # '06_crude_oil_and_ngl': '06_crude_oil_and_ngl'
+    }
     
