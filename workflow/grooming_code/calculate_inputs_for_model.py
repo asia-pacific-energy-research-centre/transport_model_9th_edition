@@ -19,7 +19,7 @@ import utility_functions
 
 import adjust_data_to_match_esto
 
-def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,filter_to_just_base_year=False,advance_base_year=False, adjust_data_to_match_esto_testing=True):
+def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,filter_to_just_base_year=False,advance_base_year=False, adjust_data_to_match_esto_TESTING=True):
     #load data
     transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
 
@@ -155,7 +155,7 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
     if RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN:
         #use teh funcitons in adjust_data_to_match_esto.py to adjust the energy use to match the esto data in the MODEL_BASE_YEAR. To do this we will have needed to run the model up ot htat year already, and saved the results. We will then use the results to adjust the energy use to match the esto data. This is so that we can make sure that stocks and energy are about what youd expect, i think. 
         #breakpoint()
-        road_model_input_wide, non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=advance_base_year, TESTING=adjust_data_to_match_esto_testing, TEST_ECONOMY='19_THA')
+        road_model_input_wide, non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=advance_base_year, TESTING=adjust_data_to_match_esto_TESTING, TEST_ECONOMY='19_THA')
         
         supply_side_fuel_mixing_new.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv', index=False)
     
@@ -168,5 +168,5 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
     
 
 #%%
-calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True, adjust_data_to_match_esto_testing=True)
+calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True, adjust_data_to_match_esto_TESTING=True)
 #%%

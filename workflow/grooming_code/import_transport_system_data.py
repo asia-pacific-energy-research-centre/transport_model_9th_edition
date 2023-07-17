@@ -389,11 +389,11 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
 
     #############
     #get passengernand freight energy
-    esto_non_road_drives_ttype_split['passenger'] = esto_non_road_drives_ttype_split['Energy_esto'] * (1-esto_non_road_drives_ttype_split['freight_ratio'])
-    esto_non_road_drives_ttype_split['freight'] = esto_non_road_drives_ttype_split['Energy_esto'] * esto_non_road_drives_ttype_split['freight_ratio']
+    esto_non_road_drives_ttype_split['passenger'] = esto_non_road_drives_ttype_split['Energy'] * (1-esto_non_road_drives_ttype_split['freight_ratio'])
+    esto_non_road_drives_ttype_split['freight'] = esto_non_road_drives_ttype_split['Energy'] * esto_non_road_drives_ttype_split['freight_ratio']
     
     #drop energy and then melt the df so we have a row for each transport type
-    esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.drop(columns=['Energy_esto', 'freight_ratio'])
+    esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.drop(columns=['Energy', 'freight_ratio'])
     esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.melt(id_vars=['Economy', 'Date', 'Medium', 'Fuel', 'Drive'], var_name='Transport Type', value_name='Energy')
     
     #now this can be joined to the transport_data_system_non_road and times by intensity to get the acitvity

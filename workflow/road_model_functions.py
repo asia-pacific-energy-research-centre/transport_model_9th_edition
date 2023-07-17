@@ -41,8 +41,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #######################################################################
     #do some quick checks on data:
-    # if year > 2038:
-    #     
+    #check for nas?
+    breakpoint()#think i should
     #check if activity matches sum of activity when you calcualte it as (change_dataframe['Activity']/( change_dataframe['Mileage'] * change_dataframe['Occupancy_or_load']))
     test_data_frame = change_dataframe.copy()
     test_data_frame['Activity_check'] = test_data_frame['Mileage'] * test_data_frame['Occupancy_or_load'] * test_data_frame['Stocks']
@@ -51,17 +51,6 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     test_data_frame['Activity_check2'] = test_data_frame['Energy'] *  test_data_frame['Efficiency'] * test_data_frame['Occupancy_or_load']
     test_data_frame['Activity_check_diff'] = test_data_frame['Activity_check'] - test_data_frame['Activity_check2']
     
-    #what could be wrong:
-    #stocks
-    #energy
-    
-    
-    # input_data_new_road['Travel_km'] = input_data_new_road['Energy'] * input_data_new_road['Efficiency']
-
-    # input_data_new_road['Activity'] = input_data_new_road['Travel_km'] * input_data_new_road['Occupancy_or_load']
-
-    # input_data_new_road['Stocks'] = input_data_new_road['Activity'] / (input_data_new_road['Mileage'] * input_data_new_road['Occupancy_or_load'])
-
 
     if not np.allclose(test_data_frame['Activity_check'], test_data_frame['Activity']) or not np.allclose(test_data_frame['Activity_check2'], test_data_frame['Activity']):
         throw_error=True
@@ -277,8 +266,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     change_dataframe['Efficiency_numerator'] = (change_dataframe['New_stocks_needed'] * change_dataframe['New_vehicle_efficiency'] + change_dataframe['Stocks_in_use_from_last_period'] * change_dataframe['Efficiency'])
 
     change_dataframe['Original_efficiency'] = change_dataframe['Efficiency']
-
-    change_dataframe['Efficiency'] = np.where(change_dataframe['New_stocks_needed'] < 0, change_dataframe['Original_efficiency'], change_dataframe['Efficiency_numerator'] / change_dataframe['Stocks'])
+    breakpoint() #can new stocks needed ever be na?
+    change_dataframe['Efficiency'] = np.where(change_dataframe['New_stocks_needed'] <= 0, change_dataframe['Original_efficiency'], change_dataframe['Efficiency_numerator'] / change_dataframe['Stocks'])
 
     #if the denominator and numerator are 0 (which will occur if we dont have any stocks in this year [and therefore the last]), then efficiency ends up as nan, so we will set this to the efficiency value for new vehicles even though it doesnt really matter what it is set to, it just helps with aggregates.
     change_dataframe.loc[(change_dataframe['Stocks'] == 0), 'Efficiency'] = change_dataframe['New_vehicle_efficiency']

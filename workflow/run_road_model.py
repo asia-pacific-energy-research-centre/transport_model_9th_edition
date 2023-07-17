@@ -124,7 +124,7 @@ def run_road_model(filter_to_just_base_year=False,advance_base_year=False,run_mo
     # main_dataframe.loc[(main_dataframe['Vehicle Type']=='lcv') & (main_dataframe['Economy']=='') & 
     
 #%%
-# run_road_model(filter_to_just_base_year=False,run_model_before_gompertz=True,advance_base_year=True)
+run_road_model(filter_to_just_base_year=False,run_model_before_gompertz=True,advance_base_year=False)
 #%%
 
 
