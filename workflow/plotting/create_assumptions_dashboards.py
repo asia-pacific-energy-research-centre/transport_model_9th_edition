@@ -149,10 +149,10 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, SALES_SHARE_PLOT_TYPE,DROP_NON
     if 'passenger_km_by_drive' in plots:
         #create passenger km by drive plots
         fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
-    if 'activity_indexed' in plots:
+    if 'activity_and_macro_lines' in plots:
         #create activity growth plots
         # fig_dict, color_preparation_list = activity_growth(fig_dict)
-        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.activity_indexed(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.activity_and_macro_lines(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, indexed=False)
     if 'fuel_mixing' in plots:
         #insertt fuel mixing plots
         fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
@@ -238,7 +238,7 @@ def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
 
 SALES_SHARE_PLOT_TYPE = 'share_of_vehicle_type_by_transport_type_on_one_graph' #can be one of : 'share_of_transport_type', 'share_of_vehicle_type_by_transport_type', 'share_of_vehicle_type_by_transport_type_on_one_graph', 'sum_of_vehicle_types_by_transport_type'
 
-plots = ['energy_use_by_fuel_type','passenger_km_by_drive', 'freight_tonne_km_by_drive',  'vehicle_type_stocks', 'drive_share_both', 'activity_indexed','fuel_mixing', 'charging', 'lmdi']#activity_growth
+plots = ['energy_use_by_fuel_type','passenger_km_by_drive', 'freight_tonne_km_by_drive',  'vehicle_type_stocks', 'drive_share_both', 'activity_and_macro_lines','fuel_mixing', 'charging', 'lmdi']#activity_growth
 ####################################'
 hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
 #%%

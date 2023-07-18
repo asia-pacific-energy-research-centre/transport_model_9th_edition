@@ -238,7 +238,7 @@ def import_transport_system_data():
     new_transport_data_system_df = new_transport_data_system_df[new_transport_data_system_df.Date <= BASE_YEAR]
     
     #save the new transport dataset
-    new_transport_data_system_df.to_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID), index=False)
+    new_transport_data_system_df.to_csv('intermediate_data/model_inputs/transport_data_system_extract.csv', index=False)
 
 
 def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):

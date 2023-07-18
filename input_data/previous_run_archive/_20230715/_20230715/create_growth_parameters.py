@@ -24,7 +24,7 @@ activity_8th = pd.read_csv('input_data/from_8th/reformatted/8th_activity_efficie
 date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'EGEDA_transport_output')
 energy_use = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/EGEDA_transport_outputDATE{date_id}.csv')
 
-activity_9th = pd.read_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
+activity_9th = pd.read_csv('intermediate_data/model_inputs/transport_data_system_extract.csv')
 
 independent_variables = ['Gdp_per_capita_growth', 'Gdp_times_capita_growth', 'Gdp_growth', 'Population_growth']
 dependent_variable = 'energy_total_growth'

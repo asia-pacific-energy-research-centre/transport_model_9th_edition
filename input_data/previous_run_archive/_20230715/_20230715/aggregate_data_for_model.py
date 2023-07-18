@@ -13,10 +13,10 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 #%%
 def aggregate_data_for_model():
     #load data from transport datasystem
-    new_transport_dataset = pd.read_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
+    new_transport_dataset = pd.read_csv('intermediate_data/model_inputs/transport_data_system_extract.csv')
 
     #laod clean user input from intermediate file
-    user_input = pd.read_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID))
+    user_input = pd.read_csv('intermediate_data/model_inputs/user_inputs_and_growth_rates.csv')
 
     #load activity growth data and macro data
     # macro1.to_csv('intermediate_data/model_inputs/regression_based_growth_estimates.csv', index=False)

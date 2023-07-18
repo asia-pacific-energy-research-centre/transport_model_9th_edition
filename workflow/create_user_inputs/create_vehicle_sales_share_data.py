@@ -175,7 +175,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     # new_sales_shares = pd.read_csv('input_data/from_8th/reformatted/vehicle_stocks_change_share_normalised.csv')
     #load groomed data from transport data system
     
-    new_transport_data_system_df = pd.read_csv('intermediate_data/{}_transport_data_system_extract.csv'.format(FILE_DATE_ID))
+    new_transport_data_system_df = pd.read_csv('intermediate_data/model_inputs/transport_data_system_extract.csv')
     #drop non road
     new_transport_data_system_df = new_transport_data_system_df.loc[new_transport_data_system_df['Medium']=='road']
     #calcualte nomral;ised sales share for each transport type. so for each economy,  transport type and date, we want to know the share of sales for each row.

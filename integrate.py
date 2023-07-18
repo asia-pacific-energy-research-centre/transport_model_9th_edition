@@ -29,9 +29,6 @@ CREATE_MODEL_CONCORDANCES = True
 #Things to do once a day:
 do_these_once_a_day = False
 if do_these_once_a_day:
-    #set up archive folder:
-    import archiving_scripts
-    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID)
     if CREATE_MODEL_CONCORDANCES:
         import concordance_scripts
         concordance_scripts.create_all_concordances()
@@ -159,6 +156,9 @@ utility_functions.copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMI
 #%%
 ARCHIVE_INPUT_DATA = True
 if ARCHIVE_INPUT_DATA:
+    #set up archive folder:
+    import archiving_scripts
+    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID)
     archiving_scripts.archive_lots_of_files(archiving_folder)
 
 #%%

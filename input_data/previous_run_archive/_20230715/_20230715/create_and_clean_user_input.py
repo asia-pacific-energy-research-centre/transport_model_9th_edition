@@ -188,7 +188,7 @@ def create_and_clean_user_input():
 
     
     #save the new_user_inputs
-    user_input_new.to_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID), index=False)
+    user_input_new.to_csv('intermediate_data/model_inputs/user_inputs_and_growth_rates.csv', index=False)
 
 
     

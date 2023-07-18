@@ -189,7 +189,7 @@ def communicate_missing_input_data():
     # %matplotlib inline
     #%%
     #plot the user input measures vs other measures
-    user_input = pd.read_csv('intermediate_data/{}_user_inputs_and_growth_rates.csv'.format(FILE_DATE_ID))
+    user_input = pd.read_csv('intermediate_data/model_inputs/user_inputs_and_growth_rates.csv')
     #loop through the measures
     user_input_measures = user_input.Measure.unique()
     non_user_input_measures = [measure for measure in aggregated_model_data.Measure.unique() if measure not in user_input_measures]
