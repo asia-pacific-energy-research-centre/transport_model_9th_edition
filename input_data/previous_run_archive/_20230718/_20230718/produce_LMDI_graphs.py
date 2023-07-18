@@ -28,23 +28,26 @@ import LMDI_functions
 
 #%%
 
-def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False):
+def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=False):
     #take in energy and activity data 
     all_data = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
 
     #here write the charts you want to produce.. can use this to make the function run quicker by only producing some of the charts
     if USE_LIST_OF_CHARTS_TO_PRODUCE:
         charts_to_produce = []
-        for economy in all_data.Economy.unique():
-            charts_to_produce.append(f'{economy}_Reference_passenger_road_2_Energy use_Hierarchical')
-            charts_to_produce.append(f'{economy}_Target_passenger_road_2_Energy use_Hierarchical')
-        
-    
+        for scenario in all_data.Scenario.unique():
+            for transport_type in all_data['Transport Type'].unique():
+                for economy in all_data.Economy.unique():
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_2_Energy use_Hierarchical')
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__2_Energy use_Hierarchical')
+                    
     # #simplify by filtering for road medium only
     # all_data = all_data[all_data['Medium'] == 'road']
     #make drive and vehicle type = medium where it is no road
-    all_data.loc[all_data['Medium'] != 'road', 'Drive'] = all_data.loc[all_data['Medium'] != 'road', 'Medium']
-    all_data.loc[all_data['Medium'] != 'road', 'Vehicle Type'] = all_data.loc[all_data['Medium'] != 'road', 'Medium']
+    temp = all_data.loc[all_data['Medium'] != 'road'].copy()
+    temp['Drive'] = temp['Medium']
+    temp['Vehicle Type'] = temp['Medium']
+    all_data.loc[all_data['Medium'] != 'road'] = temp
     #filter for Date >= OUTLOOK_BASE_YEAR
     all_data = all_data[all_data['Date']>=OUTLOOK_BASE_YEAR]
     #and filter so data is less than GRAPHING_END_YEAR
@@ -61,7 +64,7 @@ def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING 
     APEC = all_data.copy()
     #set economy to APEC
     APEC['Economy'] = 'APEC'
-    APEC.groupby(['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium']).sum().reset_index()
+    APEC.groupby(['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium']).sum(numeric_only=True).reset_index()
 
     #concat APEC on
     all_data = pd.concat([all_data, APEC])
@@ -134,6 +137,9 @@ def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING 
     for combination_dict in combination_dict_list:
         if combination_dict['scenario'] == 'Target':
             breakpoint()
+                
+        if USE_LIST_OF_CHARTS_TO_PRODUCE and combination_dict['extra_identifier'] not in charts_to_produce and USE_LIST_FOR_DATASETS_TO_PRODUCE:
+            continue
         # if combination_dict['hierarchical'] == False:
         #     #next
         #     continue
@@ -157,7 +163,7 @@ def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING 
 
         structure_variables_list = combination_dict['structure_variables_list']
         #sum the data
-        data = data.groupby(['Date']+structure_variables_list).sum().reset_index()
+        data = data.groupby(['Date']+structure_variables_list).sum(numeric_only=True).reset_index()
 
         #Separate energy and activity data
         energy_data = data[['Date','Energy']+structure_variables_list]

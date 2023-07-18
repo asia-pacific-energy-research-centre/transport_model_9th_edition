@@ -823,7 +823,7 @@ def prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_t
         elif scenario == 'Target':
             scenario_str = 'TGT'
         for economy in economy_scenario_concordance.Economy.unique():
-            file_identifier = f'{economy}_{scenario_str}_passenger_road_2_Energy use_Hierarchical_hierarchical_multiplicative_output'
+            file_identifier = f'{economy}_{scenario_str}_passenger__2_Energy use_Hierarchical_hierarchical_multiplicative_output'
             lmdi_data = pd.read_csv(f'./intermediate_data/LMDI/{economy}/{file_identifier}.csv')
             #melt data so we have the different components of the LMDI as rows. eg. for freight the cols are: Date	Change in Energy	Energy intensity effect	freight_tonne_km effect	Engine type effect	Total Energy	Total_freight_tonne_km
             #we want to drop the last two plots, then melt the data so we have the different components of the LMDI as rows. eg. for freight the cols will end up as: Date	Effect. Then we will also create a line dash col and if the Effect is Change in Energy then the line dash will be solid, otherwise it will be dotted
@@ -835,7 +835,7 @@ def prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_t
             fig = px.line(lmdi_data_melt, x="Date", y='Value',  color='Effect', line_dash='line_dash', 
             color_discrete_map=colors_dict)
             
-            title_text = 'Drivers of changes in energy use'
+            title_text = 'Drivers of passenger energy use'
             fig.update_yaxes(title_text=title_text)#not working for some reason
 
             #add fig to dictionary for scenario and economy:

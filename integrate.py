@@ -151,7 +151,7 @@ if ANALYSE_OUTPUT:
         #plot:
         all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
         import produce_LMDI_graphs
-        produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = True)
+        produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
         # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
     
 #%%
