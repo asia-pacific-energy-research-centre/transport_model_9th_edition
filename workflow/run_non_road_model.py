@@ -217,20 +217,114 @@ def run_non_road_model(project_to_just_outlook_base_year=False,advance_base_year
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='Activity',kind='bar')
     # model_input_wide[(model_input_wide['Date']==2017) & (model_input_wide['Economy']=='20_USA')].groupby(['Medium','Economy']).sum().reset_index().plot(x='Medium',y='Energy',kind='bar') 
 
-# %%
+#%%
+def run_non_road_model2(advance_base_year):
+    # Load the input data
+    
+    #this will be the name of the output file
+    new_output_file = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
+    
+    if advance_base_year:
+        #load all data except activity data (which is calcualteed separately to other calcualted inputs)
+        growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts_base_year_adv.pkl')
+        #load all other data
+        non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide_base_year_adv.csv')
+    else:
+        #load all data except activity data (which is calcualteed separately to other calcualted inputs)
+        growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
+        #load all other data
+        non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
+
+    #merge growth_forecasts[['Date', 'Economy','Scenario','Transport Type','Activity_growth']] with non_road_model_input
+    non_road_model_input = non_road_model_input.merge(growth_forecasts[['Date', 'Economy','Scenario','Transport Type','Activity_growth']].drop_duplicates(), on=['Date', 'Economy','Scenario','Transport Type'], how='left')
+    
+    #TEMP insert data for new method:
+    #add average age of 20 to all rows where stocks is greater than 0
+    non_road_model_input.loc[non_road_model_input['Stocks']>0,'Average_age'] = 20
+    #Activity_per_Stock = 1
+    non_road_model_input['Activity_per_Stock'] = 1
+    
+    #TEMP end insert data for new method
+    
+    # Sort the dataframe by year
+    non_road_model_input.sort_values(by='Date', inplace=True)
+
+    # Initialize an empty dataframe for the output
+    output_df = pd.DataFrame()
+
+    # Group the data by ['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive']
+    for _, group in non_road_model_input.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive']):
+        for i in range(1, len(group)):
+            old_row = group.iloc[i-1].copy()
+            new_row = group.iloc[i].copy()
+
+            # Calculate new activity
+            new_row['Activity'] = old_row['Activity'] * new_row['Activity_growth']
+            # Calculate new stocks needed for increased activity
+            new_stocks_for_activity = new_row['Activity'] / new_row['Activity_per_Stock']
+            # Calculate total sales for the year
+            total_sales_for_that_year = new_stocks_for_activity + stocks_to_replace
+            # Calculate new stocks
+            new_row['Stocks'] = old_row['Stocks'] - stocks_to_replace + total_sales_for_that_year
+            # Calculate new average age
+            new_row['Average_age'] = (old_row['Average_age'] * old_row['Stocks']) / new_row['Stocks']
+            # Calculate new intensity
+            new_row['Intensity'] =  old_row['Intensity'] * (1/new_row['Non_road_intensity_improvement'])
+            # Calculate new energy
+            new_row['Energy'] = new_row['Activity'] * new_row['Intensity']
+
+            # Append the new row to the output dataframe
+            output_df = output_df.append(new_row)
+
+    # Save the output dataframe to a CSV file
+    output_df.to_csv(new_output_file, index=False)
+
+# # Test the function
+# run_non_road_model('input.csv', 'output.csv')
+
+def calculate_turnover_rate(old_row, new_row, lifetime=20):
+    """
+    Calculate the turnover rate using the average age of the vehicles and their lifetime.
+    """
+    if old_row['Average_age'] >= lifetime:
+        turnover_rate = 1
+    else:
+        turnover_rate = old_row['Average_age'] / lifetime
+
+    return turnover_rate
+
+def calculate_new_vehicles_needed(old_row, turnover_rate):
+    """
+    Calculate the number of new vehicles needed based on the turnover rate and the current stocks.
+    """
+    new_vehicles_needed = turnover_rate * old_row['Stocks']
+
+    return new_vehicles_needed
+
+def adjust_average_age(old_row, new_row, new_vehicles_needed):
+    """
+    Adjust the average age of the vehicles based on the number of new vehicles added.
+    The average age of the new vehicles is assumed to be 0.
+    """
+    new_average_age = (old_row['Average_age'] * old_row['Stocks']) / new_row['Stocks']
+
+    return new_average_age
+
+def calculate_vehicle_sales(new_row, new_vehicles_needed, activity_growth, activity):
+    """
+    Calculate the total vehicle sales for the year.
+    This is the sum of the new vehicles needed due to turnover and the new vehicles needed due to activity growth.
+    """
+    total_sales_for_that_year = new_vehicles_needed + (activity_growth * activity)
+
+    return total_sales_for_that_year
 
 
 
 
 
 
-
-
-
-
-
-
-# #%%
+#%%
 
 # #START MAIN PROCESS
 # for year in range(BASE_YEAR+1, END_YEAR+1):

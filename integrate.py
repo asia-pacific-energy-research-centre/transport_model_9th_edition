@@ -59,6 +59,11 @@ if PREPARE_DATA:
         communicate_missing_input_data.communicate_missing_input_data()
     
 #%%
+vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 40, 'ht': 50}
+turnover_rate_parameters_dict = {'turnover_rate_steepness':0.7,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':17.5}
+#tried std_deviation_share = 0.25, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #old vehicles never left the fleet once we reached 80% ev stock share
+# tried std_deviation_share = 0.5, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #WAS TOO STEEP
+
 MODEL_RUN_1  = True
 if MODEL_RUN_1:
     #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN AND INCLUDIONG BASE YEAR AND OUTLOOK_BASE_YEAR)
@@ -69,7 +74,7 @@ if MODEL_RUN_1:
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year)
+    run_road_model.run_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year, vehicle_gompertz_factors = vehicle_gompertz_factors, turnover_rate_parameters_dict = turnover_rate_parameters_dict)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     import run_non_road_model
     run_non_road_model.run_non_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year)# sometimes this doesnt work. dont know why.
@@ -97,7 +102,7 @@ if MODEL_RUN_2:
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(advance_base_year=advance_base_year)
+    run_road_model.run_road_model(advance_base_year=advance_base_year, vehicle_gompertz_factors = vehicle_gompertz_factors, turnover_rate_parameters_dict = turnover_rate_parameters_dict)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     import run_non_road_model
     run_non_road_model.run_non_road_model(advance_base_year=advance_base_year)# sometimes this doesnt work. dont know why.
@@ -139,19 +144,19 @@ if ANALYSE_OUTPUT:
     all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=False)
     
     import produce_LMDI_graphs
-    produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False)
+    produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
     # exec(open("./workflow/plotting/all_economy_graphs.py").read())
     #unfortunately at the moment i have written this to be run from data formatted within all_economy_graphs.py, but that takes ages t run.
     exec(open("./workflow/plotting/create_assumptions_dashboards.py").read())
     
     exec(open("./workflow/plotting/compare_esto_energy_to_data.py").read())
     
-    plot_all_economy_graphs = False
+    plot_all_economy_graphs = True
     if plot_all_economy_graphs:
         #plot:
         all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
         import produce_LMDI_graphs
-        produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
+        produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
         # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
     
 #%%

@@ -36,13 +36,13 @@ value_cols = ['passenger_km','freight_tonne_km', 'Energy', 'Stocks',
        'Travel_km', 'Efficiency', 'Mileage', 'Surplus_stocks',
        'Vehicle_sales_share',  'Gdp_per_capita','Gdp', 'Population', 'Stocks_per_thousand_capita']
 
-if USE_MEAN_AGES:
+if USE_ADVANCED_TURNOVER_RATES:
     value_cols = value_cols + ['Average_age']
     
 #some value cols are not summable because they are factors. so specify them for when we group by economy, then we can calculate the mean of them
 non_summable_value_cols = ['Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
 
-if USE_MEAN_AGES:
+if USE_ADVANCED_TURNOVER_RATES:
     non_summable_value_cols = non_summable_value_cols + ['Average_age']
     
 categorical_cols = ['Vehicle Type', 'Medium', 'Transport Type', 'Drive']

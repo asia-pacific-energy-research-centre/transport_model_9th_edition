@@ -40,6 +40,9 @@ def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING 
                 for economy in all_data.Economy.unique():
                     charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_2_Energy use_Hierarchical')
                     charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__2_Energy use_Hierarchical')
+                    # 19_THA_TGT_passenger_road_1_Energy use_additive_waterfall
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_1_Energy use')
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__1_Energy use')
                     
     # #simplify by filtering for road medium only
     # all_data = all_data[all_data['Medium'] == 'road']

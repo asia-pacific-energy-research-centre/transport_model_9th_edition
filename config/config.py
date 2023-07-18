@@ -41,7 +41,7 @@ def get_latest_date_for_data_file(data_folder_path, file_name):
 # pd.options.mode.chained_assignment = None  # default='warn'
 #%%
 #STATE VARIABLES USER MAY CHANGE OFTEN:
-USE_MEAN_AGES=True
+USE_ADVANCED_TURNOVER_RATES =True
 NEW_SALES_SHARES = True
 NEW_FUEL_MIXING_DATA = True
 REPLACE_ACTIVITY_GROWTH_WITH_8TH = False#NOTE THAT THIS CURRENETLY DOESNT WORK BECAUSE OF NAS IN THE DATA
@@ -162,7 +162,7 @@ transport_type_mapping = {'passenger': 'passenger', 'freight': 'freight'}
 
 vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_02_01_two_wheeler','all':'x'}
 
-vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', '2w': '15_02_02_06_two_wheeler_freight', 'all':'x'}
+vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', '2w': '15_02_02_01_two_wheeler_freight', 'all':'x'}
 
 drive_mapping_inversed = {'x':'all',
     '15_02_01_01_01_diesel_engine': 'ice_d', 
@@ -201,6 +201,15 @@ drive_mapping_inversed = {'x':'all',
     '15_02_01_04_07_liquified_petroleum_gas': 'lpg', 
     '15_02_01_04_08_fuel_cell_ev': 'fcev', 
 
+    '15_02_01_05_01_diesel_engine': 'ice_d', 
+    '15_02_01_05_02_gasoline_engine': 'ice_g', 
+    '15_02_01_05_03_battery_ev': 'bev', 
+    '15_02_01_05_04_compressed_natual_gas': 'cng', 
+    '15_02_01_05_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_01_05_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_01_05_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_01_05_08_fuel_cell_ev': 'fcev',
+
     '15_02_02_01_01_diesel_engine': 'ice_d', 
     '15_02_02_01_02_gasoline_engine': 'ice_g', 
     '15_02_02_01_03_battery_ev': 'bev', 
@@ -235,25 +244,7 @@ drive_mapping_inversed = {'x':'all',
     '15_02_02_04_05_plugin_hybrid_ev_gasoline': 'phev_g', 
     '15_02_02_04_06_plugin_hybrid_ev_diesel': 'phev_d',  
     '15_02_02_04_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_02_04_08_fuel_cell_ev': 'fcev',
-
-    '15_02_01_05_01_diesel_engine': 'ice_d', 
-    '15_02_01_05_02_gasoline_engine': 'ice_g', 
-    '15_02_01_05_03_battery_ev': 'bev', 
-    '15_02_01_05_04_compressed_natual_gas': 'cng', 
-    '15_02_01_05_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_01_05_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_01_05_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_05_08_fuel_cell_ev': 'fcev',
-    
-    '15_02_02_06_01_diesel_engine': 'ice_d', 
-    '15_02_02_06_02_gasoline_engine': 'ice_g', 
-    '15_02_02_06_03_battery_ev': 'bev', 
-    '15_02_02_06_04_compressed_natual_gas': 'cng', 
-    '15_02_02_06_05_plugin_hybrid_ev_gasoline': 'phev_g', 
-    '15_02_02_06_06_plugin_hybrid_ev_diesel': 'phev_d',  
-    '15_02_02_06_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_02_06_08_fuel_cell_ev': 'fcev'}
+    '15_02_02_04_08_fuel_cell_ev': 'fcev'}
     
 
 subfuels_mapping = {'17_electricity':'x', '07_07_gas_diesel_oil':'07_07_gas_diesel_oil', '07_01_motor_gasoline':'07_01_motor_gasoline',

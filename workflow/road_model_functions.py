@@ -16,7 +16,7 @@ import numpy as np
 #%%
 
 
-def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation,  low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block, testing = False, old_vehicle_economies = ['19_THA']):
+def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation,  low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME,previous_10_year_block, testing = False, old_vehicle_economies = ['19_THA'], turnover_rate_parameters_dict = {'turnover_rate_steepness':0.7,'std_deviation_share':0.5,'midpoint_new':12.5,'midpoint_old':17.5}, USE_ADVANCED_TURNOVER_RATES = True):
     print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR))
     # breakpoint()
     #extract the user inputs dataframes from the dictionary
@@ -25,6 +25,13 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     Turnover_rate_growth = user_inputs_df_dict['Turnover_rate_growth']
     New_vehicle_efficiency_growth = user_inputs_df_dict['New_vehicle_efficiency_growth']
     Mileage_growth = user_inputs_df_dict['Mileage_growth']
+    
+    #extracts vars from turnover_rate_parameters_dict:
+    turnover_rate_steepness = turnover_rate_parameters_dict['turnover_rate_steepness']
+    std_deviation_share = turnover_rate_parameters_dict['std_deviation_share']#the cars being removed are std_deviation_share * standard deviation above the mean age lik the following equation: change_dataframe['Average_age'] = change_dataframe['Average_age'] - (std_deviation_share * change_dataframe['Average_age'] * change_dataframe['Turnover_rate'])
+    midpoint_new = turnover_rate_parameters_dict['midpoint_new']
+    midpoint_old = turnover_rate_parameters_dict['midpoint_old']
+    
     # gompertz_parameters = user_inputs_df_dict['gompertz_parameters']
 
     #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
@@ -84,7 +91,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #CALCUALTE NEW TURNOVER RATE AND THEN TURNOVER OF OLD STOCKS
     change_dataframe = change_dataframe.merge(Turnover_rate_growth, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Date'], how='left')
     # #now apply turnover growth rate to turnover rate
-    if not USE_MEAN_AGES:
+    if not USE_ADVANCED_TURNOVER_RATES:
         change_dataframe['Turnover_rate'] = change_dataframe['Turnover_rate'] * change_dataframe['Turnover_rate_growth']
     else:
         #####################TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
@@ -95,11 +102,11 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         #####################
         #set midpoint in the df based on whether the economy is old or new
         #old_vehicle_economies = ['19_THA']increase x0 (midpoint) for these economies to make the turnover rate growth start later in the life of the vehicle
-        midpoint_new = 12.5
-        midpoint_old = midpoint_new+5
         #put the midpoint in the df
-        change_dataframe['Midpoint_age'] = midpoint_new
-        change_dataframe['Midpoint_age'] = change_dataframe['Midpoint_age'].map(lambda x: midpoint_old if x in old_vehicle_economies else midpoint_new)
+        change_dataframe['old_economy'] = change_dataframe['Economy'].isin(old_vehicle_economies)
+        change_dataframe['Midpoint_age'] = np.where(change_dataframe['old_economy'], midpoint_old, midpoint_new)
+        #if it in midpoint old, we want to reflect the improvmeent of economies situation, by slowly decreasing midpoiint age until it reaches midpoint_new. do this by decreasing it by 5% each year, until it reaches midpoint_new:
+        change_dataframe['Midpoint_age'] = np.where((change_dataframe['Midpoint_age'] > midpoint_new) & (change_dataframe['old_economy']), change_dataframe['Midpoint_age'] * 0.95, change_dataframe['Midpoint_age'])
 
         def calculate_turnover_rate(avg_age, midpoint, k=0.7):
             
@@ -110,7 +117,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         # ev_turnover = calculate_turnover_rate(ev_mean_age, k, x0)
         # ice_turnover = calculate_turnover_rate(ice_mean_age, k, x0)
         new_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies) == False].copy()  
-        new_economies_df['Turnover_rate'] = new_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_new))
+        new_economies_df['Turnover_rate'] = new_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_new, turnover_rate_steepness))
 
         old_economies_df = change_dataframe[change_dataframe['Economy'].isin(old_vehicle_economies)].copy()
         old_economies_df['Turnover_rate'] = old_economies_df['Average_age'].map(lambda x: calculate_turnover_rate(x, midpoint_old))
@@ -231,9 +238,8 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     change_dataframe['New_stocks_needed'] = change_dataframe['Travel_km_of_new_stocks'] / change_dataframe['Mileage']
 
     #########TESTING TURNOVER RATE GROWTH AND AGE ADJUSTMENT
-    if USE_MEAN_AGES:
+    if USE_ADVANCED_TURNOVER_RATES:
         # Calculate new mean age after turnover by assuming that the cars being removed are x * standard deviation above the mean. The new average age after turnover can be calculated as follows:
-        std_deviation_share = 0.5#1 was a bit high
         change_dataframe['Average_age'] = change_dataframe['Average_age'] - (std_deviation_share * change_dataframe['Average_age'] * change_dataframe['Turnover_rate'])
         
         change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed'])
@@ -292,7 +298,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #Now start cleaning up the changes dataframe to create the dataframe for the new year.
     addition_to_main_dataframe = change_dataframe.copy()
     
-    if USE_MEAN_AGES:
+    if USE_ADVANCED_TURNOVER_RATES:
         addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population', 'Average_age']]
     else:
         addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population']]

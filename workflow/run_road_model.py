@@ -10,7 +10,7 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 import road_model_functions
 import logistic_fitting_functions
 #%%
-def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=False,run_model_before_gompertz=True):
+def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=False,run_model_before_gompertz=True, vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':15, 'mt': 20, 'ht': 30}, turnover_rate_parameters_dict = {'turnover_rate_steepness':0.7,'std_deviation_share':0.25,'midpoint_new':12.5,'midpoint_old':17.5}, USE_ADVANCED_TURNOVER_RATES = True):
     
     if advance_base_year:
             #laod all data
@@ -43,7 +43,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
     if run_model_before_gompertz:
         #RUN MODEL TO GET RESULTS FOR EACH YEAR
         for year in range(BASE_YEAR_x+1, END_YEAR_x+1):
-            main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False)
+            main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False,turnover_rate_parameters_dict = turnover_rate_parameters_dict, USE_ADVANCED_TURNOVER_RATES = USE_ADVANCED_TURNOVER_RATES)
 
         main_dataframe = road_model_functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
 
@@ -68,7 +68,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
     # #breakpoint()#seems we're getting activity estimates much higher for china than we should be.
     breakpoint()
     ONLY_PASSENGER_VEHICLES = False
-    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':10, 'mt': 15, 'ht': 20})
+    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = vehicle_gompertz_factors)
     #breakpoint()
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
     #so do a merge and only keep the new growth rates for the economies that have them
@@ -112,7 +112,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
     
     #run model again with new growth rates for passenger vehicles (so replace growth_forecasts with activity_growth_estimates)
     for year in range(BASE_YEAR_x+1, END_YEAR_x+1):
-        main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False)
+        main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block, testing=False,turnover_rate_parameters_dict = turnover_rate_parameters_dict, USE_ADVANCED_TURNOVER_RATES = USE_ADVANCED_TURNOVER_RATES)
     #######################################################################
 
     #finalisation processes. save results and create diagnostics plots

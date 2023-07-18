@@ -35,7 +35,7 @@ def remap_drive_types(df, value_col='Value', index_cols = ['Scenario', 'Economy'
     df = df.groupby(index_cols).sum().reset_index()
     return df
 ###################################################
-def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,share_of_transport_type_type):
     # ##breakpoint()
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
 
@@ -91,38 +91,46 @@ def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
 
             #concat drive and vehicle type
             plot_data['Drive'] = plot_data['Drive'] + ' ' + plot_data['Vehicle Type']
-            
             #sort by date col and line_dash
             plot_data.sort_values(by=['Date'], inplace=True)
             #############
             #now plot
-            
-            title = f'Sales and stocks shares for passenger vehicles (%)'
+            if share_of_transport_type_type == 'passenger':
+                title = f'Sales and stocks shares for passenger vehicles (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
 
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['share_of_transport_type_passenger'] = [fig,title]
             
             #############
-            
-            title = f'Sales and stocks shares for freight vehicles (%)'
+            elif share_of_transport_type_type == 'freight':
+                title = f'Sales and stocks shares for freight vehicles (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
 
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['share_of_transport_type_freight'] = [fig,title]
+            elif share_of_transport_type_type == 'all':
+                title = f'Sales and stocks shares (%)'
+
+                fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['share_of_transport_type_all'] = [fig,title]
             #############
+            else:
+                raise ValueError('share_of_transport_type_type must be either passenger or freight')
     
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
     color_preparation_list.append(plot_data['Drive'].unique().tolist())
     return fig_dict, color_preparation_list
 
 
-def plot_share_of_vehicle_type_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def plot_share_of_vehicle_type_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, share_of_transport_type_type):
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
     #This data is in terms of transport type, so will need to normalise it to vehicle type by summing up the shares for each vehicle type and dividing individual shares by their sum
-
+    breakpoint()
     # filter so data is less than GRAPHING_END_YEAR
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Date']<=GRAPHING_END_YEAR)].copy()
 
@@ -176,22 +184,32 @@ def plot_share_of_vehicle_type_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPOR
             plot_data.sort_values(by=['Date'], inplace=True)
             #############
             #now plot
-            
-            title = f'Shares for passenger (%)'
+            if share_of_transport_type_type == 'passenger':
+                title = f'Shares for passenger (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
-            ###breakpoint()
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
-            
-            #############
-            
-            title = f'Shares for freight (%)'
+                fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                ###breakpoint()
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['share_of_vehicle_type_by_transport_type_passenger'] = [fig,title]
+                
+                #############
+            elif share_of_transport_type_type == 'freight':
+                title = f'Shares for freight (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
-            
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
+                fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['share_of_vehicle_type_by_transport_type_freight'] = [fig,title]
+            elif share_of_transport_type_type == 'all':
+                
+                title = f'Sales and stock shares (%)'
+
+                fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                ###breakpoint()
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['share_of_vehicle_type_by_transport_type_all'] = [fig,title]
+            else:
+                raise ValueError('share_of_transport_type_type must be either passenger or freight')
             #############
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
     color_preparation_list.append(plot_data['Drive'].unique().tolist())
@@ -263,7 +281,7 @@ def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(fig_dict,DROP
             fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
             ###breakpoint()
             #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_both'] = [fig,title]
+            fig_dict[economy][scenario]['share_of_vehicle_type_by_transport_type_on_one_graph'] = [fig,title]
             
             #############
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
@@ -271,13 +289,15 @@ def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(fig_dict,DROP
     
     return fig_dict,color_preparation_list
 
-def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, share_of_transport_type_type):
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
-    
+    # breakpoint()
     #This data is in terms of transport type but obv still shwo drive type, so just dropo vehicle type and we good
 
     # filter so data is less than GRAPHING_END_YEAR
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Date']<=GRAPHING_END_YEAR)].copy()
+    #and so data is greater than OUTLOOK_BASE_YEAR
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Date']>=OUTLOOK_BASE_YEAR)].copy()
     
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive', 'Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
         
@@ -294,9 +314,11 @@ def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANS
         
         #and filter so data is less than GRAPHING_END_YEAR  
         stocks = stocks.loc[(stocks['Date']<=GRAPHING_END_YEAR)].copy()
+        #and filter so data is greater than OUTLOOK_BASE_YEAR
+        stocks = stocks.loc[(stocks['Date']>=OUTLOOK_BASE_YEAR)].copy()
         
         #groupby and sum like in sales shares:
-        stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Stocks']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
+        stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
         
         #now calucalte share of total stocks for each transport type as a proportion like the sales share
         stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'])['Value'].apply(lambda x: x/x.sum())
@@ -315,27 +337,35 @@ def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANS
             # plot_data = plot_data.apply(lambda x: x if x['Date'] <= 2022 or x['Date'] in [2025, 2030, 2035, 2040, 2050, 2060, 2070, 2080,2090, 2100] else 0, axis=1)
             #drop all drives except bev and fcev
             plot_data = plot_data.loc[(plot_data['Drive']=='bev') | (plot_data['Drive']=='fcev')].copy()
-            
             #sort by date col
             plot_data.sort_values(by=['Date'], inplace=True)
             #############
             #now plot
-            
-            title = f'Shares for passenger (%)'
+            if share_of_transport_type_type == 'passenger':
+                title = f'Shares for passenger (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
-            
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_passenger'] = [fig,title]
-            
-            #############
-            
-            title = f'Shares for freight (%)'
+                fig = px.line(plot_data[plot_data['Transport Type']=='passenger'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['sum_of_vehicle_types_by_transport_type_passenger'] = [fig,title]
+                
+                #############
+            elif share_of_transport_type_type == 'freight':
+                title = f'Shares for freight (%)'
 
-            fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
-            
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['drive_share_freight'] = [fig,title]
+                fig = px.line(plot_data[plot_data['Transport Type']=='freight'], x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['sum_of_vehicle_types_by_transport_type_freight'] = [fig,title]
+            elif share_of_transport_type_type == 'all':
+                title = 'Share by transport type (%)'
+                #concat drive and transport type
+                plot_data['Drive'] = plot_data['Drive'] + ' ' + plot_data['Transport Type']
+                fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['sum_of_vehicle_types_by_transport_type_all'] = [fig,title]
+            else:
+                raise ValueError('share_of_transport_type_type must be passenger or freight')
             #############
 
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
@@ -347,7 +377,7 @@ def share_of_sum_of_vehicle_types_by_transport_type(fig_dict,DROP_NON_ROAD_TRANS
 
 
 ###################################################
-def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
     #load in data and recreate plot, as created in all_economy_graphs
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():
@@ -361,7 +391,7 @@ def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_co
         
         #create a new df with only the data we need: 
         energy_use_by_fuel_type = model_output_with_fuels.copy()
-        energy_use_by_fuel_type= energy_use_by_fuel_type[['Economy', 'Date', 'Fuel', 'Energy']].groupby(['Economy', 'Date', 'Fuel']).sum().reset_index()
+        energy_use_by_fuel_type= energy_use_by_fuel_type[['Economy', 'Date', 'Fuel', 'Transport Type','Energy']].groupby(['Economy', 'Date','Transport Type', 'Fuel']).sum().reset_index()
         
         #add units (by setting measure to Energy haha)
         energy_use_by_fuel_type['Measure'] = 'Energy'
@@ -384,15 +414,39 @@ def energy_use_by_fuel_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_co
 
             # Now sort the DataFrame by the 'Fuel' column:
             energy_use_by_fuel_type_economy.sort_values(by='Fuel', inplace=True)
-            
-            #now plot
-            fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
-            
-            #add units to y col
-            title_text = 'Energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
-            
-            #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['energy_use_by_fuel_type'] = [fig, title_text]
+            if transport_type=='passenger':
+                #now plot
+                fig = px.area(energy_use_by_fuel_type_economy.loc[energy_use_by_fuel_type_economy['Transport Type']=='passenger'], x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Energy by Fuel {} ({})'.format(transport_type, energy_use_by_fuel_type_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['energy_use_by_fuel_type_passenger'] = [fig, title_text]
+                
+            elif transport_type == 'freight':
+                #now plot
+                fig = px.area(energy_use_by_fuel_type_economy.loc[energy_use_by_fuel_type_economy['Transport Type']=='freight'], x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Energy by Fuel {} ({})'.format(transport_type, energy_use_by_fuel_type_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['energy_use_by_fuel_type_freight'] = [fig, title_text]
+                
+            elif transport_type == 'all':
+                #sum across transport types
+                energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum().reset_index()
+                #now plot
+                fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['energy_use_by_fuel_type_all'] = [fig, title_text]
+            else:
+                raise ValueError('transport_type must be passenger, all or freight')
             
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
     color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
@@ -641,7 +695,6 @@ def activity_and_macro_lines(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_c
         #     df.drop(columns=[col], inplace=True)
         #     return df
 
-        breakpoint()
         def calc_index(df, col, normalised=True):
             if normalised:
                 df = df.sort_values(by='Date')
@@ -816,30 +869,30 @@ def create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conco
     color_preparation_list.append(['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'])
     return fig_dict, color_preparation_list
 
-def prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, transport_type):
     for scenario in economy_scenario_concordance.Scenario.unique():
         if scenario == 'Reference':
             scenario_str = 'REF'
         elif scenario == 'Target':
             scenario_str = 'TGT'
         for economy in economy_scenario_concordance.Economy.unique():
-            file_identifier = f'{economy}_{scenario_str}_passenger__2_Energy use_Hierarchical_hierarchical_multiplicative_output'
+            file_identifier = f'{economy}_{scenario_str}_{transport_type}__2_Energy use_Hierarchical_hierarchical_multiplicative_output'
             lmdi_data = pd.read_csv(f'./intermediate_data/LMDI/{economy}/{file_identifier}.csv')
             #melt data so we have the different components of the LMDI as rows. eg. for freight the cols are: Date	Change in Energy	Energy intensity effect	freight_tonne_km effect	Engine type effect	Total Energy	Total_freight_tonne_km
             #we want to drop the last two plots, then melt the data so we have the different components of the LMDI as rows. eg. for freight the cols will end up as: Date	Effect. Then we will also create a line dash col and if the Effect is Change in Energy then the line dash will be solid, otherwise it will be dotted
             #drop cols by index, not name so it doesnt matter what thei names are
             lmdi_data_melt = lmdi_data.copy()#drop(lmdi_data.columns[[len(lmdi_data.columns)-1, len(lmdi_data.columns)-2]], axis=1)
             lmdi_data_melt = lmdi_data_melt.melt(id_vars=['Date'], var_name='Effect', value_name='Value')
-            lmdi_data_melt['line_dash'] = lmdi_data_melt['Effect'].apply(lambda x: 'solid' if x == 'Change in Energy' else 'dash')
+            lmdi_data_melt['line_dash'] = lmdi_data_melt['Effect'].apply(lambda x: 'solid' if x == 'Percent change in Energy' else 'dash')
                         
             fig = px.line(lmdi_data_melt, x="Date", y='Value',  color='Effect', line_dash='line_dash', 
             color_discrete_map=colors_dict)
             
-            title_text = 'Drivers of passenger energy use'
+            title_text = f'Drivers of {transport_type} energy use'
             fig.update_yaxes(title_text=title_text)#not working for some reason
 
             #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['lmdi'] = [fig, title_text]
+            fig_dict[economy][scenario][f'lmdi_{transport_type}'] = [fig, title_text]
 
     return fig_dict
             
