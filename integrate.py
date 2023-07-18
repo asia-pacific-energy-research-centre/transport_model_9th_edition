@@ -35,7 +35,7 @@ if do_these_once_a_day:
         
     
 #%%
-PREPARE_DATA = False
+PREPARE_DATA = True
 if PREPARE_DATA:
     # exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
     import import_macro_data
@@ -137,6 +137,9 @@ if ANALYSE_OUTPUT:
     
     import all_economy_graphs
     all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=False)
+    
+    import produce_LMDI_graphs
+    produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False)
     # exec(open("./workflow/plotting/all_economy_graphs.py").read())
     #unfortunately at the moment i have written this to be run from data formatted within all_economy_graphs.py, but that takes ages t run.
     exec(open("./workflow/plotting/create_assumptions_dashboards.py").read())
@@ -147,7 +150,9 @@ if ANALYSE_OUTPUT:
     if plot_all_economy_graphs:
         #plot:
         all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
-        exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
+        import produce_LMDI_graphs
+        produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = True)
+        # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
     
 #%%
 import utility_functions

@@ -25,20 +25,33 @@ import plot_output
 import data_creation_functions
 import LMDI_functions
 
-PLOTTING = False
+
 #%%
 
-def produce_lots_of_LMDI_charts(USE_CHART_TO_PRODUCE_LIST = False):
+def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False):
     #take in energy and activity data 
     all_data = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
 
     #here write the charts you want to produce.. can use this to make the function run quicker by only producing some of the charts
-    if USE_CHART_TO_PRODUCE_LIST:
+    if USE_LIST_OF_CHARTS_TO_PRODUCE:
         charts_to_produce = []
-        for economy in all_data.Economy.unique():
-            charts_to_produce.append(f'{economy}_Reference_passenger_road_2_Energy use_Hierarchical')
-            charts_to_produce.append(f'{economy}_Target_passenger_road_2_Energy use_Hierarchical')
-        
+        for scenario in all_data.Scenario.unique():
+            for transport_type in all_data['Transport Type'].unique():
+                for economy in all_data.Economy.unique():
+                    # charts_to_produce.append(f'{economy}_Reference_passenger_road_2_Energy use_Hierarchical')
+                    # charts_to_produce.append(f'{economy}_Target_passenger_road_2_Energy use_Hierarchical')
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_2_Energy use_Hierarchical')
+                    
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_2_Energy use_Hierarchical_hierarchical_multiplicative_output')#not sure what style works. shoudl test
+                    
+                    # 19_THA_REF_freight__2_Energy use_Hierarchical_hierarchical_multiplicative_output
+                    
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__2_Energy use_Hierarchical_hierarchical_multiplicative_output')#Percent change in Energy
+                    
+                    charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__2_Energy use_Hierarchical')
+                    
+                    
+            
     
     # #simplify by filtering for road medium only
     # all_data = all_data[all_data['Medium'] == 'road']
@@ -134,9 +147,6 @@ def produce_lots_of_LMDI_charts(USE_CHART_TO_PRODUCE_LIST = False):
     for combination_dict in combination_dict_list:
         if combination_dict['scenario'] == 'Target':
             breakpoint()
-        if USE_CHART_TO_PRODUCE_LIST:
-            if combination_dict['extra_identifier'] not in CHART_TO_PRODUCE_LIST:
-                continue
         # if combination_dict['hierarchical'] == False:
         #     #next
         #     continue
@@ -193,7 +203,11 @@ def produce_lots_of_LMDI_charts(USE_CHART_TO_PRODUCE_LIST = False):
             
         #run LMDI
         main_function.run_divisia(data_title, extra_identifier, activity_data, energy_data, structure_variables_list, activity_variable, emissions_variable = 'Emissions', energy_variable = energy_variable, emissions_divisia = emissions_divisia, emissions_data=emissions_data, time_variable=time_variable,hierarchical=hierarchical,output_data_folder=output_data_folder)
-
+        
+        if USE_LIST_OF_CHARTS_TO_PRODUCE and combination_dict['extra_identifier'] not in charts_to_produce:
+            continue
+        if combination_dict['extra_identifier'] in charts_to_produce:
+            breakpoint()
         if PLOTTING:
             #plot LMDI
             plot_output.plot_additive_waterfall(data_title, extra_identifier, structure_variables_list=structure_variables_list,activity_variable=activity_variable,energy_variable='Energy', emissions_variable='Emissions',emissions_divisia=emissions_divisia, time_variable='Date', graph_title=graph_title, residual_variable1=residual_variable1, residual_variable2='Emissions intensity', font_size=font_size, y_axis_min_percent_decrease=y_axis_min_percent_decrease,AUTO_OPEN=AUTO_OPEN, hierarchical=hierarchical,output_data_folder=output_data_folder, plotting_output_folder=plotting_output_folder)
@@ -206,5 +220,5 @@ def produce_lots_of_LMDI_charts(USE_CHART_TO_PRODUCE_LIST = False):
             
             
 #%%
-produce_lots_of_LMDI_charts(USE_CHART_TO_PRODUCE_LIST = True)
+# produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True)
 #%%

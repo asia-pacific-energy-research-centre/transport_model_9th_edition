@@ -14,7 +14,8 @@ model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/N
 
 #drop dates after 2070
 model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']<=2070].copy()
-
+#drop dates bnefore the OUTLOOK_BASE_YEAR
+model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']>=OUTLOOK_BASE_YEAR].copy()
 #load in EBT framework:
 model_variables = pd.read_excel('./config/9th_EBT_schema.xlsx', sheet_name='9th_EBT_schema', header = 2)
 #cols 'scenarios', 'economy', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'

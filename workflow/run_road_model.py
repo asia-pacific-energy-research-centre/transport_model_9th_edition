@@ -68,7 +68,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
     # #breakpoint()#seems we're getting activity estimates much higher for china than we should be.
     breakpoint()
     ONLY_PASSENGER_VEHICLES = False
-    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':3, 'mt': 5, 'ht': 7})
+    activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':10, 'mt': 15, 'ht': 20})
     #breakpoint()
     #note that activity_growth_estimates will contain new growth rates for only some econmies where their stocks per cpita passed their threshold. For the others, the growth rates will be the same as they were previously.
     #so do a merge and only keep the new growth rates for the economies that have them

@@ -792,18 +792,21 @@ def create_charging_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conco
     #and so data is greater or equal to OUTLOOK_BASE_YEAR
     chargers = chargers.loc[(chargers['Date']>=OUTLOOK_BASE_YEAR)].copy()
     chargers = chargers[['Economy', 'Scenario', 'Date', 'sum_of_fast_chargers_needed','sum_of_slow_chargers_needed']].drop_duplicates()
+    #divide chargers by a million
+    chargers['sum_of_fast_chargers_needed'] = chargers['sum_of_fast_chargers_needed']/1000000
+    chargers['sum_of_slow_chargers_needed'] = chargers['sum_of_slow_chargers_needed']/1000000
     for scenario in economy_scenario_concordance['Scenario'].unique():
         
         for economy in ECONOMIES_TO_PLOT_FOR:
             #filter to economy
             chargers_scenario = chargers.loc[chargers['Scenario']==scenario].copy()
             chargers_economy = chargers_scenario.loc[chargers_scenario['Economy']==economy].copy()
-
+            
             title = 'Expected slow and fast public chargers needed for' + scenario + ' scenario'
             fig = px.bar(chargers_economy, x="Date", y=['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'], title=title, color_discrete_map=colors_dict)
 
             #add units to y col
-            title_text = 'Public chargers'
+            title_text = 'Public chargers (millions)'
             fig.update_yaxes(title_text=title_text)#not working for some reason
 
             #add fig to dictionary for scenario and economy:
@@ -825,7 +828,7 @@ def prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_t
             #melt data so we have the different components of the LMDI as rows. eg. for freight the cols are: Date	Change in Energy	Energy intensity effect	freight_tonne_km effect	Engine type effect	Total Energy	Total_freight_tonne_km
             #we want to drop the last two plots, then melt the data so we have the different components of the LMDI as rows. eg. for freight the cols will end up as: Date	Effect. Then we will also create a line dash col and if the Effect is Change in Energy then the line dash will be solid, otherwise it will be dotted
             #drop cols by index, not name so it doesnt matter what thei names are
-            lmdi_data_melt = lmdi_data.drop(lmdi_data.columns[[len(lmdi_data.columns)-1, len(lmdi_data.columns)-2]], axis=1)
+            lmdi_data_melt = lmdi_data.copy()#drop(lmdi_data.columns[[len(lmdi_data.columns)-1, len(lmdi_data.columns)-2]], axis=1)
             lmdi_data_melt = lmdi_data_melt.melt(id_vars=['Date'], var_name='Effect', value_name='Value')
             lmdi_data_melt['line_dash'] = lmdi_data_melt['Effect'].apply(lambda x: 'solid' if x == 'Change in Energy' else 'dash')
                         
