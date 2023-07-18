@@ -159,6 +159,9 @@ unique_sectors = model_output_all_with_fuels[['Medium','Transport Type', 'Vehicl
 # passenger	2w	ice_g
 # passenger	2w	ice_d
 # passenger	2w	bev
+# freight	2w	ice_g
+# freight	2w	ice_d
+# freight	2w	bev
 # freight	mt	phev_g
 # freight	mt	phev_d
 # freight	mt	lpg
@@ -342,7 +345,7 @@ fuels_df['fuels'] = fuels_df['Fuel'].map(fuels_mapping)
 
 #check for Fuels that are not mapped:
 if fuels_df.isna().sum().sum() > 0:
-    print('WARNING: There are fuels that are not mapped to a subfuel or fuel. Please check the mapping')
+    print('WARNING: There are fuels that are not mapped to a subfuel or fuel. Please check the mapping {} and add them to the mapping if needed'.format(fuels_df[fuels_df.isna().any(axis=1)]))
 #%%
 #now merge both fuels df and unique_sectors_mapping_df to the model_output_all_with_fuels df on the Fuel and Transport Type	Vehicle Type	Drive	 columns respectively:
 new_final_df = model_output_all_with_fuels.copy()

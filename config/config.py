@@ -45,7 +45,7 @@ USE_MEAN_AGES=True
 NEW_SALES_SHARES = True
 NEW_FUEL_MIXING_DATA = True
 REPLACE_ACTIVITY_GROWTH_WITH_8TH = False#NOTE THAT THIS CURRENETLY DOESNT WORK BECAUSE OF NAS IN THE DATA
-transport_data_system_FILE_DATE_ID ='DATE20230712' # 'DATE20230216'))
+transport_data_system_FILE_DATE_ID ='DATE20230717' # 'DATE20230216'))
 
 ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
 #%%
@@ -162,7 +162,7 @@ transport_type_mapping = {'passenger': 'passenger', 'freight': 'freight'}
 
 vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_02_01_two_wheeler','all':'x'}
 
-vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', 'all':'x'}
+vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', '2w': '15_02_02_06_two_wheeler_freight', 'all':'x'}
 
 drive_mapping_inversed = {'x':'all',
     '15_02_01_01_01_diesel_engine': 'ice_d', 
@@ -244,15 +244,24 @@ drive_mapping_inversed = {'x':'all',
     '15_02_01_05_05_plugin_hybrid_ev_gasoline': 'phev_g', 
     '15_02_01_05_06_plugin_hybrid_ev_diesel': 'phev_d',  
     '15_02_01_05_07_liquified_petroleum_gas': 'lpg', 
-    '15_02_01_05_08_fuel_cell_ev': 'fcev'
-}
+    '15_02_01_05_08_fuel_cell_ev': 'fcev',
+    
+    '15_02_02_06_01_diesel_engine': 'ice_d', 
+    '15_02_02_06_02_gasoline_engine': 'ice_g', 
+    '15_02_02_06_03_battery_ev': 'bev', 
+    '15_02_02_06_04_compressed_natual_gas': 'cng', 
+    '15_02_02_06_05_plugin_hybrid_ev_gasoline': 'phev_g', 
+    '15_02_02_06_06_plugin_hybrid_ev_diesel': 'phev_d',  
+    '15_02_02_06_07_liquified_petroleum_gas': 'lpg', 
+    '15_02_02_06_08_fuel_cell_ev': 'fcev'}
+    
 
 subfuels_mapping = {'17_electricity':'x', '07_07_gas_diesel_oil':'07_07_gas_diesel_oil', '07_01_motor_gasoline':'07_01_motor_gasoline',
 '08_01_natural_gas':'08_01_natural_gas', 
 '16_x_hydrogen':'16_x_hydrogen',
 '07_09_lpg':'07_09_lpg',
 '07_02_aviation_gasoline':'07_02_aviation_gasoline', '07_x_jet_fuel':'07_x_jet_fuel', 
-'01_x_thermal_coal':'01_coal',
+'01_coal':'x',
 '07_08_fuel_oil':'07_08_fuel_oil', '07_x_other_petroleum_products':'07_x_other_petroleum_products',
 '16_06_biodiesel':'16_06_biodiesel', 
 '16_05_biogasoline':'16_05_biogasoline', 
@@ -268,7 +277,7 @@ fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_
 '16_x_hydrogen':'16_others', 
 '07_09_lpg':'07_petroleum_products',
 '07_02_aviation_gasoline':'07_petroleum_products', '07_x_jet_fuel':'07_petroleum_products', 
-'01_x_thermal_coal':'01_coal',
+'01_coal':'01_coal',
 '07_08_fuel_oil':'07_petroleum_products', '07_x_other_petroleum_products':'07_petroleum_products',
 '16_06_biodiesel':'16_others', 
 '16_05_biogasoline':'16_others', 

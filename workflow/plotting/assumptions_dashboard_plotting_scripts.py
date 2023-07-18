@@ -694,7 +694,7 @@ def plot_supply_side_fuel_mixing(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
     # supply_side_fuel_mixing_plot = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name))
     
     #save as user input csv
-    supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
+    supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN_base_year_adv.csv')
     
     #and filter so data is less than GRAPHING_END_YEAR
     supply_side_fuel_mixing = supply_side_fuel_mixing.loc[(supply_side_fuel_mixing['Date']<=GRAPHING_END_YEAR)].copy()

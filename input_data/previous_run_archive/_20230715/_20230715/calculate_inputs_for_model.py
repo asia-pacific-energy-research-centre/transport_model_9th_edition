@@ -19,11 +19,11 @@ import utility_functions
 
 import adjust_data_to_match_esto
 
-def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,filter_to_just_base_year=False,advance_base_year=False):
+def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,project_to_just_outlook_base_year=False,advance_base_year=False):
     #load data
     transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
 
-    # if filter_to_just_base_year:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
+    # if project_to_just_outlook_base_year:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
     #     #filter so the data is from OUTLOOK_BASE_YEAR and back
     #     transport_dataset = transport_dataset[transport_dataset['Date'] <= OUTLOOK_BASE_YEAR]
     #remove uneeded columns

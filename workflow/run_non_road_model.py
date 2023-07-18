@@ -12,11 +12,17 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
-def run_non_road_model(filter_to_just_base_year=False):
-    #load all data except activity data (which is calcualteed separately to other calcualted inputs)
-    growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
-    #load all other data
-    non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
+def run_non_road_model(project_to_just_outlook_base_year=False,advance_base_year=False):
+    if advance_base_year:
+        #load all data except activity data (which is calcualteed separately to other calcualted inputs)
+        growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts_base_year_adv.pkl')
+        #load all other data
+        non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide_base_year_adv.csv')
+    else:
+        #load all data except activity data (which is calcualteed separately to other calcualted inputs)
+        growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
+        #load all other data
+        non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
 
     # #testing:
     # #just set energy and stocks to 1
@@ -31,9 +37,6 @@ def run_non_road_model(filter_to_just_base_year=False):
 
     non_road_model_input.drop(columns=['Non_road_intensity_improvement'], inplace=True)
 
-    #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
-    previous_year_main_dataframe = non_road_model_input.loc[non_road_model_input.Date == BASE_YEAR,:]
-    main_dataframe = previous_year_main_dataframe.copy()
 
 
     #give option to run the process on a low RAM computer. If True then the loop will be split into 10 year blocks, saving each block in a csv, then starting again with an empty main datafrmae for the next 10 years block. If False then the loop will be run on all years without saving intermediate results.
@@ -48,13 +51,21 @@ def run_non_road_model(filter_to_just_base_year=False):
     #if you want to analyse what is hapening in th model then set this to true and lok at the change dataframe.
     ANALYSE_CHANGE_DATAFRAME = True
 
-    if filter_to_just_base_year:
+    if project_to_just_outlook_base_year:
         END_YEAR_x = OUTLOOK_BASE_YEAR
     else:
         END_YEAR_x = END_YEAR
+    if advance_base_year:
+        BASE_YEAR_x = OUTLOOK_BASE_YEAR
+    else:
+        BASE_YEAR_x = BASE_YEAR
         
+    #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
+    previous_year_main_dataframe = non_road_model_input.loc[non_road_model_input.Date == BASE_YEAR_x,:]
+    main_dataframe = previous_year_main_dataframe.copy()
+    
     #START MAIN PROCESS
-    for year in range(BASE_YEAR+1, END_YEAR_x+1):
+    for year in range(BASE_YEAR_x+1, END_YEAR_x+1):
         print('Up to year {}. The loop will run until year {}'.format(year, END_YEAR_x))
 
         #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
@@ -119,14 +130,14 @@ def run_non_road_model(filter_to_just_base_year=False):
         previous_year_main_dataframe = addition_to_main_dataframe.copy()
         
         if ANALYSE_CHANGE_DATAFRAME:
-            if year == BASE_YEAR+1:
+            if year == BASE_YEAR_x+1:
                 change_dataframe_aggregation = change_dataframe.copy()
             else:
                 change_dataframe_aggregation = pd.concat([change_dataframe, change_dataframe_aggregation])
 
         #if we have a low ram computer then we will save the dataframe to a csv file at 10 year intervals. this is to save memory. during the proecss we will save a list of the file names that we have saved to, from which to stitch the new dataframe togehter from
         if low_ram_computer == True:
-            year_counter = year - BASE_YEAR
+            year_counter = year - BASE_YEAR_x
             if year_counter % 10 == 0:
                 print('The year is at the end of a ten year block, in year {}, saving interemediate results to csv.'.format(year))
                 low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
@@ -200,7 +211,7 @@ def run_non_road_model(filter_to_just_base_year=False):
         
 
 #%%
-# run_non_road_model()
+# run_non_road_model(project_to_just_outlook_base_year=False, advance_base_year=True)
 #%%
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='freight_tonne_km',kind='bar')
     # change_dataframe_aggregation[(change_dataframe_aggregation['Date']==2018) & (change_dataframe_aggregation['Economy']=='20_USA')].plot(x='Medium',y='Activity',kind='bar')

@@ -10,24 +10,31 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
-def apply_fuel_mix_supply_side(filter_to_just_base_year=False):
+def apply_fuel_mix_supply_side(project_to_just_outlook_base_year=False,advance_base_year=False):
     # breakpoint()
     # model_output_file_name = 'model_output_years_2017_to_2050_DATE20220824_1043.csv'
     #load user input for fuel mixing
-    supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
+    if advance_base_year:
+        supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN_base_year_adv.csv')#necessary so we dont have to re run supply side fuel mixing creation scripts every time we adjust it
+    else:
+        supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
 
     model_output = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(model_output_file_name))
 
-    if filter_to_just_base_year:
+    if project_to_just_outlook_base_year:
         supply_side_fuel_mixing = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] <= OUTLOOK_BASE_YEAR]
         model_output = model_output[model_output['Date'] <= OUTLOOK_BASE_YEAR]
-        
+    
+    BASE_YEAR_x = BASE_YEAR
+    if advance_base_year:
+        BASE_YEAR_x = OUTLOOK_BASE_YEAR
+    
     #to deal with historical data that may or may not have been included, jsut assume the same fuel mix as the base year for all previous years.
-    supply_side_fuel_mixing_historical = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] == BASE_YEAR]
+    supply_side_fuel_mixing_historical = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] == BASE_YEAR_x]
     # Get the unique years in model_output that are before the BASE_YEAR
-    unique_years_less_than_base = model_output[model_output['Date'] < BASE_YEAR]['Date'].unique()
+    unique_years_less_than_base = model_output[model_output['Date'] < BASE_YEAR_x]['Date'].unique()
     #drop those years from the supply side fuel mixing
-    supply_side_fuel_mixing = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] >= BASE_YEAR]
+    supply_side_fuel_mixing = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] >= BASE_YEAR_x]
 
     # Initialize an empty DataFrame
     supply_side_fuel_mixing_historical_all_years = pd.DataFrame()

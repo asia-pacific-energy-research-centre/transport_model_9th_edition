@@ -27,7 +27,7 @@ CREATE_MODEL_CONCORDANCES = True
 
 #%%
 #Things to do once a day:
-do_these_once_a_day = True
+do_these_once_a_day = False
 if do_these_once_a_day:
     #set up archive folder:
     import archiving_scripts
@@ -38,7 +38,7 @@ if do_these_once_a_day:
         
     
 #%%
-PREPARE_DATA = True
+PREPARE_DATA = False
 if PREPARE_DATA:
     # exec(open("./workflow/grooming_code/1_import_macro_data.py").read())
     import import_macro_data
@@ -66,53 +66,54 @@ MODEL_RUN_1  = True
 if MODEL_RUN_1:
     #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN AND INCLUDIONG BASE YEAR AND OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
-    filter_to_just_base_year = True
+    project_to_just_outlook_base_year = True
     import calculate_inputs_for_model
-    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,filter_to_just_base_year=filter_to_just_base_year)
+    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False)
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(filter_to_just_base_year=filter_to_just_base_year)
+    run_road_model.run_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     import run_non_road_model
-    run_non_road_model.run_non_road_model(filter_to_just_base_year=filter_to_just_base_year)# sometimes this doesnt work. dont know why.
+    run_non_road_model.run_non_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year)# sometimes this doesnt work. dont know why.
     # exec(open("./workflow/2_concatenate_model_output.py").read())
     import concatenate_model_output
     concatenate_model_output.concatenate_model_output()
     # exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
 
     import apply_fuel_mix_demand_side
-    apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(filter_to_just_base_year=filter_to_just_base_year)
+    apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(project_to_just_outlook_base_year=project_to_just_outlook_base_year)
     # exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
     import apply_fuel_mix_supply_side
-    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(filter_to_just_base_year=filter_to_just_base_year)
+    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(project_to_just_outlook_base_year=project_to_just_outlook_base_year)
     # exec(open("./workflow/5_clean_model_output.py").read())
     import clean_model_output
     clean_model_output.clean_model_output()
 #%%
 MODEL_RUN_2  = True
 if MODEL_RUN_2:
-    #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN AND INCLUDIONG BASE YEAR AND OUTLOOK_BASE_YEAR)
+    #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN  AND INCLUDIONG BASE YEAR AND OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
+    advance_base_year = True
     import calculate_inputs_for_model
-    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True)
+    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=advance_base_year)
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(advance_base_year=True)
+    run_road_model.run_road_model(advance_base_year=advance_base_year)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     import run_non_road_model
-    run_non_road_model.run_non_road_model()# sometimes this doesnt work. dont know why.
+    run_non_road_model.run_non_road_model(advance_base_year=advance_base_year)# sometimes this doesnt work. dont know why.
     # exec(open("./workflow/2_concatenate_model_output.py").read())
     import concatenate_model_output
-    concatenate_model_output.concatenate_model_output()
+    concatenate_model_output.concatenate_model_output(advance_base_year=advance_base_year)
     # exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
 
     import apply_fuel_mix_demand_side
     apply_fuel_mix_demand_side.apply_fuel_mix_demand_side()
     # exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
     import apply_fuel_mix_supply_side
-    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side()
+    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(advance_base_year=advance_base_year)
     # exec(open("./workflow/5_clean_model_output.py").read())
     import clean_model_output
     clean_model_output.clean_model_output()

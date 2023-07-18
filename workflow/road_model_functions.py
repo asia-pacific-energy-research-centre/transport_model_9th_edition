@@ -284,7 +284,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #finalisation processes
 
     #######################################################################
-        
+    breakpoint() #can new stocks needed ever be na?
     #calcualte stocks per capita as its a useful metric
     change_dataframe['Thousand_stocks_per_capita'] = change_dataframe['Stocks']/change_dataframe['Population']
     change_dataframe['Stocks_per_thousand_capita'] = change_dataframe['Thousand_stocks_per_capita'] * 1000000

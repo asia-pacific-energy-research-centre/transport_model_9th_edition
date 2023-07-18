@@ -147,7 +147,7 @@ def create_supply_side_fuel_mixing_input():
     plot_user_input_data.plot_supply_side_fuel_mixing(supply_side_fuel_mixing)
         
 #%%
-# create_supply_side_fuel_mixing_input()
+create_supply_side_fuel_mixing_input()
 #%%
 
 #%%

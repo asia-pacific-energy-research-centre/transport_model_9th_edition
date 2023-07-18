@@ -12,7 +12,7 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
-def run_non_road_model(filter_to_just_base_year=False):
+def run_non_road_model(project_to_just_outlook_base_year=False):
     #load all data except activity data (which is calcualteed separately to other calcualted inputs)
     growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
     #load all other data
@@ -48,7 +48,7 @@ def run_non_road_model(filter_to_just_base_year=False):
     #if you want to analyse what is hapening in th model then set this to true and lok at the change dataframe.
     ANALYSE_CHANGE_DATAFRAME = True
 
-    if filter_to_just_base_year:
+    if project_to_just_outlook_base_year:
         END_YEAR_x = OUTLOOK_BASE_YEAR
     else:
         END_YEAR_x = END_YEAR

@@ -105,7 +105,8 @@ def import_transport_system_data():
     # use the difference method to find the index values that are missing from the transport system dataset # this is a lot faster than looping through each index row in the concordance and checking if it is in the user_input
     # we will not print out what values are in the dataset but missing from the concordance as this is expected to be a lot of values (but we will remove them from the dataset as they are not needed for the model to run)
     missing_index_values1 = model_concordances_measures.index.difference(transport_data_system_df.index)
-
+    USE_REPLACEMENTS = False
+    replacement_values = None 
     if missing_index_values1.empty:
         print('All rows we need are present in the transport system dataset')
     else:
@@ -142,8 +143,7 @@ def import_transport_system_data():
             save_this = True
             if save_this:
               a.to_csv('intermediate_data/transport_data_system/missing_important_values.csv')
-            USE_REPLACEMENTS = False
-            if USE_REPLACEMENTS:
+            if USE_REPLACEMENTS:#im not sure what the intendsed option if this was false was? I guess it doesnt really matter, we have made it so that the data coming from the transport data system is what we need.
                 #for now jsut replace them with the mean for the same vehicle type:
                 #first find the mean for each vehicle type by measure and then replace the missing values with these means
                 b = transport_data_system_df.copy().reset_index()[['Measure', 'Vehicle Type', 'Value']].drop_duplicates()
@@ -163,7 +163,7 @@ def import_transport_system_data():
         missing_index_values1['Value'] = 0
         #then append to transport_data_system_df
         transport_data_system_df = pd.concat([missing_index_values1, transport_data_system_df], sort=False)
-        if USE_REPLACEMENTS:
+        if USE_REPLACEMENTS and replacement_values is not None:
             #join on the replacement_values
             transport_data_system_df = pd.merge(transport_data_system_df.reset_index(), replacement_values, how='left', on=['Data_available','Measure', 'Vehicle Type'], suffixes=('', '_y'))
             #fill in the missing values with the replacement values where data_available is row_and_data_not_available  and value_y is not null or 0
@@ -248,7 +248,6 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #so separate the non road data and merge on the drive types from the concordance, to repalce the 'all' drive types with the new drive types and create new rows where we need. 
     #one issue will be that we will be replicating the vlaues for activity and enegry use, resulting in double counting. so for now, pull in the data from ESTO and make the amount of energy use in each drve type match its repsective fuel use. Then recalcualte the acitvity using the intensity. 
     #however, we will also adjsut the intensity values a tad, since you can expect inttensity of electiricty to be at least a half of that of the fossil fuel types. so we will adjust the intensity of electricity to be 0.5 of the fossil fuel types.
-
     transport_data_system_df_road=transport_data_system_df[transport_data_system_df['Medium']=='road'].copy()
     import sys
     sys.path.append("./workflow")
@@ -437,8 +436,6 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     final_df = final_df.drop(columns=['Fuel'])
     #conat to transport_data_system_df_road then finis
     transport_data_system_df_new = pd.concat([transport_data_system_df_road, final_df], sort=False)
-    
-    breakpoint()
     #in final_df search for any duplciates in teh columns INDEX_COLS
     INDEX_COLS_NO_MEASURE = INDEX_COLS.copy()
     INDEX_COLS_NO_MEASURE.remove('Measure')
@@ -457,5 +454,5 @@ def set_electric_non_road_to_0_5_intensity(row,electric_drive_types):
     else:
         return row.Intensity
 #%%
-import_transport_system_data()
+# import_transport_system_data()
 #%%

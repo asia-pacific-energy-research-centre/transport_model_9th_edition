@@ -19,11 +19,11 @@ import utility_functions
 
 import adjust_data_to_match_esto
 
-def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,filter_to_just_base_year=False,advance_base_year=False, adjust_data_to_match_esto_TESTING=True):
+def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,advance_base_year=False, adjust_data_to_match_esto_TESTING=False, TEST_ECONOMY='19_THA'):
     #load data
     transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
 
-    # if filter_to_just_base_year:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
+    # if project_to_just_outlook_base_year:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
     #     #filter so the data is from OUTLOOK_BASE_YEAR and back
     #     transport_dataset = transport_dataset[transport_dataset['Date'] <= OUTLOOK_BASE_YEAR]
     #remove uneeded columns
@@ -152,21 +152,81 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
         growth_forecasts_wide['Activity_growth'] = (growth_forecasts_wide['Activity_growth'] - 1) * PROPORTION_OF_GROWTH + 1
     
 
-    if RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN:
+    if advance_base_year:
         #use teh funcitons in adjust_data_to_match_esto.py to adjust the energy use to match the esto data in the MODEL_BASE_YEAR. To do this we will have needed to run the model up ot htat year already, and saved the results. We will then use the results to adjust the energy use to match the esto data. This is so that we can make sure that stocks and energy are about what youd expect, i think. 
-        #breakpoint()
-        road_model_input_wide, non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=advance_base_year, TESTING=adjust_data_to_match_esto_TESTING, TEST_ECONOMY='19_THA')
-        
-        supply_side_fuel_mixing_new.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv', index=False)
+        breakpoint()
+        new_road_model_input_wide, new_non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=advance_base_year, TESTING=adjust_data_to_match_esto_TESTING, TEST_ECONOMY=TEST_ECONOMY)
+        #test if the output contains dates greater than the outlook base year. if it doesnt then the previous model run probably was only to the Outlook base year to savbe time. So we need to add data fpor this, using road_model_input_wide and non_road_model_input_wide:
+        if (new_road_model_input_wide['Date'].max() == OUTLOOK_BASE_YEAR):
+            if (new_non_road_model_input_wide['Date'].max() == OUTLOOK_BASE_YEAR):
+                new_data_road = road_model_input_wide[road_model_input_wide['Date'] > OUTLOOK_BASE_YEAR].copy()
+                new_data_non_road = non_road_model_input_wide[non_road_model_input_wide['Date'] > OUTLOOK_BASE_YEAR].copy()
+                #concatenate
+                new_road_model_input_wide = pd.concat([new_road_model_input_wide, new_data_road])
+                new_non_road_model_input_wide = pd.concat([new_non_road_model_input_wide, new_data_non_road])
+                
+            else:
+                raise ValueError('the non road model output has dates greater than the outlook base year but the road model output doesnt. This is not expected. Please check the data')
+        breakpoint()
+        supply_side_fuel_mixing_new.to_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN_base_year_adv.csv', index=False)#TODO WHY IS THIS FOR LESS YEARS THAN THE OTHERS?
     
-    breakpoint()
-    #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
-    road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide.csv', index=False)
-    non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv', index=False)
-    growth_forecasts_wide.to_csv('intermediate_data/model_inputs/growth_forecasts.csv', index=False)
-        
+        #apply growth rates up to the outlook base year for all the growth rates that are in the model
+        growth_columns_dict = {'New_vehicle_efficiency_growth':'New_vehicle_efficiency', 
+        'Turnover_rate_growth':'Turnover_rate', 
+        'Occupancy_or_load_growth':'Occupancy_or_load'}
+        new_road_model_input_wide = apply_growth_up_to_outlook_base_year(new_road_model_input_wide,growth_columns_dict)
+        growth_columns_dict = {'Non_road_intensity_improvement':'Intensity'}
+        new_non_road_model_input_wide = apply_growth_up_to_outlook_base_year(new_non_road_model_input_wide,growth_columns_dict)
     
+        #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
+        new_road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide_base_year_adv.csv', index=False)
+        new_non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide_base_year_adv.csv', index=False)
+        growth_forecasts_wide.to_csv('intermediate_data/model_inputs/growth_forecasts_base_year_adv.csv', index=False)
+        
+    else:
+        
+        road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide.csv', index=False)
+        non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv', index=False)
+        growth_forecasts_wide.to_csv('intermediate_data/model_inputs/growth_forecasts.csv', index=False)
+            
+
+def apply_growth_up_to_outlook_base_year(road_model_input_wide,growth_columns_dict):
+    #calcualte values from BASE YEAR up to OUTLOOK BASE YEAR just in case they are needed. that is, calcualte New Vehicle Efficienecy as the prodcut of the New Vehicle Efficienecy Growth of range(BASE_YEAR, OUTLOOK_BASE_YEAR-1) * the New Vehicle Efficienecy in the BASE_YEAR. Do this for all the other growth rates too.
+
+    for growth, value in growth_columns_dict.items():
+        
+        new_values = road_model_input_wide[(road_model_input_wide['Date'] >= BASE_YEAR) & (road_model_input_wide['Date'] <= OUTLOOK_BASE_YEAR)].copy()
+        base_year_values = road_model_input_wide[road_model_input_wide['Date'] == BASE_YEAR].copy()
+        
+        # replace any nans with 1
+        new_values[growth] = new_values[growth].fillna(1)
+        
+        # Calculate cumulative product
+        new_values[growth] = new_values.groupby(['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'])[growth].transform('cumprod')
+        #filter for latest Date only
+        new_values = new_values[new_values['Date'] == OUTLOOK_BASE_YEAR]
+        # Match base year value for each group and multiply with cumulative growth
+        cum_growth = new_values[['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', growth]].merge(base_year_values[['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', value]], on=['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'])
+        if value == 'New_vehicle_efficiency':
+            breakpoint()
+        # Multiply cumulative growth with base year value
+        cum_growth[value] = cum_growth[growth] * cum_growth[value]
+
+        #make Date = OUTLOOK_BASE_YEAR as we want to save this value as the value used for the OUTLOOK_BASE_YEAR, so that in the first year forecasted (OUTLOOK_BASE_YEAR+1) we can use this value as the base year value
+        cum_growth['Date'] = OUTLOOK_BASE_YEAR
+        
+        #merge and replace original value column with adjusted growth
+        road_model_input_wide = road_model_input_wide.merge(cum_growth[['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Date', value]],on=['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Date'], how='left', suffixes=('', '_y'))
+
+        # Replace original value column with adjusted growth
+        road_model_input_wide[value] = road_model_input_wide[value+'_y'].fillna(road_model_input_wide[value])
+        road_model_input_wide = road_model_input_wide.drop(columns=[value+'_y'])
+    return road_model_input_wide
 
 #%%
-calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True, adjust_data_to_match_esto_TESTING=True)
+
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,advance_base_year=False, adjust_data_to_match_esto_TESTING=False)
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True)
+
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True,adjust_data_to_match_esto_TESTING=True,TEST_ECONOMY='20_USA')
 #%%

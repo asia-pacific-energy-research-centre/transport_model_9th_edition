@@ -27,7 +27,7 @@ save_pickle = True
 #get all useful graphs and put them in one folder
 useful_graphs = []
 
-beginning_year = 2017
+beginning_year = OUTLOOK_BASE_YEAR
 end_year = GRAPHING_END_YEAR
 
 #plot all data in model_output_all:
@@ -866,7 +866,7 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
 #%%
 
-all_economy_graphs_massive_unwieldy_function(PLOT=False)
+# all_economy_graphs_massive_unwieldy_function(PLOT=False)
 
 #%%
 

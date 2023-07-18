@@ -94,7 +94,6 @@ def adjust_supply_side_fuel_share(energy_use_esto,supply_side_fuel_mixing):
     
     #concat them and then join to supplu_side_fuel_mixing, then swap supply_side_fuel_share for the new one, where available:
     new_share = pd.concat([share_of_gas_diesel_oil, share_of_motor_gasoline, share_of_biogas_in_lpg, share_of_biogas_in_nat_gas, share_of_bio_jet_in_jet, share_of_bio_jet_in_aviation_gasoline, share_of_bio_jet_in_kerosene]).reset_index(drop=True)
-    
     supply_side_fuel_mixing_new = supply_side_fuel_mixing.merge(new_share, on=['Economy', 'Date', 'Fuel','New_fuel'], how='left', suffixes=('', '_new')).copy()
     #where there is a new share, use that, otherwise use the old one
     supply_side_fuel_mixing_new['Supply_side_fuel_share'] = supply_side_fuel_mixing_new['Supply_side_fuel_share_new'].fillna(supply_side_fuel_mixing_new['Supply_side_fuel_share'])
@@ -244,7 +243,7 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
 #############
 
 def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energy_use_merged,road_model_input_wide,non_road_model_input_wide,energy_use_output,TESTING):
-    # 
+    breakpoint()
     #CLEAN INPUT DATA 
     #get dates that match the esto data:
     input_data_new = input_data_based_on_previous_model_run.loc[input_data_based_on_previous_model_run['Date'].isin(energy_use_merged['Date'].unique())].copy()
@@ -296,21 +295,25 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     
     #merge energy_use_merged to energy_use_output using a right merge and times the ratio by the energy use in the model to get the new energy use (and the effect of timesing by the ratio will be that the total difference for that ['Economy', 'Date', 'Medium','Fuel'] spread equally among all rows for that ['Economy', 'Date', 'Medium','Fuel') (except for supply side fuel mixing fuels, which we will handle separately, and demand side fuel mixing fuels, which we will drop as they are too ahrd to handle)
     energy_use_merged_merged = energy_use_merged.merge(energy_use_output, on=['Economy', 'Date', 'Medium','Fuel'], how='right')
+    #To make it a bit more simple, lets called Energy, Energy old. Then when we calcualte Energy*ratio it can be called Energy new. then rename it to energy and drop energy old before we move on:
+    energy_use_merged_merged.rename(columns={'Energy': 'Energy_old'}, inplace=True)   
     
     #first, drop any supply side fuel mixing fuels as thier energy use is handled separately
     supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')['New_fuel'].unique().tolist()
     energy_use_merged_merged = energy_use_merged_merged.loc[~energy_use_merged_merged['Fuel'].isin(supply_side_fuel_mixing_fuels)].copy()
     #then for any phevs sum their electricity row for each economy and date, then minus that off the bev electricity. NOTE that this only works because phevs are currently a small share of use and decreaing their enegry use in elec would probably have a minimal effect. if they were bigger we'd have to find some way to handle this properly
-    demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
-    if set(demand_side_fuel_mixing_drives) != set(['phev_d', 'phev_g']):
-        raise ValueError('demand_side_fuel_mixing_drives has changed')
-    phev_elec = energy_use_merged_merged.loc[energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])].groupby(['Economy', 'Date', 'Scenario']).sum(numeric_only=True).reset_index()
-    phev_elec['decrease'] = phev_elec['Energy'] - (phev_elec['Energy'] * phev_elec['ratio'])#wer will decrease bev energy use by this much after applying the ratio to it.
-    phev_elec['Drive'] = 'bev'
-    phev_elec['Transport Type'] = 'passenger'
-    #drop electiricty rows for phev
-    energy_use_merged_merged = energy_use_merged_merged.loc[~(energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])&energy_use_merged_merged['Fuel'].isin(['17_electricity']))].copy()
-    
+    phev=False#i dont think i need to do this actually. the stocks for phevs will end up half what they should be if we do it, and i think it is fine to keep them in here, as well just sum their energy use like so it is not by fuel later?
+    if phev:
+        demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
+        if set(demand_side_fuel_mixing_drives) != set(['phev_d', 'phev_g']):
+            raise ValueError('demand_side_fuel_mixing_drives has changed')
+        phev_elec = energy_use_merged_merged.loc[energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])].groupby(['Economy', 'Date', 'Scenario']).sum(numeric_only=True).reset_index()
+        phev_elec['decrease'] = phev_elec['Energy_old'] - (phev_elec['Energy_old'] * phev_elec['ratio'])#we will decrease bev energy use by this much after applying the ratio to it. this will effectively change bevs to make up the missing electricity use from phevs
+        phev_elec['Drive'] = 'bev'
+        phev_elec['Transport Type'] = 'passenger'
+        #drop electiricty rows for phev
+        energy_use_merged_merged = energy_use_merged_merged.loc[~(energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])&energy_use_merged_merged['Fuel'].isin(['17_electricity']))].copy()
+        
     #lastly idenifty any nas. they are probably okay bnut useful to observe for nwo: #the nas that ive seen here are to be expected, such as for bevs and phevs. Its better just to notice potential issues elswehre.
     do_this = False
     if do_this:
@@ -325,56 +328,65 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     #     input_data_new['ratio'] = input_data_new['ratio'].fillna(1)
         
     #do the ratio times enegry calc":
-    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy']*energy_use_merged_merged['ratio']
+    energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_old']*energy_use_merged_merged['ratio']
 
     #additions need to be split equally where they are made. do this using the proprtion of each energy use out of the total energy use for that fuel, medium, economy and date to do this:
     
     #replace energy with 0 where its na for the calcualtion
-    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy'].fillna(0)
-    energy_use_merged_merged['proportion_of_group'] = energy_use_merged_merged.groupby(['Economy', 'Date', 'Medium'])['Energy'].transform(lambda x: x/x.sum(numeric_only=True))
+    energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_new'].fillna(0)
+    energy_use_merged_merged['proportion_of_group'] = energy_use_merged_merged.groupby(['Economy', 'Date', 'Medium'])['Energy_new'].transform(lambda x: x/x.sum(numeric_only=True))
 
     energy_use_merged_merged['addition'] = energy_use_merged_merged['addition']*energy_use_merged_merged['proportion_of_group'].replace(np.nan, 0)
     #now need to add any additions to the Energy. this is where the ratio was inf because the model had 0 energy use but the esto data had >0. so we will add the esto data energy use to the model data energy use and just times by a ratio of 1
-    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy'] + energy_use_merged_merged['addition'].replace(np.nan, 0)
+    energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_new'] + energy_use_merged_merged['addition'].replace(np.nan, 0)
+    if phev:
+        #now change teh bev energy use by the phev electriicty amount we calculated earlier
+        energy_use_merged_merged = energy_use_merged_merged.merge(phev_elec[['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type', 'decrease']], on=['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type'], how='left')
+        #where decrease is nan, set it to 0, then decrease it
+        energy_use_merged_merged['decrease'] = energy_use_merged_merged['decrease'].fillna(0)
+        #if the result will be less than 0 however, then just set it to 0
+        energy_use_merged_merged['Energy_new'] = np.where(energy_use_merged_merged['Energy_new'] - energy_use_merged_merged['decrease'] < 0, 0, energy_use_merged_merged['Energy_new'] - energy_use_merged_merged['decrease'])
+        
+        #drop decrease
+        energy_use_merged_merged = energy_use_merged_merged.drop(columns=['decrease'])
+        
     
-    #now deccrease teh bev energy use by the phev electriicty amount we calculated earlier
-    energy_use_merged_merged = energy_use_merged_merged.merge(phev_elec[['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type', 'decrease']], on=['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type'], how='left')
-    #where decrease is nan, set it to 0, then decrease it
-    energy_use_merged_merged['decrease'] = energy_use_merged_merged['decrease'].fillna(0)
-    energy_use_merged_merged['Energy'] = energy_use_merged_merged['Energy'] - energy_use_merged_merged['decrease']
-    #drop decrease
-    energy_use_merged_merged = energy_use_merged_merged.drop(columns=['decrease'])
-    
+    #drop unneeded cols
+    energy_use_merged_merged = energy_use_merged_merged.drop(columns=['ratio','addition','proportion_of_group', 'Energy_esto', 'Energy_model', 'Energy_old', 'Fuel'])
+    #and sum now that we've calclate the new enegry use for each 'Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'
+    energy_use_merged_merged = energy_use_merged_merged.groupby(['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario']).sum(numeric_only=True).reset_index()
+    breakpoint()
     # #replicate the dfs for the other scenarios
     # energy_use_merged_merged_copy = energy_use_merged_merged.copy()
     # for scenario in scenario_list:
     #     energy_use_merged_merged_copy['Scenario'] = scenario
     #     energy_use_merged_merged = pd.concat([energy_use_merged_merged, energy_use_merged_merged_copy])
     #####################################
-    breakpoint()
     #Now join on the efficiency, Occupancy_or_load, Mileage, inteisntiy from the detailed data so we can calcualte the new inputs for the model:
     energy_use_merged_merged = energy_use_merged_merged.merge(input_data_new[['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Efficiency', 'Occupancy_or_load', 'Mileage', 'Intensity']], on=['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], how='left')
     #split into medium = road and not, then recalcualte the other measures. for road we will calcuialte travel km and activity and stocks, wehreas for non road we will just recalcualte energy use using itnsntiy instead of effcieincy
     #road:
     input_data_new_road = energy_use_merged_merged.loc[energy_use_merged_merged['Medium'] == 'road'].copy()
 
-    input_data_new_road['Travel_km'] = input_data_new_road['Energy'] * input_data_new_road['Efficiency']
+    input_data_new_road['Travel_km'] = input_data_new_road['Energy_new'] * input_data_new_road['Efficiency']
 
     input_data_new_road['Activity'] = input_data_new_road['Travel_km'] * input_data_new_road['Occupancy_or_load']
 
     input_data_new_road['Stocks'] = input_data_new_road['Activity'] / (input_data_new_road['Mileage'] * input_data_new_road['Occupancy_or_load'])
 
-    #drop unneeded cols
-    input_data_new_road = input_data_new_road.drop(columns=['ratio','addition','proportion_of_group', 'Energy_esto', 'Energy_model'])
+    #rename Energy_new to Energy
+    input_data_new_road.rename(columns={'Energy_new': 'Energy'}, inplace=True)
     
-    #non road:
+    #########
+    # non road:
     input_data_new_non_road = energy_use_merged_merged.loc[energy_use_merged_merged['Medium'] != 'road'].copy()
-    input_data_new_non_road = input_data_new_non_road.drop(columns=['ratio','addition','proportion_of_group'])
-    input_data_new_non_road['Activity'] = input_data_new_non_road['Energy'] * input_data_new_non_road['Intensity']
+    input_data_new_non_road['Activity'] = input_data_new_non_road['Energy_new'] * input_data_new_non_road['Intensity']
     
-    input_data_new_non_road.loc[(input_data_new_non_road['Energy'] > 0), 'Stocks'] = 1
-    input_data_new_non_road.loc[(input_data_new_non_road['Energy'] == 0), 'Stocks'] = 0
+    input_data_new_non_road.loc[(input_data_new_non_road['Energy_new'] > 0), 'Stocks'] = 1
+    input_data_new_non_road.loc[(input_data_new_non_road['Energy_new'] == 0), 'Stocks'] = 0
 
+    #rename Energy_new to Energy
+    input_data_new_non_road.rename(columns={'Energy_new': 'Energy'}, inplace=True)
     #drop cols unneeded for non road, by filtering tfor the same cols that are in non_road_model_input_wide
     input_data_new_non_road = input_data_new_non_road.loc[:, input_data_new_non_road.columns.isin(non_road_model_input_wide.columns)].copy()
     #is this right
@@ -402,15 +414,20 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     # missing_cols_non_road = [col for col in non_road_model_input_wide.columns if col not in input_data_new_non_road.columns]#['Non_road_intensity_improvement', 'Population', 'Gdp', 'Gdp_per_capita', 'Activity_growth']
     #what if non road missing cols are empty can we jsut carry on? or probably  throw an error if NOT empty
     #merge and add tehse missing cols back on usaing the original input data:
-    road_all_wide = input_data_new_road.merge(road_model_input_wide, on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Drive', 'Scenario'], how='left', suffixes=('', '_new'))
-    breakpoint()#is thhere any point in replacing nas here?
-    #check what new cols there are
+    road_all_wide = input_data_new_road.copy()
+    road_all_wide = road_all_wide.merge(road_model_input_wide, on=['Date', 'Economy', 'Medium', 'Transport Type','Vehicle Type',  'Drive', 'Scenario'], how='left', suffixes=('', '_new'))
+    #check what new cols there are by seeing what cols are different between input_data_new_road and road_all_wide
+    new_cols = [col for col in road_all_wide.columns if col not in input_data_new_road.columns]
     #drop cols that end with _new
     road_all_wide = road_all_wide.loc[:,~road_all_wide.columns.str.endswith('_new')].copy()
-    #and drop Fuel
-    road_all_wide = road_all_wide.drop(columns=['Fuel'])
-    non_road_all_wide = input_data_new_non_road.copy()
     
+    #NOW FOR NON ROAD
+    non_road_all_wide = input_data_new_non_road.copy()
+    non_road_all_wide = non_road_all_wide.merge(non_road_model_input_wide, on=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], how='left', suffixes=('', '_new'))
+    #check what new cols there are by seeing what cols are different between input_data_new_road and non_road_model_input_wide
+    new_cols = [col for col in input_data_new_non_road.columns if col not in non_road_all_wide.columns]
+    #drop cols that end with _new
+    non_road_all_wide = non_road_all_wide.loc[:,~non_road_all_wide.columns.str.endswith('_new')].copy()
     # #so we'll melt both the new input data and the orignal input data for road and non road, so that the measures are in one col and the values are in another. then we can merge them on the measures col and  replace values where they are new, then pivot bacc to wide format
     # #
     # input_data_new_non_road = input_data_new_non_road.melt(id_vars=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive'], var_name='Measure', value_name='Value')
@@ -531,7 +548,6 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
         diff2 = diff2.loc[(diff2.Date>=BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
     print('non road energy use difference (PJ)')
     print(diff2['Energy'].sum(numeric_only=True) - diff2['Energy_esto'].sum(numeric_only=True))
-    breakpoint()
     ###################TESTING###############
     #Another test using the proportion difference between teh two:
     total_road_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()

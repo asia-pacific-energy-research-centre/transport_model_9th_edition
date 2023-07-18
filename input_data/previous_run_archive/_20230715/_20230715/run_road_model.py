@@ -10,13 +10,13 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 import road_model_functions
 import logistic_fitting_functions
 #%%
-def run_road_model(filter_to_just_base_year=False,advance_base_year=False,run_model_before_gompertz=True):
+def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=False,run_model_before_gompertz=True):
         
     #laod all data
     road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
 
     growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
-    if filter_to_just_base_year:
+    if project_to_just_outlook_base_year:
         END_YEAR_x = OUTLOOK_BASE_YEAR
         road_model_input = road_model_input[road_model_input['Date'] <= OUTLOOK_BASE_YEAR]
         growth_forecasts = growth_forecasts[growth_forecasts['Date'] <= OUTLOOK_BASE_YEAR]
@@ -45,7 +45,7 @@ def run_road_model(filter_to_just_base_year=False,advance_base_year=False,run_mo
         main_dataframe.to_pickle('./intermediate_data/road_model/main_dataframe.pkl')
     else:
         main_dataframe = pd.read_pickle('./intermediate_data/road_model/main_dataframe.pkl')
-        if filter_to_just_base_year:
+        if project_to_just_outlook_base_year:
             main_dataframe = main_dataframe[main_dataframe['Date'] <= OUTLOOK_BASE_YEAR]
     #######################################################################
     #CLEAN DATA FOR NEXT RUN
@@ -124,7 +124,7 @@ def run_road_model(filter_to_just_base_year=False,advance_base_year=False,run_mo
     # main_dataframe.loc[(main_dataframe['Vehicle Type']=='lcv') & (main_dataframe['Economy']=='') & 
     
 #%%
-run_road_model(filter_to_just_base_year=False,run_model_before_gompertz=True,advance_base_year=True)
+run_road_model(project_to_just_outlook_base_year=False,run_model_before_gompertz=True,advance_base_year=True)
 #%%
 
 
