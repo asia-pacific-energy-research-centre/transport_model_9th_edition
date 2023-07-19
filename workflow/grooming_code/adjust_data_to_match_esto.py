@@ -480,7 +480,7 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     return road_all_wide, non_road_all_wide
 
 
-def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=True, TESTING=False, TEST_ECONOMY='19_THA'):
+def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,ADVANCE_BASE_YEAR=True, TESTING=False, TEST_ECONOMY='19_THA'):
     energy_use_esto = format_9th_input_energy_from_esto()
     
     input_data_based_on_previous_model_run = pd.read_csv('output_data/model_output_detailed/NON_ROAD_DETAILED_{}'.format(model_output_file_name))
@@ -515,14 +515,14 @@ def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,ad
     #########
     #now do tests to check data matches expectations:
     #test that the total road enegry use matches the total energy use in the esto data:
-    test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_use_merged, advance_base_year=True)
+    test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_use_merged, ADVANCE_BASE_YEAR=True)
     
     
     return road_all_wide, non_road_all_wide, supply_side_fuel_mixing_new
 
 
 #why is ratio so high in places? maybe need to fix.
-def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_use_merged, advance_base_year=True):
+def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_use_merged, ADVANCE_BASE_YEAR=True):
     #calcauklte total energy use by year and economy for both road and non road.
     #first rmeove the supply_side_fuel_mixing_fuels from esto data!
     supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')['New_fuel'].unique().tolist()
@@ -535,14 +535,14 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     #print the differentce between total energy in the years 2017 to 2022
     print('road energy use difference (PJ)')
     diff = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         diff = diff.loc[(diff.Date>BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
     else:
         diff = diff.loc[(diff.Date>=BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
     print(diff['Energy'].sum(numeric_only=True) - diff['Energy_esto'].sum(numeric_only=True))
     
     diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         diff2 = diff2.loc[(diff2.Date>BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
     else:
         diff2 = diff2.loc[(diff2.Date>=BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
@@ -558,14 +558,14 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
 
     diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
     #filter for dates after base year
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         diff_road = diff_road.loc[diff_road.Date>=OUTLOOK_BASE_YEAR]
     else:
         diff_road = diff_road.loc[diff_road.Date>=BASE_YEAR]
     diff_road_proportion = sum(diff_road['Energy'].dropna()) / sum(diff_road['Energy_esto'].dropna())
     
     diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         diff_non_road = diff_non_road.loc[diff_non_road.Date>=OUTLOOK_BASE_YEAR]
     else:
         diff_non_road = diff_non_road.loc[diff_non_road.Date>=BASE_YEAR]

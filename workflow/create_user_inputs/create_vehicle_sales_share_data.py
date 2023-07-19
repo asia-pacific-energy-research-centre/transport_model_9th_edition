@@ -53,6 +53,8 @@ def estimate_transport_data_system_sales_share(new_transport_data_system_df, IND
     #filter for Stocks in Measutre
     sales = sales.loc[sales['Measure']=='Stocks']
     cols = INDEX_COLS.copy()
+    col = col + ['road']#used for allowing swithicvn between non road mediums
+    cols.remove('Medium')
     cols.remove('Vehicle Type')
     cols.remove('Drive')
     total_stocks = sales.copy()
@@ -127,25 +129,25 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
     sales_share_base_year = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==BASE_YEAR]
     sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
     #extract unique drives, vehicle types and transport types from model_concordances_user_input_and_growth_rates
-    combinations = model_concordances_user_input_and_growth_rates[['Transport Type', 'Vehicle Type', 'Drive']].drop_duplicates()
+    combinations = model_concordances_user_input_and_growth_rates[['Medium','Transport Type','road', 'Vehicle Type', 'Drive']].drop_duplicates()
     #find unique combiantions in passenger_drive_shares and freight_drive_shares
-    p = passenger_drive_shares[['Vehicle Type', 'Drive']].drop_duplicates()
+    p = passenger_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
     p['Transport Type'] = 'passenger'
-    f = freight_drive_shares[['Vehicle Type', 'Drive']].drop_duplicates()
+    f = freight_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
     f['Transport Type'] = 'freight'
     combinations_manual_input = pd.concat([p , f])
     #dropo the combinations in sales_share_manual_input from sales_share_base_year
-    sales_share_base_year = sales_share_base_year[~sales_share_base_year[['Transport Type', 'Vehicle Type', 'Drive']].apply(tuple,1).isin(combinations_manual_input[['Transport Type', 'Vehicle Type', 'Drive']].apply(tuple,1))]
+    sales_share_base_year = sales_share_base_year[~sales_share_base_year[['Transport Type', 'Medium','Vehicle Type','road', 'Drive']].apply(tuple,1).isin(combinations_manual_input[['Transport Type', 'road','Medium','Vehicle Type', 'Drive']].apply(tuple,1))]
 
     #set nas in drive share to 0
     sales_share_base_year[ 'Drive_share'] = sales_share_base_year[ 'Drive_share'].fillna(0)
     #find the normalised shares for the available data in the base year data
-    sales_share_base_year['Drive_share'] = sales_share_base_year.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Drive_share'].transform(lambda x: x/x.sum())
+    sales_share_base_year['Drive_share'] = sales_share_base_year.groupby(['Economy', 'Scenario', 'Transport Type', 'road','Medium','Vehicle Type'])['Drive_share'].transform(lambda x: x/x.sum())
     #set nas in drive share to 0
     sales_share_base_year[ 'Drive_share'] = sales_share_base_year[ 'Drive_share'].fillna(0)
 
     #now get sum of manually inputted shares for each year
-    sales_share_manual_input_sum = sales_share_manual_input.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date'])['Drive_share'].sum().reset_index()
+    sales_share_manual_input_sum = sales_share_manual_input.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Date'])['Drive_share'].sum().reset_index()
     #1 minus it
     sales_share_manual_input_sum['Drive_share_remainder'] = 1 - sales_share_manual_input_sum['Drive_share']
     #drop drive share
@@ -156,12 +158,12 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
         print(sales_share_manual_input_sum.loc[sales_share_manual_input_sum['Drive_share_remainder']<0])
         raise ValueError('Drive share remainder is less than 0')
     #join this to the base year data using right join
-    missing_sales_shares = sales_share_base_year[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type','Drive', 'Drive_share']].merge(sales_share_manual_input_sum, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'], how='right')
+    missing_sales_shares = sales_share_base_year[['Economy', 'Scenario', 'Transport Type','Medium', 'Vehicle Type','Drive', 'road','Drive_share']].merge(sales_share_manual_input_sum, on=['Economy','road', 'Scenario', 'Medium','Transport Type', 'Vehicle Type'], how='right')
     #times the base year data by the 1-x
     missing_sales_shares['Drive_share'] = missing_sales_shares['Drive_share'] * missing_sales_shares['Drive_share_remainder']
 
     #now we need to insert these rows into the  new_sales_shares_pre_interp, rmeoving their original rows (which will be nas.) so do a join and then repalce drive share with the new drive share where it is not na
-    final_df = new_sales_shares_pre_interp.merge(missing_sales_shares, on=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type','Date', 'Drive'], how='left', suffixes=('', '_y'))
+    final_df = new_sales_shares_pre_interp.merge(missing_sales_shares, on=['Economy', 'Scenario','Medium', 'Transport Type','road', 'Vehicle Type','Date', 'Drive'], how='left', suffixes=('', '_y'))
     #want to replace the drive share with the new drive share where it is na (replacing nas with nas too.)
     final_df['Drive_share'] = final_df['Drive_share'].fillna(final_df['Drive_share_y'])
     #drop the y cols
@@ -179,11 +181,22 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     #drop non road
     new_transport_data_system_df = new_transport_data_system_df.loc[new_transport_data_system_df['Medium']=='road']
     #calcualte nomral;ised sales share for each transport type. so for each economy,  transport type and date, we want to know the share of sales for each row.
+
+    #insert stocks data for non road. do this by copying the activity data and setting stocks to be the same (i.e. the activity per stock is 1)
+    non_road_stocks = new_transport_data_system_df.loc[new_transport_data_system_df['Measure']=='Activity'].copy()
+    non_road_stocks['Measure'] = 'Stocks'
+    non_road_stocks['Unit'] = 'Stocks'
+    #now concat again
+    new_transport_data_system_df = pd.concat([new_transport_data_system_df, non_road_stocks])
+        
     #this means we ahve to calcualte the sales by finding the difference between the stock in the current year and the stock in the previous year.
     #this could rersult in issues because we may have gaps in our data. but for now we will just assume that we have data for every year and see how it goes:
     breakpoint()
+    new_transport_data_system_df['road'] = new_transport_data_system_df['Medium']=='road'
     sales = estimate_transport_data_system_sales_share(new_transport_data_system_df, INDEX_COLS,SCENARIOS_LIST,YEARS_TO_KEEP_AFTER_BASE_YEAR)
-
+    #drop 'road' for now (it wont work with the concordances)
+    sales = sales.drop(columns=['road'])
+    breakpoint()
     #extract dictionary from csv
     #for later, load in vehicle_type_growth_regions sheet and vehicle_type_growth sheet
     vehicle_type_growth_regions = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx',sheet_name='vehicle_type_growth_regions')
@@ -217,7 +230,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     #Identify duplicates in case we have multiple rows for the same economy, vehicle type, drive type, transport type and date
     # #todo for some reason we need to do this and i htink its
-    new_sales_shares_sum_dupes = new_sales_shares_sum[new_sales_shares_sum.duplicated(subset=['Economy', 'Scenario', 'Vehicle Type', 'Transport Type','Drive', 'Date','Medium'])]
+    new_sales_shares_sum_dupes = new_sales_shares_sum[new_sales_shares_sum.duplicated(subset=['Economy', 'Scenario', 'Medium','Vehicle Type', 'Transport Type','Drive', 'Date','Medium'])]
     if len(new_sales_shares_sum_dupes)>0:#somehow getting dupes. 
         raise ValueError('new_sales_shares_sum_dupes is not empty. This should not happen. Investigate')
         
@@ -282,12 +295,13 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     #####################################
     #CALCAULTE CURRENT SHARES  
     #####################################
-
+    #before doing anything, create new col called 'road' that is True or False based on the medium. That way we can easily handle switching between non road types by treating any transport type share sums, as also having to be grouped by 'road'.
+    new_sales_shares_sum['road'] = new_sales_shares_sum['Medium']=='road'
     # breakpoint()
     #PLEASE NOTE THAT VALUE IS THE % OF THE TRANSPORT TYPE FOR THAT VEHICLE TYPE AND DRIVE TYPE. SO IF WE SUM BY VEHICLE TYPE WE GET THE TOTAL SHARE OF EACH VEHICLE TYPE. IF WE DIVIDE BY THIS WE GET THE SHARE OF EACH DRIVE TYPE WITHIN EACH VEHICLE TYPE
     #reaplce Value with Transport_type_share
     new_sales_shares_sum = new_sales_shares_sum.rename(columns={'Sales Share':'Transport_type_share'})
-    new_sales_shares_sum['Vehicle_type_share_sum'] = new_sales_shares_sum.groupby(['Economy', 'Scenario', 'Vehicle Type', 'Transport Type', 'Date'])['Transport_type_share'].transform('sum')
+    new_sales_shares_sum['Vehicle_type_share_sum'] = new_sales_shares_sum.groupby(['Economy', 'Scenario', 'Vehicle Type','road', 'Medium','Transport Type', 'Date'])['Transport_type_share'].transform('sum')
 
     new_sales_shares_sum['Drive_share'] = new_sales_shares_sum['Transport_type_share']/new_sales_shares_sum['Vehicle_type_share_sum']
 
@@ -296,14 +310,14 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     # breakpoint()
     #first create a clean dataframe with all values set to NA for every year after the base year
-    new_sales_shares_sum_clean = new_sales_shares_sum[['Economy', 'Scenario',  'Transport Type', 'Date', 'Vehicle Type', 'Drive', 'Drive_share']].drop_duplicates()
+    new_sales_shares_sum_clean = new_sales_shares_sum[['Economy', 'Scenario','Medium', 'road', 'Transport Type', 'Date', 'Vehicle Type', 'Drive', 'Drive_share']].drop_duplicates()
 
     new_sales_shares_sum_0 = new_sales_shares_sum_clean.copy()
 
     new_sales_shares_sum_0.loc[new_sales_shares_sum_0['Date']>BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Drive_share'] = np.nan
 
     #sort
-    new_sales_shares_sum_0 = new_sales_shares_sum_0.sort_values(by=['Economy', 'Scenario', 'Date', 'Vehicle Type', 'Transport Type', 'Drive'])
+    new_sales_shares_sum_0 = new_sales_shares_sum_0.sort_values(by=['Economy', 'Scenario', 'Date', 'Vehicle Type','Medium','road', 'Transport Type', 'Drive'])
 
     # breakpoint()#were getting no values fro Drive_share for <=BASE_YEar
     ########################################################################################################################################################
@@ -325,28 +339,30 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
         for i, row in df.iterrows():
             scenario_dict = outer_dict.setdefault(row['Scenario'], {})
             inner_dict = scenario_dict.setdefault(row['Region'], {})
-            vehicle_dict = inner_dict.setdefault(row['Vehicle Type'], {})
+            medium_dict = inner_dict.setdefault(row['Medium'], {})
+            vehicle_dict = medium_dict.setdefault(row['Vehicle Type'], {})
             if row['Drive'] in vehicle_dict:
                 vehicle_dict[row['Drive']].append((row['Share'], row['Date']))
             else:
                 vehicle_dict[row['Drive']] = [(row['Share'], row['Date'])]
         return outer_dict
 
-    passenger_drive_shares = passenger_drive_shares.melt(id_vars=['Region', 'Vehicle Type', 'Drive', 'Date'],var_name='Scenario', value_name='Share')
-    freight_drive_shares = freight_drive_shares.melt(id_vars=['Region', 'Vehicle Type', 'Drive', 'Date'],var_name='Scenario', value_name='Share')
+    passenger_drive_shares = passenger_drive_shares.melt(id_vars=['Region', 'Medium','Vehicle Type', 'Drive', 'Date'],var_name='Scenario', value_name='Share')
+    freight_drive_shares = freight_drive_shares.melt(id_vars=['Region', 'Medium','Vehicle Type', 'Drive', 'Date'],var_name='Scenario', value_name='Share')
     drive_shares_passenger_dict = df_to_nested_dict(passenger_drive_shares)
     drive_shares_freight_dict = df_to_nested_dict(freight_drive_shares)
 
 
     def create_drive_shares_df(df, drive_shares_dict):
         for scenario, regions in drive_shares_dict.items():
-            for region, veh_types in regions.items():
+            for region, mediums in regions.items():
+            for mediums, veh_types in mediums.items():
                 for veh_type, drives in veh_types.items():
                     for drive, shares in drives.items():
                         for share in shares:
                             year = share[1]
                             share_ = share[0]
-                            df.loc[(df['Region'] == region) & (df['Vehicle Type'] == veh_type) & (df['Drive'] == drive) & (df['Date'] == year) & (df['Scenario'] == scenario), 'Drive_share'] = share_
+                            df.loc[(df['Region'] == region) & (df['Vehicle Type'] == veh_type) & (df['Drive'] == drive) & (df['Date'] == year) & (df['Scenario'] == scenario)& (df['Medium'] == medium), 'Drive_share'] = share_
         return df
 
     #using the drive shares we laoded in, create a df with which to set the drive shares
@@ -378,21 +394,21 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     new_sales_shares_test = new_sales_shares_pre_interp.copy()
     #drop na in Drive Share col
     new_sales_shares_test = new_sales_shares_test.dropna(subset=['Drive_share'])
-    new_sales_shares_test = new_sales_shares_test.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive']).count().reset_index()
+    new_sales_shares_test = new_sales_shares_test.groupby(['Economy', 'Scenario','Medium', 'road','Transport Type', 'Vehicle Type', 'Drive']).count().reset_index()
     #where we have very few sales shares to interpoalte by, we can just set the sales share to 0, but tell teh user.
     new_sales_shares_test = new_sales_shares_test.loc[new_sales_shares_test['Date']<=4]
     #breakpoint()
     if len(new_sales_shares_test) > 0:
         #get unique groups
-        new_sales_shares_test = new_sales_shares_test[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive']].drop_duplicates()
+        new_sales_shares_test = new_sales_shares_test[['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive']].drop_duplicates()
         #print unique groups when you ignore scenario and economy
-        new_sales_shares_test_unique = new_sales_shares_test[['Transport Type', 'Vehicle Type', 'Drive']].drop_duplicates()
+        new_sales_shares_test_unique = new_sales_shares_test[['Transport Type', 'Medium','Vehicle Type', 'Drive']].drop_duplicates()
         print('#####\nWARNING: The following groups have less than 4 sales shares to interpolate by. Sales shares for these groups will be set to 0 for all years.\n Please check the data and rerun the model if this is not what you want\n#####')
         print(new_sales_shares_test_unique)
 
         #set sales share to 0 for these groups by retrievinmg them by index. So set index of both to [['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive']] and then set the sales share to 0 for the index of the groups in new_sales_shares_test
-        new_sales_shares_test = new_sales_shares_test.set_index(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])
-        new_sales_shares_pre_interp = new_sales_shares_pre_interp.set_index(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])
+        new_sales_shares_test = new_sales_shares_test.set_index(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive'])
+        new_sales_shares_pre_interp = new_sales_shares_pre_interp.set_index(['Economy', 'Scenario', 'road','Transport Type','Medium', 'Vehicle Type', 'Drive'])
         new_sales_shares_pre_interp.loc[new_sales_shares_test.index, 'Drive_share'] = 0
         #reset index
         new_sales_shares_pre_interp = new_sales_shares_pre_interp.reset_index()
@@ -400,28 +416,28 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     ################################################################################
     #NOW DO INTERPOLATION
     #check for duplicates on the cols we will group by
-    new_sales_shares_concat_interp_dupes = new_sales_shares_pre_interp[new_sales_shares_pre_interp.duplicated(subset=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], keep=False)]
+    new_sales_shares_concat_interp_dupes = new_sales_shares_pre_interp[new_sales_shares_pre_interp.duplicated(subset=['Economy', 'Scenario', 'Date', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive'], keep=False)]
     if len(new_sales_shares_concat_interp_dupes) > 0:
         raise Exception(f'ERROR: DUPLICATES IN NEW SALES SHARES CONCAT INTERP {new_sales_shares_concat_interp_dupes}')
     
     #order data by year
-    new_sales_shares_concat_interp = new_sales_shares_pre_interp.sort_values(by=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']).copy()
+    new_sales_shares_concat_interp = new_sales_shares_pre_interp.sort_values(by=['Economy', 'Scenario', 'Date','road', 'Transport Type', 'Medium','Vehicle Type', 'Drive']).copy()
     
     if X_ORDER == 'linear':
         #do interpolation using spline and order = X
         
-        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='linear'))
+        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='linear'))
     else:
         #do interpolation using spline and order = X
         
-        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='spline', order=X_ORDER))
+        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Medium','road','Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='spline', order=X_ORDER))
     
     #where any values are negatives or na just set them to 0
     new_sales_shares_concat_interp.loc[new_sales_shares_concat_interp['Drive_share']<0, 'Drive_share'] = 0
     new_sales_shares_concat_interp.loc[new_sales_shares_concat_interp['Drive_share'].isna(), 'Drive_share'] = 0
 
     #now we just need to normalise by vehicle type so that the drive share for each vehicle type sums to 1
-    new_sales_shares_concat_interp['Drive_sum'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Date'])['Drive_share'].transform('sum')
+    new_sales_shares_concat_interp['Drive_sum'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario','road', 'Transport Type','Medium', 'Vehicle Type', 'Date'])['Drive_share'].transform('sum')
 
     new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp['Drive_share']/new_sales_shares_concat_interp['Drive_sum']
 
@@ -435,11 +451,11 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     original_new_sales_shares_by_vehicle.loc[original_new_sales_shares_by_vehicle['Date'].isin(all_zero_years), 'Vehicle_type_share_sum'] = np.nan
     #now sort by date then ffill
-    original_new_sales_shares_by_vehicle = original_new_sales_shares_by_vehicle.sort_values(by=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
-    original_new_sales_shares_by_vehicle['Vehicle_type_share_sum'] = original_new_sales_shares_by_vehicle.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Vehicle_type_share_sum'].apply(lambda group: group.ffill())
+    original_new_sales_shares_by_vehicle = original_new_sales_shares_by_vehicle.sort_values(by=['Economy', 'Scenario', 'Date','road', 'Transport Type','Medium', 'Vehicle Type', 'Drive'])
+    original_new_sales_shares_by_vehicle['Vehicle_type_share_sum'] = original_new_sales_shares_by_vehicle.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type'])['Vehicle_type_share_sum'].apply(lambda group: group.ffill())
 
     #now merge the values onto the oroginal df and times by the vehicle type shares
-    new_sales_shares_all = new_sales_shares_interp_by_drive.merge(original_new_sales_shares_by_vehicle, on=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], how='left')
+    new_sales_shares_all = new_sales_shares_interp_by_drive.merge(original_new_sales_shares_by_vehicle, on=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'road','Drive'], how='left')
 
     #times the values to get the final values so that they sum to 1 by transport type
     new_sales_shares_all['Transport_type_share'] = new_sales_shares_all['Vehicle_type_share_sum']*new_sales_shares_all['Drive_share']
@@ -463,18 +479,19 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     #then normalise all to 1 by transport type
     vehicle_type_growth_regions = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx', sheet_name='vehicle_type_growth_regions')
     vehicle_type_growth = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx', sheet_name='vehicle_type_growth')
+    
     new_sales_shares_all_new= new_sales_shares_all.copy()
     #use vehicle_type_growth_regions to merge regions to econmy
     new_sales_shares_all_new = new_sales_shares_all_new.merge(vehicle_type_growth_regions, on=['Economy'], how='left')
     #merge vehicle_type_growth to new_sales_shares_all_new
-    new_sales_shares_all_new = new_sales_shares_all_new.merge(vehicle_type_growth, on=['Region', 'Scenario', 'Transport Type', 'Vehicle Type'], how='left')
+    new_sales_shares_all_new = new_sales_shares_all_new.merge(vehicle_type_growth, on=['Region', 'Scenario', 'Transport Type', 'Medium','road','Vehicle Type'], how='left')
     #cumprod the growth rate (Growth) when grouping by Economy, Scenario, Transport Type, Vehicle Type and drive # but first sort by date
-    new_sales_shares_all_new = new_sales_shares_all_new.sort_values(by=['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive', 'Date'])
-    new_sales_shares_all_new['Compound_growth_rate'] = new_sales_shares_all_new.groupby(['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive'])['Growth'].cumprod()
+    new_sales_shares_all_new = new_sales_shares_all_new.sort_values(by=['Economy', 'Scenario', 'Transport Type','Medium', 'Vehicle Type','road', 'Drive', 'Date'])
+    new_sales_shares_all_new['Compound_growth_rate'] = new_sales_shares_all_new.groupby(['Economy', 'Scenario', 'Transport Type', 'Medium','Vehicle Type','road', 'Drive'])['Growth'].cumprod()
     #apply the growth rate to the Transport_type_share
     new_sales_shares_all_new['Transport_type_share_new'] = new_sales_shares_all_new['Transport_type_share'] * new_sales_shares_all_new['Compound_growth_rate']
     #normalise the Transport_type_share_new to 1
-    new_sales_shares_all_new['Transport_type_share_new'] = new_sales_shares_all_new.groupby(['Economy', 'Scenario', 'Date','Transport Type'])['Transport_type_share_new'].transform(lambda x: x/x.sum())
+    new_sales_shares_all_new['Transport_type_share_new'] = new_sales_shares_all_new.groupby(['Economy', 'Scenario', 'Date','road','Transport Type'])['Transport_type_share_new'].transform(lambda x: x/x.sum())
 
     plotting=True
     if plotting:
@@ -511,10 +528,12 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     
     #final check before saving:
-    a = new_sales_shares_all_new.loc[(new_sales_shares_all_new['Measure']=='Vehicle_sales_share') & (new_sales_shares_all_new['Transport Type']=='passenger') & (new_sales_shares_all_new['Date']==2019) & (new_sales_shares_all_new['Economy']=='01_AUS') & (new_sales_shares_all_new['Scenario']=='Reference')].copy()
+    a = new_sales_shares_all_new.loc[(new_sales_shares_all_new['Measure']=='Vehicle_sales_share') & (new_sales_shares_all_new['Transport Type']=='passenger') & (new_sales_shares_all_new['Date']==2019) & (new_sales_shares_all_new['Economy']=='01_AUS') & (new_sales_shares_all_new['Scenario']=='Reference') &(new_sales_shares_all_new['Medium']=='road')].copy()
     if abs(a.Value.sum() - 1) > 0.0001: 
         raise ValueError(f'The sum of the vehicle sales share for passenger vehicles in 2019 is not 1, it is {a.Value.sum()}. Please check the user input data and fix this.')
     
+    #drop 'road',
+    new_sales_shares_all_new = new_sales_shares_all_new.drop(columns=['road'])
     #also save the data to the user_input_spreadsheets folder as csv
     new_sales_shares_all_new.to_csv('input_data/user_input_spreadsheets/Vehicle_sales_share.csv', index = False)
 

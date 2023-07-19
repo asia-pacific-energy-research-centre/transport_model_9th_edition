@@ -52,7 +52,7 @@ ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to []
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 USE_LATEST_OUTPUT_DATE_ID = True
 #create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
-
+# FILE_DATE_ID ='_20230718'
 try:
     if FILE_DATE_ID:
        pass
@@ -158,9 +158,9 @@ model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_deman
 #ESTO/9th_EBT to transport model mappings:
 medium_mapping = {'air': '15_01_domestic_air_transport', 'road': '15_02_road', 'rail': '15_03_rail', 'ship': '15_04_domestic_navigation', 'pipeline':'15_05_pipeline_transport', 'nonspecified': '15_06_nonspecified_transport'}
 
-transport_type_mapping = {'passenger': 'passenger', 'freight': 'freight'}
+transport_type_mapping = {'passenger': '01_passenger', 'freight': '02_freight'}
 
-vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_02_01_two_wheeler','all':'x'}
+vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_01_01_two_wheeler','all':'x'}
 
 vehicle_type_mapping_freight = {'mt': '15_02_02_03_medium_truck', 'lcv': '15_02_02_02_light_commercial_vehicle', 'ht': '15_02_02_04_heavy_truck', '2w': '15_02_02_01_two_wheeler_freight', 'all':'x'}
 

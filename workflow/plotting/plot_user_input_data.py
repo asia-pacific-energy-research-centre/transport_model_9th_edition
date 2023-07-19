@@ -48,30 +48,29 @@ def plot_new_sales_shares(new_sales_shares_all):
     if plotting:
         import plotly.express as px
         new_sales_shares_all_plot = new_sales_shares_all.copy()
-        new_sales_shares_all_plot['Vehicle_Transport'] = new_sales_shares_all_plot['Vehicle Type'] + '_' + new_sales_shares_all_plot['Transport Type']
+        new_sales_shares_all_plot['Vehicle_Transport_medium'] = new_sales_shares_all_plot['Vehicle Type'] + '_' + new_sales_shares_all_plot['Transport Type'] + '_' + new_sales_shares_all_plot['Medium']
 
         for scenario in new_sales_shares_all_plot['Scenario'].unique():
-            for Vehicle_Transport in new_sales_shares_all_plot['Vehicle_Transport'].unique():
-                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport']==Vehicle_Transport) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
+            for Vehicle_Transport_Medium in new_sales_shares_all_plot['Vehicle_Transport_medium'].unique():
+                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport_medium']==Vehicle_Transport_Medium) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
 
                 fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
-                fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport}_{scenario}_drive_share.html', auto_open=False)
+                fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport_Medium}_{scenario}_drive_share.html', auto_open=False)
 
-                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport']==Vehicle_Transport) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
-                fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport)
+                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport_Medium']==Vehicle_Transport_Medium) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
+                fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport_Medium)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
-                fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport}_{scenario}Transport_type_share_pre_vehicle_share_adj.html', auto_open=False)
+                fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport_Medium}_{scenario}Transport_type_share_pre_vehicle_share_adj.html', auto_open=False)
 
-    #it is also usefu to plot the vehicle sales share by economy now. This is because it is a useful graph for analysis of assumptions. So loop through economys and just plkot the Drive_share by economy, with vehicle type and transport type as facets
-    plotting = True
-    if plotting:
+        #it is also usefu to plot the vehicle sales share by economy now. This is because it is a useful graph for analysis of assumptions. So loop through economys and just plkot the Drive_share by economy, with vehicle type and transport type as facets
+
         for scenario in new_sales_shares_all_plot['Scenario'].unique():
             for economy in new_sales_shares_all_plot['Economy'].unique():
                 
                 plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Scenario']==scenario) & (new_sales_shares_all_plot['Economy']==economy)].copy()
-                title = f'{economy} {scenario} Drive Share by Vehicle Type and Transport Type'
-                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Vehicle_Transport',facet_col_wrap=3, title=Vehicle_Transport)
+                title = f'{economy} {scenario} Drive Share by Vehicle Type and Transport Type and medium'
+                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Vehicle_Transport_Medium',facet_col_wrap=3, title=Vehicle_Transport_Medium)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}_drive_share.html', auto_open=False)
 
@@ -109,20 +108,22 @@ def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new
         import plotly.express as px
 
         #extract a df for Transport_type_share measures:
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date','Transport Type', 'Vehicle Type', 'Drive',  'Transport_type_share', 'Transport_type_share_new']].copy()
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date','Transport Type','Medium', 'Vehicle Type', 'Drive',  'Transport_type_share', 'Transport_type_share_new']].copy()
 
         #make them long
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot_transport_type_shares.melt(id_vars=['Economy', 'Scenario', 'Date', 'Transport Type','Vehicle Type', 'Drive'], value_vars=['Transport_type_share', 'Transport_type_share_new'], var_name='Measure', value_name='Transport_type_share')
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot_transport_type_shares.melt(id_vars=['Economy', 'Scenario', 'Date', 'Transport Type','Medium','Vehicle Type', 'Drive'], value_vars=['Transport_type_share', 'Transport_type_share_new'], var_name='Measure', value_name='Transport_type_share')
 
         #join drive and vehicle type
         new_sales_shares_all_plot_transport_type_shares['Vehicle_drive'] = new_sales_shares_all_plot_transport_type_shares['Vehicle Type'] + '_' + new_sales_shares_all_plot_transport_type_shares['Drive']
         for scenario in new_sales_shares_all_plot_transport_type_shares['Scenario'].unique():
             for economy in new_sales_shares_all_plot_transport_type_shares['Economy'].unique():
-                plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario)].copy()
+                for medium in new_sales_shares_all_plot_transport_type_shares['Medium'].unique():
+                        
+                    plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario) & (new_sales_shares_all_plot_transport_type_shares['Medium']==medium)].copy()
 
-                fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Vehicle_drive', line_dash = 'Measure', facet_col='Transport Type',facet_col_wrap=1, title='Transport_type_share')
-                #write to html in plotting_output\input_exploration\vehicle_sales_shares
-                fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}Transport_type_share.html', auto_open=False)
+                    fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Vehicle_drive', line_dash = 'Measure', facet_col='Transport Type',facet_col_wrap=1, title=f'Transport_type_share {medium}')
+                    #write to html in plotting_output\input_exploration\vehicle_sales_shares
+                    fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}_{medium}_Transport_type_share.html', auto_open=False)
     print('Plots of new sales shares saved to plotting_output/input_exploration/vehicle_sales_shares/')
 
 def plot_input_sales_shares_before_interpolation(new_sales_shares_pre_interp):
@@ -136,15 +137,16 @@ def plot_input_sales_shares_before_interpolation(new_sales_shares_pre_interp):
         import plotly.express as px
 
         #extract a df for Transport_type_share measures:
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive','Drive_share']].copy()
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date', 'Medium','Transport Type', 'Vehicle Type', 'Drive','Drive_share']].copy()
 
         #join drive and vehicle type
         new_sales_shares_all_plot_transport_type_shares['Vehicle_drive'] = new_sales_shares_all_plot_transport_type_shares['Vehicle Type'] + '_' + new_sales_shares_all_plot_transport_type_shares['Drive']
         for scenario in new_sales_shares_all_plot_transport_type_shares['Scenario'].unique():
             for economy in new_sales_shares_all_plot_transport_type_shares['Economy'].unique():
                 plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario)].copy()
-
-                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', line_dash = 'Vehicle Type', facet_col='Transport Type',facet_col_wrap=1, title='Drive_share')
+                #concattransport type and medium
+                plot_data['Transport_type'] = plot_data['Transport Type'] + '_' + plot_data['Medium']
+                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', line_dash = 'Vehicle Type', facet_col='Transport Type',facet_col_wrap=3, title='Drive_share')
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}drive_share_pre_interp.html', auto_open=False)
                 

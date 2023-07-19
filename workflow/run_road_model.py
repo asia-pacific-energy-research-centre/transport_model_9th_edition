@@ -10,9 +10,9 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 import road_model_functions
 import logistic_fitting_functions
 #%%
-def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=False,run_model_before_gompertz=True, vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':15, 'mt': 20, 'ht': 30}, turnover_rate_parameters_dict = {'turnover_rate_steepness':0.7,'std_deviation_share':0.25,'midpoint_new':12.5,'midpoint_old':17.5}, USE_ADVANCED_TURNOVER_RATES = True):
+def run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BASE_YEAR=False,run_model_before_gompertz=True,  USE_ADVANCED_TURNOVER_RATES = True):
     
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
             #laod all data
             road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide_base_year_adv.csv')
 
@@ -22,16 +22,21 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
         road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
 
         growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
-    if project_to_just_outlook_base_year:
+    if PROJECT_TO_JUST_OUTLOOK_BASE_YEAR:
         END_YEAR_x = OUTLOOK_BASE_YEAR
         road_model_input = road_model_input[road_model_input['Date'] <= OUTLOOK_BASE_YEAR]
         growth_forecasts = growth_forecasts[growth_forecasts['Date'] <= OUTLOOK_BASE_YEAR]
     else:
         END_YEAR_x = END_YEAR
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         BASE_YEAR_x = OUTLOOK_BASE_YEAR
     else:
         BASE_YEAR_x = BASE_YEAR
+        
+    #grab from the paramters.yml file:
+    vehicle_gompertz_factors = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['vehicle_gompertz_factors']
+    turnover_rate_parameters_dict = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['turnover_rate_parameters_dict']
+    
     main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(BASE_YEAR_x,road_model_input,low_ram_computer=False)
     
     #if you want to analyse what is hapening in th model then set this to true and the model will output a dataframe wioth all the variables that are being calculated.
@@ -51,7 +56,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
         main_dataframe.to_pickle('./intermediate_data/road_model/main_dataframe.pkl')
     else:
         main_dataframe = pd.read_pickle('./intermediate_data/road_model/main_dataframe.pkl')
-        if project_to_just_outlook_base_year:
+        if PROJECT_TO_JUST_OUTLOOK_BASE_YEAR:
             main_dataframe = main_dataframe[main_dataframe['Date'] <= OUTLOOK_BASE_YEAR]
     #######################################################################
     #CLEAN DATA FOR NEXT RUN
@@ -96,7 +101,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
     #now srt growth_forecasts to new_growth_forecasts
     growth_forecasts = new_growth_forecasts.copy()
     
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         #save these growth forecasts for use in non road too:
         growth_forecasts.to_pickle('./intermediate_data/road_model/final_road_growth_forecasts_base_year_adv.pkl')
     else:
@@ -124,7 +129,7 @@ def run_road_model(project_to_just_outlook_base_year=False,advance_base_year=Fal
 
     
 #%%
-# run_road_model(project_to_just_outlook_base_year=False,run_model_before_gompertz=True,advance_base_year=True)
+# run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,run_model_before_gompertz=True,ADVANCE_BASE_YEAR=True)
 #%%
 
 

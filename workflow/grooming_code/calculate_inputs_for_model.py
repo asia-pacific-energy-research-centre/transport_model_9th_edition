@@ -19,11 +19,11 @@ import utility_functions
 
 import adjust_data_to_match_esto
 
-def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,advance_base_year=False, adjust_data_to_match_esto_TESTING=False, TEST_ECONOMY='19_THA'):
+def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN,ADVANCE_BASE_YEAR=False, adjust_data_to_match_esto_TESTING=False, TEST_ECONOMY='19_THA'):
     #load data
     transport_dataset = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
 
-    # if project_to_just_outlook_base_year:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
+    # if PROJECT_TO_JUST_OUTLOOK_BASE_YEAR:#dont think i should do this because it doesnt matter to the output. better to jsut do it later so we the output suits whatever you need
     #     #filter so the data is from OUTLOOK_BASE_YEAR and back
     #     transport_dataset = transport_dataset[transport_dataset['Date'] <= OUTLOOK_BASE_YEAR]
     #remove uneeded columns
@@ -152,10 +152,10 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
         growth_forecasts_wide['Activity_growth'] = (growth_forecasts_wide['Activity_growth'] - 1) * PROPORTION_OF_GROWTH + 1
     
 
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         #use teh funcitons in adjust_data_to_match_esto.py to adjust the energy use to match the esto data in the MODEL_BASE_YEAR. To do this we will have needed to run the model up ot htat year already, and saved the results. We will then use the results to adjust the energy use to match the esto data. This is so that we can make sure that stocks and energy are about what youd expect, i think. 
         breakpoint()
-        new_road_model_input_wide, new_non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,advance_base_year=advance_base_year, TESTING=adjust_data_to_match_esto_TESTING, TEST_ECONOMY=TEST_ECONOMY)
+        new_road_model_input_wide, new_non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, TESTING=adjust_data_to_match_esto_TESTING, TEST_ECONOMY=TEST_ECONOMY)
         #test if the output contains dates greater than the outlook base year. if it doesnt then the previous model run probably was only to the Outlook base year to savbe time. So we need to add data fpor this, using road_model_input_wide and non_road_model_input_wide:
         if (new_road_model_input_wide['Date'].max() == OUTLOOK_BASE_YEAR):
             if (new_non_road_model_input_wide['Date'].max() == OUTLOOK_BASE_YEAR):
@@ -225,8 +225,8 @@ def apply_growth_up_to_outlook_base_year(road_model_input_wide,growth_columns_di
 
 #%%
 
-# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,advance_base_year=False, adjust_data_to_match_esto_TESTING=False)
-# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True)
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,ADVANCE_BASE_YEAR=False, adjust_data_to_match_esto_TESTING=False)
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True)
 
-# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=True,adjust_data_to_match_esto_TESTING=True,TEST_ECONOMY='20_USA')
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True,adjust_data_to_match_esto_TESTING=True,TEST_ECONOMY='20_USA')
 #%%

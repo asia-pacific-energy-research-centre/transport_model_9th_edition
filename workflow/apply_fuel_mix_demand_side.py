@@ -13,7 +13,7 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
  #%%
-def apply_fuel_mix_demand_side(project_to_just_outlook_base_year=False):
+def apply_fuel_mix_demand_side(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False):
     
     # model_output_file_name = 'model_output_years_2017_to_2050_DATE20220824_1043.csv'
     #load model output
@@ -28,7 +28,7 @@ def apply_fuel_mix_demand_side(project_to_just_outlook_base_year=False):
     #drop supply_side_fuel_mixing_fuels from model_concordances_fuels
     model_concordances_fuels = model_concordances_fuels[~model_concordances_fuels['Fuel'].isin(supply_side_fuel_mixing_fuels)]
     
-    if project_to_just_outlook_base_year:
+    if PROJECT_TO_JUST_OUTLOOK_BASE_YEAR:
         #filter so the data is from OUTLOOK_BASE_YEAR and back
         demand_side_fuel_mixing = demand_side_fuel_mixing[demand_side_fuel_mixing['Date'] <= OUTLOOK_BASE_YEAR]
         model_concordances_fuels = model_concordances_fuels[model_concordances_fuels['Date'] <= OUTLOOK_BASE_YEAR]

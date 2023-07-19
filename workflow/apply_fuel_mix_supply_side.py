@@ -10,23 +10,23 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 #%%
-def apply_fuel_mix_supply_side(project_to_just_outlook_base_year=False,advance_base_year=False):
+def apply_fuel_mix_supply_side(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BASE_YEAR=False):
     # breakpoint()
     # model_output_file_name = 'model_output_years_2017_to_2050_DATE20220824_1043.csv'
     #load user input for fuel mixing
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN_base_year_adv.csv')#necessary so we dont have to re run supply side fuel mixing creation scripts every time we adjust it
     else:
         supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
 
     model_output = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(model_output_file_name))
 
-    if project_to_just_outlook_base_year:
+    if PROJECT_TO_JUST_OUTLOOK_BASE_YEAR:
         supply_side_fuel_mixing = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] <= OUTLOOK_BASE_YEAR]
         model_output = model_output[model_output['Date'] <= OUTLOOK_BASE_YEAR]
     
     BASE_YEAR_x = BASE_YEAR
-    if advance_base_year:
+    if ADVANCE_BASE_YEAR:
         BASE_YEAR_x = OUTLOOK_BASE_YEAR
     
     #to deal with historical data that may or may not have been included, jsut assume the same fuel mix as the base year for all previous years.

@@ -38,66 +38,38 @@ def archive_lots_of_files(archive_folder_name):
     #load data that we want to archive 
     #t omake thigns simple while we havent got a clear idea of what we need we will just load and save the model inputs and fuel mixing data
 
-    #Major model inputs:
-    activity_growth = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
-    non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
-    road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
-
-    #load user input for fuel mixing 
-    demand_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')
-
-    #load user input for fuel mixing
-    supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
+    # #Major model inputs:
 
     #load output data
     model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
-
     model_output_non_detailed = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-
     model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
-
-
-    #save it all to a foler with name archive_folder_name
-    #save file to folder in {}.foramt(archive_folder_name)
-
-    #save files
-    non_road_model_input.to_csv('{}/non_road_model_input.csv'.format(archive_folder_name), index=False)
-    road_model_input.to_csv('{}/road_model_input.csv'.format(archive_folder_name))
-
-    activity_growth.to_csv('{}/activity_growth.csv'.format(archive_folder_name))
-
-    #save fuel mixing data
-    demand_side_fuel_mixing.to_csv('{}/demand_side_fuel_mixing.csv'.format(archive_folder_name))
-    supply_side_fuel_mixing.to_csv('{}/supply_side_fuel_mixing.csv'.format(archive_folder_name))
 
     #save output data
     model_output_detailed.to_csv('{}/model_output_detailed.csv'.format(archive_folder_name))
-
     model_output_non_detailed.to_csv('{}/model_output_non_detailed.csv'.format(archive_folder_name))
-
     model_output_all_with_fuels.to_csv('{}/model_output_all_with_fuels.csv'.format(archive_folder_name))
-
-
     
     #save config file to folder
     shutil.copyfile('config/config.py', '{}/config.py'.format(archive_folder_name))
 
     #save all workflow files to folder, incmluding all subfolders (they are the code)
-    recursively_save_file('./workflow', archive_folder_name, '.py', exclude_archive_folder=True)
-    
+    recursively_save_file('./workflow', archive_folder_name, 'file_extension=.py', exclude_archive_folder=True)
     #save all csvs in \input_data\user_input_spreadsheets
-    recursively_save_file('input_data/user_input_spreadsheets', archive_folder_name, '.csv', exclude_archive_folder=True)
+    recursively_save_file('input_data/user_input_spreadsheets', archive_folder_name, file_extension='.csv', exclude_archive_folder=True)
+    recursively_save_file('intermediate_data/model_inputs', archive_folder_name, file_extension='.csv', exclude_archive_folder=True)
+    recursively_save_file('output_data/for_other_modellers', archive_folder_name, exclude_archive_folder=True)
     
-    #and save 
+    #and save individual files
     fuel_mixing_assumptions = 'input_data/fuel_mixing_assumptions.xlsx'
     shutil.copyfile(fuel_mixing_assumptions, '{}/fuel_mixing_assumptions.xlsx'.format(archive_folder_name))
 
     recursively_save_file('config/concordances_and_config_data/computer_generated_concordances', archive_folder_name, '.csv', exclude_archive_folder=True)
 
-    # zip_up_folder(archive_folder_name)
+    zip_up_folder(archive_folder_name)
     
     
-def recursively_save_file(source_dir, dest_dir, file_extension, exclude_archive_folder=True):
+def recursively_save_file(source_dir, dest_dir, file_extension='*', exclude_archive_folder=True):
     import os
     import shutil
 
@@ -107,7 +79,7 @@ def recursively_save_file(source_dir, dest_dir, file_extension, exclude_archive_
     # walk the source directory
     for dirpath, dirnames, filenames in os.walk(source_dir):
         for filename in filenames:
-            if filename.endswith('.py'):
+            if (filename.endswith(file_extension)) or (file_extension == '*'):
                 if exclude_archive_folder:
                     if '/archive' in dirpath:
                         continue
@@ -120,16 +92,17 @@ def recursively_save_file(source_dir, dest_dir, file_extension, exclude_archive_
 
 #zip up the folder and save to C drive:
 def zip_up_folder(archive_folder_name):
-    if os.path.exists('C:/Users/finbar.maunsell/Documents'):
+    # if os.path.exists('C:/Users/finbar.maunsell/Documents'):
         
-        output_file = 'C:/Users/finbar.maunsell/Documents'#this is really cheating but it works for now
-    else:
-        output_file = 'C:/Users/Finbar Maunsell/Documents'
+    #     output_file = 'C:/Users/finbar.maunsell/Documents'#this is really cheating but it works for now
+    # else:
+    #     output_file = 'C:/Users/Finbar Maunsell/Documents'
 
     # create a zip archive with file date id
-    output_file = output_file + FILE_DATE_ID
-    #if it is already there then delete it
-    if os.path.exists(output_file + '.zip'):
-        os.remove(output_file + '.zip')
+    output_file = archive_folder_name +'/'+ FILE_DATE_ID + '_0'
+    #if it is already there then make the number at the end one higher
+    while os.path.exists(output_file + '.zip'):
+        output_file = output_file[:-1] + str(int(output_file[-1])+1)
+
     shutil.make_archive(output_file, 'zip', archive_folder_name)
     print(f'Zipped up {archive_folder_name} to {output_file}.zip')

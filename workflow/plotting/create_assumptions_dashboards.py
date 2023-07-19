@@ -189,7 +189,11 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measu
     if 'lmdi_freight' in plots:
         #LMDI
         fig_dict = assumptions_dashboard_plotting_scripts.prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, transport_type = 'freight')
-    
+    if 'avg_age' in plots:
+        #avg_age
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+    if 'stocks_per_capita' in plots:
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_stocks_per_capita(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     check_colors_in_color_preparation_list(color_preparation_list, colors_dict)
     #now create the dashboards:
     for economy in fig_dict.keys():
@@ -269,15 +273,19 @@ def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
 # charging
 # vehicle_type_stocks
 # lmdi
+# avg_age
+# stocks_per_capita
 
-
-#%%
-
-
-#THAILAND DASHBOARD:
-plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'passenger_km_by_drive', 'freight_tonne_km_by_drive', 'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'lmdi_freight', 'lmdi_passenger']#, 'charging']#activity_growth# 'charging',
 ####################################'
 hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
+#%%
+plots = ['stocks_per_capita', 'avg_age']
+
+
+create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names)
+#%%
+#THAILAND DASHBOARD:
+plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'lmdi_freight', 'lmdi_passenger']#, 'charging']#activity_growth# 'charging',
 #%%
 create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names)
 #%%
@@ -290,3 +298,11 @@ create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_t
 
 #%%
 
+#create a development dashboard:
+
+plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'lmdi_freight', 'lmdi_passenger','avg_age','stocks_per_capita']
+
+
+create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names)
+
+# %%

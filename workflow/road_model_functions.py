@@ -106,7 +106,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         change_dataframe['old_economy'] = change_dataframe['Economy'].isin(old_vehicle_economies)
         change_dataframe['Midpoint_age'] = np.where(change_dataframe['old_economy'], midpoint_old, midpoint_new)
         #if it in midpoint old, we want to reflect the improvmeent of economies situation, by slowly decreasing midpoiint age until it reaches midpoint_new. do this by decreasing it by 5% each year, until it reaches midpoint_new:
-        change_dataframe['Midpoint_age'] = np.where((change_dataframe['Midpoint_age'] > midpoint_new) & (change_dataframe['old_economy']), change_dataframe['Midpoint_age'] * 0.95, change_dataframe['Midpoint_age'])
+        change_dataframe['Midpoint_age'] = np.where((change_dataframe['Midpoint_age'] > midpoint_new) & (change_dataframe['old_economy']), change_dataframe['Midpoint_age'] * 0.99, change_dataframe['Midpoint_age'])
 
         def calculate_turnover_rate(avg_age, midpoint, k=0.7):
             
@@ -242,7 +242,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
         # Calculate new mean age after turnover by assuming that the cars being removed are x * standard deviation above the mean. The new average age after turnover can be calculated as follows:
         change_dataframe['Average_age'] = change_dataframe['Average_age'] - (std_deviation_share * change_dataframe['Average_age'] * change_dataframe['Turnover_rate'])
         
-        change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed'])
+        change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed'])#note that you times 0*change_dataframe['New_stocks_needed'] by the average age of the new stocks, as they have an average age of 0. it is there for understanding.
         #increase age by 1 year to simulate the fact that the cars are 1 year older
         change_dataframe['Average_age'] = change_dataframe['Average_age'] + 1
         

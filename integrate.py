@@ -27,7 +27,7 @@ CREATE_MODEL_CONCORDANCES = True
 
 #%%
 #Things to do once a day:
-do_these_once_a_day = False
+do_these_once_a_day = True
 if do_these_once_a_day:
     if CREATE_MODEL_CONCORDANCES:
         import concordance_scripts
@@ -59,8 +59,8 @@ if PREPARE_DATA:
         communicate_missing_input_data.communicate_missing_input_data()
     
 #%%
-vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 40, 'ht': 50}
-turnover_rate_parameters_dict = {'turnover_rate_steepness':0.7,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':17.5}
+vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 30, 'ht': 30}
+turnover_rate_parameters_dict = {'turnover_rate_steepness':0.5,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':25}
 #tried std_deviation_share = 0.25, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #old vehicles never left the fleet once we reached 80% ev stock share
 # tried std_deviation_share = 0.5, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #WAS TOO STEEP
 
@@ -68,26 +68,26 @@ MODEL_RUN_1  = True
 if MODEL_RUN_1:
     #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN AND INCLUDIONG BASE YEAR AND OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
-    project_to_just_outlook_base_year = True
+    PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = True
     import calculate_inputs_for_model
     calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False)
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year, vehicle_gompertz_factors = vehicle_gompertz_factors, turnover_rate_parameters_dict = turnover_rate_parameters_dict)
+    run_road_model.run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     import run_non_road_model
-    run_non_road_model.run_non_road_model(project_to_just_outlook_base_year=project_to_just_outlook_base_year)# sometimes this doesnt work. dont know why.
+    run_non_road_model.run_non_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)# sometimes this doesnt work. dont know why.
     # exec(open("./workflow/2_concatenate_model_output.py").read())
     import concatenate_model_output
     concatenate_model_output.concatenate_model_output()
     # exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
 
     import apply_fuel_mix_demand_side
-    apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(project_to_just_outlook_base_year=project_to_just_outlook_base_year)
+    apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
     import apply_fuel_mix_supply_side
-    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(project_to_just_outlook_base_year=project_to_just_outlook_base_year)
+    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/5_clean_model_output.py").read())
     import clean_model_output
     clean_model_output.clean_model_output()
@@ -96,26 +96,26 @@ MODEL_RUN_2  = True
 if MODEL_RUN_2:
     #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN  AND INCLUDIONG BASE YEAR AND OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
-    advance_base_year = True
+    ADVANCE_BASE_YEAR = True
     import calculate_inputs_for_model
-    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,advance_base_year=advance_base_year)
+    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(advance_base_year=advance_base_year, vehicle_gompertz_factors = vehicle_gompertz_factors, turnover_rate_parameters_dict = turnover_rate_parameters_dict)
+    run_road_model.run_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     import run_non_road_model
-    run_non_road_model.run_non_road_model(advance_base_year=advance_base_year)# sometimes this doesnt work. dont know why.
+    run_non_road_model.run_non_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)# sometimes this doesnt work. dont know why.
     # exec(open("./workflow/2_concatenate_model_output.py").read())
     import concatenate_model_output
-    concatenate_model_output.concatenate_model_output(advance_base_year=advance_base_year)
+    concatenate_model_output.concatenate_model_output(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
     # exec(open("./workflow/3_apply_fuel_mix_demand_side.py").read())
 
     import apply_fuel_mix_demand_side
     apply_fuel_mix_demand_side.apply_fuel_mix_demand_side()
     # exec(open("./workflow/4_apply_fuel_mix_supply_side.py").read())
     import apply_fuel_mix_supply_side
-    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(advance_base_year=advance_base_year)
+    apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
     # exec(open("./workflow/5_clean_model_output.py").read())
     import clean_model_output
     clean_model_output.clean_model_output()
@@ -151,14 +151,7 @@ if ANALYSE_OUTPUT:
     
     exec(open("./workflow/plotting/compare_esto_energy_to_data.py").read())
     
-    plot_all_economy_graphs = True
-    if plot_all_economy_graphs:
-        #plot:
-        all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
-        import produce_LMDI_graphs
-        produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
-        # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
-    
+
 #%%
 import utility_functions
 utility_functions.copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR, SCENARIOS_LIST,output_folder_path='output_data/for_other_modellers')
@@ -173,3 +166,11 @@ if ARCHIVE_INPUT_DATA:
 
 #%%
 #%%
+#do this last because it takes so long, so make sure thaht everything else is working first
+plot_all_economy_graphs = False
+if plot_all_economy_graphs:
+    #plot:
+    all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
+    import produce_LMDI_graphs
+    produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
+    # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())

@@ -1,0 +1,17 @@
+
+#Use this file to keep and track different parameters used in the model. 
+vehicle_gompertz_factors:
+  car: 1
+  lt: 1
+  suv: 1
+  bus: 5
+  2w: 0.5
+  lcv: 20
+  mt: 30
+  ht: 30
+#can edit these to adjust the amount of vehicles in the fleet. it is important to watch stocks per capita, by transport type to udnerstand the impact of these changes.
+turnover_rate_parameters_dict:
+  turnover_rate_steepness: 0.5
+  std_deviation_share: 0.1
+  midpoint_new: 12.5
+  midpoint_old: 25

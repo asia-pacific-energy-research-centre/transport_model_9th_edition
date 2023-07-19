@@ -203,9 +203,9 @@ for row in unique_sectors.iterrows():
     
     new_medium = medium_mapping[medium]
     new_transport_type = transport_type_mapping[transport_type]
-    if new_transport_type == 'passenger':
+    if transport_type == 'passenger':
         new_vehicle_type = vehicle_type_mapping_passenger[vehicle_type]
-    elif new_transport_type == 'freight':
+    elif transport_type == 'freight':
         new_vehicle_type = vehicle_type_mapping_freight[vehicle_type]
     else:
         raise ValueError('transport type not found')
@@ -227,8 +227,8 @@ for row in unique_sectors.iterrows():
             else:
                 raise ValueError('drive not found, the drive was {} for the row {}'.format(drive, row))
     
-    #Use the first numbers of vehicle type and add them to transport type: eg. in 15_04_01_01_two_wheeler, we will use 15_04_01_ and put that at start of transport type
-    new_transport_type = new_vehicle_type[:8] + '_' + new_transport_type
+    #Use the first 5 characters of medium and add them to transport type: eg. in 15_03_rail, 15_01_domestic_air_transport, and put that at start of transport type
+    new_transport_type = new_medium[:5]+'_'+new_transport_type
     
     #add those to the dataframe for that row:
     unique_sectors.loc[row[0], 'sub4sectors'] = new_drive_type
