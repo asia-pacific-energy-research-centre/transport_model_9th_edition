@@ -43,34 +43,39 @@ def plot_new_sales_shares(new_sales_shares_all):
     #now we wnat to plot the data using plotly. we will plot with facets for each economy, and a different plot for each vehicle type, transport tyep combo
     #first we need to create a new column that is the vehicle type and transport type
     #we will also plot for comparison between new_sales_shares_sum and new_sales_shares_all so nerge that on now
-    
+    # breakpoint()
     plotting = True
     if plotting:
         import plotly.express as px
         new_sales_shares_all_plot = new_sales_shares_all.copy()
-        new_sales_shares_all_plot['Vehicle_Transport_medium'] = new_sales_shares_all_plot['Vehicle Type'] + '_' + new_sales_shares_all_plot['Transport Type'] + '_' + new_sales_shares_all_plot['Medium']
+        #replace road bool with 'road' or 'non_road'
+        new_sales_shares_all_plot['road'] = new_sales_shares_all_plot['road'].replace({True:'road', False:'non_road'})
+        new_sales_shares_all_plot['Vehicle_Transport_Medium'] = new_sales_shares_all_plot['Vehicle Type'] + '_' + new_sales_shares_all_plot['Transport Type'] + '_' + new_sales_shares_all_plot['road']
 
         for scenario in new_sales_shares_all_plot['Scenario'].unique():
-            for Vehicle_Transport_Medium in new_sales_shares_all_plot['Vehicle_Transport_medium'].unique():
-                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport_medium']==Vehicle_Transport_Medium) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
+            for Vehicle_Transport_Medium in new_sales_shares_all_plot['Vehicle_Transport_Medium'].unique():
+                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport_Medium']==Vehicle_Transport_Medium) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
 
-                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport)
+                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport_Medium)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport_Medium}_{scenario}_drive_share.html', auto_open=False)
-
-                plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Vehicle_Transport_Medium']==Vehicle_Transport_Medium) & (new_sales_shares_all_plot['Scenario']==scenario)].copy()
-                fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport_Medium)
+                
+                #and then plot the transport type share
+                fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Drive', facet_col='Economy',facet_col_wrap=3, title=Vehicle_Transport_Medium, markers=True)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport_Medium}_{scenario}Transport_type_share_pre_vehicle_share_adj.html', auto_open=False)
 
         #it is also usefu to plot the vehicle sales share by economy now. This is because it is a useful graph for analysis of assumptions. So loop through economys and just plkot the Drive_share by economy, with vehicle type and transport type as facets
-
+        
+        new_sales_shares_all_plot = new_sales_shares_all.copy()
+        #replace road bool with 'road' or 'non_road'
+        new_sales_shares_all_plot['road'] = new_sales_shares_all_plot['road'].replace({True:'road', False:'non_road'})
+        new_sales_shares_all_plot['Vehicle_Transport_Medium'] = new_sales_shares_all_plot['Vehicle Type'] + '_' + new_sales_shares_all_plot['Transport Type'] + '_' + new_sales_shares_all_plot['road']
         for scenario in new_sales_shares_all_plot['Scenario'].unique():
             for economy in new_sales_shares_all_plot['Economy'].unique():
-                
                 plot_data = new_sales_shares_all_plot.loc[(new_sales_shares_all_plot['Scenario']==scenario) & (new_sales_shares_all_plot['Economy']==economy)].copy()
                 title = f'{economy} {scenario} Drive Share by Vehicle Type and Transport Type and medium'
-                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Vehicle_Transport_Medium',facet_col_wrap=3, title=Vehicle_Transport_Medium)
+                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', facet_col='Vehicle_Transport_Medium',facet_col_wrap=3, title=title)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}_drive_share.html', auto_open=False)
 
@@ -106,22 +111,24 @@ def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new
         new_sales_shares_all_plot = new_sales_shares_all_new.copy()
 
         import plotly.express as px
-
+        #replace road bool with 'road' or 'non_road'
+        new_sales_shares_all_plot['road'] = new_sales_shares_all_plot['road'].replace({True:'road', False:'non_road'})
+        
         #extract a df for Transport_type_share measures:
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date','Transport Type','Medium', 'Vehicle Type', 'Drive',  'Transport_type_share', 'Transport_type_share_new']].copy()
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date','Transport Type','road', 'Vehicle Type', 'Drive',  'Transport_type_share', 'Transport_type_share_new']].copy()
 
         #make them long
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot_transport_type_shares.melt(id_vars=['Economy', 'Scenario', 'Date', 'Transport Type','Medium','Vehicle Type', 'Drive'], value_vars=['Transport_type_share', 'Transport_type_share_new'], var_name='Measure', value_name='Transport_type_share')
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot_transport_type_shares.melt(id_vars=['Economy', 'Scenario', 'Date', 'Transport Type','road','Vehicle Type', 'Drive'], value_vars=['Transport_type_share', 'Transport_type_share_new'], var_name='Measure', value_name='Transport_type_share')
 
         #join drive and vehicle type
         new_sales_shares_all_plot_transport_type_shares['Vehicle_drive'] = new_sales_shares_all_plot_transport_type_shares['Vehicle Type'] + '_' + new_sales_shares_all_plot_transport_type_shares['Drive']
         for scenario in new_sales_shares_all_plot_transport_type_shares['Scenario'].unique():
             for economy in new_sales_shares_all_plot_transport_type_shares['Economy'].unique():
-                for medium in new_sales_shares_all_plot_transport_type_shares['Medium'].unique():
+                for medium in new_sales_shares_all_plot_transport_type_shares['road'].unique():
                         
-                    plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario) & (new_sales_shares_all_plot_transport_type_shares['Medium']==medium)].copy()
+                    plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario) & (new_sales_shares_all_plot_transport_type_shares['road']==medium)].copy()
 
-                    fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Vehicle_drive', line_dash = 'Measure', facet_col='Transport Type',facet_col_wrap=1, title=f'Transport_type_share {medium}')
+                    fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Vehicle_drive', line_dash = 'Measure', facet_col='Transport Type',facet_col_wrap=1, title=f'Transport_type_share {medium}', markers=True)
                     #write to html in plotting_output\input_exploration\vehicle_sales_shares
                     fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}_{medium}_Transport_type_share.html', auto_open=False)
     print('Plots of new sales shares saved to plotting_output/input_exploration/vehicle_sales_shares/')
@@ -129,15 +136,15 @@ def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new
 def plot_input_sales_shares_before_interpolation(new_sales_shares_pre_interp):
     #new_sales_shares_pre_interp[['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Drive','Drive_share']]
     #do some more plotting. just plot the Transport_type_share_new vs Transport_type_share
-    breakpoint()
     plotting=True
     if plotting:
         new_sales_shares_all_plot = new_sales_shares_pre_interp.copy()
 
         import plotly.express as px
-
+        #replace road bool with 'road' or 'non_road'
+        new_sales_shares_all_plot['road'] = new_sales_shares_all_plot['road'].replace({True:'road', False:'non_road'})
         #extract a df for Transport_type_share measures:
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date', 'Medium','Transport Type', 'Vehicle Type', 'Drive','Drive_share']].copy()
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date', 'road','Transport Type', 'Vehicle Type', 'Drive','Drive_share']].copy()
 
         #join drive and vehicle type
         new_sales_shares_all_plot_transport_type_shares['Vehicle_drive'] = new_sales_shares_all_plot_transport_type_shares['Vehicle Type'] + '_' + new_sales_shares_all_plot_transport_type_shares['Drive']
@@ -145,8 +152,8 @@ def plot_input_sales_shares_before_interpolation(new_sales_shares_pre_interp):
             for economy in new_sales_shares_all_plot_transport_type_shares['Economy'].unique():
                 plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario)].copy()
                 #concattransport type and medium
-                plot_data['Transport_type'] = plot_data['Transport Type'] + '_' + plot_data['Medium']
-                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', line_dash = 'Vehicle Type', facet_col='Transport Type',facet_col_wrap=3, title='Drive_share')
+                plot_data['Transport_type'] = plot_data['Transport Type'] + '_' + plot_data['road']
+                fig = px.line(plot_data, x='Date', y='Drive_share', color='Drive', line_dash = 'Vehicle Type', facet_col='Transport Type',facet_col_wrap=3, title='Drive_share', markers=True)
                 #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}drive_share_pre_interp.html', auto_open=False)
                 
@@ -193,3 +200,28 @@ def plot_demand_side_fuel_mixing(demand_side_fuel_mixing):
         #save to html
         fig.write_html(f"plotting_output/input_exploration/fuel_mixing/{title}.html")
         
+def plot_average_intensity(non_road_model_input_wide):
+    
+    # non_road_model_input_wide = non_road_model_input_wide.groupby(['Date', 'Transport Type', 'Drive'])['Intensity'].mean().unstack().reset_index()
+    #first drop nas
+    # non_road_model_input_wide = non_road_model_input_wide.dropna()
+    non_road_model_input_wide_plotting = non_road_model_input_wide.copy()
+    non_road_model_input_wide_plotting['Average_intensity'] = non_road_model_input_wide_plotting.groupby(['Transport Type','Medium', 'Drive'])['Intensity'].transform('mean')
+    non_road_model_input_wide_plotting = non_road_model_input_wide_plotting[['Transport Type','Medium', 'Drive', 'Average_intensity']].drop_duplicates()
+    
+    #because some drive/transport type combos dont ahve any data, tehy end up ahvign intensity of nan and that gets rmeoved. so add on those combos with an intensity of 0 so that they are plotted
+    #get all drive/transport type combos
+    drive_transport_type_combos = non_road_model_input_wide[['Transport Type','Medium', 'Drive']].drop_duplicates()
+    #set vlaue to 0
+    drive_transport_type_combos['Average_intensity'] = 0
+    #conat and sum to get them inthere
+    non_road_model_input_wide_plotting = pd.concat([non_road_model_input_wide_plotting, drive_transport_type_combos]).groupby(['Transport Type', 'Medium', 'Drive'])['Average_intensity'].sum().reset_index()
+    
+    #plot as bars using plotly
+    fig = px.bar(non_road_model_input_wide_plotting, x='Drive', y='Average_intensity', color='Drive', facet_col='Transport Type')
+    fig.write_html(f'plotting_output/input_exploration/average_non_road_intensity.html', auto_open=False)
+    
+    
+    
+    
+    

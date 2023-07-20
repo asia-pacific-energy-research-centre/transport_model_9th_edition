@@ -76,8 +76,12 @@ if MODEL_RUN_1:
     import run_road_model
     run_road_model.run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)
     # exec(open("./workflow/1_run_non_road_model.py").read())
-    import run_non_road_model
-    run_non_road_model.run_non_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)# sometimes this doesnt work. dont know why.
+        
+    import NEW_run_non_road_model
+    NEW_run_non_road_model.run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR, output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name))
+                                                         
+    # import run_non_road_model
+    # run_non_road_model.run_non_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)# sometimes this doesnt work. dont know why.
     # exec(open("./workflow/2_concatenate_model_output.py").read())
     import concatenate_model_output
     concatenate_model_output.concatenate_model_output()
@@ -104,8 +108,13 @@ if MODEL_RUN_2:
     import run_road_model
     run_road_model.run_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
     # exec(open("./workflow/1_run_non_road_model.py").read())
-    import run_non_road_model
-    run_non_road_model.run_non_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)# sometimes this doesnt work. dont know why.
+    
+    import NEW_run_non_road_model
+    NEW_run_non_road_model.run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name))
+                                              
+    # import run_non_road_model
+    # run_non_road_model.run_non_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR,, output_file = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
+    
     # exec(open("./workflow/2_concatenate_model_output.py").read())
     import concatenate_model_output
     concatenate_model_output.concatenate_model_output(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
@@ -174,3 +183,4 @@ if plot_all_economy_graphs:
     import produce_LMDI_graphs
     produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
     # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
+#%%

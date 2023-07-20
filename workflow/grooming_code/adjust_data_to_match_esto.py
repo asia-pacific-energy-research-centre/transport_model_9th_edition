@@ -193,24 +193,24 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     
     
     #NOW CLEAN UP ENERGY_USE_OUTPUT
-    energy_use_output_ref = energy_use_output.loc[energy_use_output['Scenario'] == 'Reference'].copy()
+    # energy_use_output_ref = energy_use_output.loc[energy_use_output['Scenario'] == 'Reference'].copy()
         
-    energy_use_output_ref = energy_use_output_ref.drop(columns=[ 'Vehicle Type', 'Drive', 'Transport Type']).groupby(['Economy', 'Date', 'Medium', 'Fuel']).sum(numeric_only=True).reset_index()
+    energy_use_output = energy_use_output.drop(columns=[ 'Vehicle Type', 'Drive', 'Transport Type']).groupby(['Economy','Scenario', 'Date', 'Medium', 'Fuel']).sum(numeric_only=True).reset_index()
     #GRAB DATA ONLY FOR DATES WITH WHICH WE HAVE ESTO DATA
-    energy_use_output_ref = energy_use_output_ref.loc[energy_use_output_ref['Date'].isin(energy_use_esto['Date'].unique())].copy()
+    energy_use_output = energy_use_output.loc[energy_use_output['Date'].isin(energy_use_output['Date'].unique())].copy()
     #LIEKWISE FOR ESTO
-    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'].isin(energy_use_output_ref['Date'].unique())].copy()
+    energy_use_output = energy_use_output.loc[energy_use_output['Date'].isin(energy_use_output['Date'].unique())].copy()
     #########################
     #NOW find the ratio between energy use in the model and energy use in the esto data. So merge the dfs and then find it
     
-    energy_use_merged = energy_use_esto.merge(energy_use_output_ref, on=['Economy', 'Date', 'Medium','Fuel'], how='left', suffixes=('_esto', '_model'))
+    energy_use_merged = energy_use_esto.merge(energy_use_output, on=['Economy', 'Date','Medium','Fuel'], how='left', suffixes=('_esto', '_model'))
     
     #reaplce nans in  Energy_model with 0. they are nan because they arent in the model (the way the model works, it has just removed these rows, so tahts why they are nans)
     #energy_use_merged['Energy_esto'] = energy_use_merged['Energy_esto'].fillna(0)
     energy_use_merged['Energy_model'] = energy_use_merged['Energy_model'].fillna(0)
     # But , for now, if theres any nans in Energy_esto then let the uyser know sicne there shouldnt really be any there.
     if energy_use_merged['Energy_esto'].isna().sum(numeric_only=True) > 0:
-        nans = energy_use_merged.loc[energy_use_merged['Energy_esto'].isna(), ['Economy', 'Date', 'Medium','Fuel']].drop_duplicates()
+        nans = energy_use_merged.loc[energy_use_merged['Energy_esto'].isna(), ['Economy', 'Date', 'Scenario','Medium','Fuel']].drop_duplicates()
         raise ValueError('There are nans in energy_use_esto for the following rows: {}'.format(nans))
     # 
     # if energy_use_merged['Energy'].isna().sum(numeric_only=True) > 0:
@@ -223,7 +223,7 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     
     #where ratio becomes inf then this means that ESTO has >0 energy use and the model has 0 energy use. This is because the model didnt assume any use at that point in time. This is a semi common occuraence. So create anotehr col and call it 'addition' and put the Energy_esto value in ther to be split among its users later:
     #but first,m print what fuel, medium, economy combos have this issue:
-    inf_rows = energy_use_merged.loc[energy_use_merged['ratio'] == np.inf, ['Fuel', 'Medium', 'Economy']].drop_duplicates()
+    inf_rows = energy_use_merged.loc[energy_use_merged['ratio'] == np.inf, ['Fuel', 'Medium', 'Scenario','Economy']].drop_duplicates()
     if len(inf_rows[~inf_rows.Fuel.isin(['16_05_biogasoline', '16_06_biodiesel', '16_07_bio_jet_kerosene','16_01_biogas'])]) > 0:
         print('The following fuel, medium, economy combos have inf ratio, meaning the model had 0 energy use but the esto data had >0 energy use. This is because the model didnt assume any use at that point in time. So create anotehr col and call it addition and put the Energy_esto value in ther to be split among its users later:')
         print('There are fuels other than 16_05_biogasoline and 16_06_biodiesel that have inf ratio. This is unexpected {inf_rows}. they will be set in the addition column')
@@ -237,13 +237,12 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     #also where ratio is na, its because both values are 0, so just set ratio to 0
     energy_use_merged['ratio'] = energy_use_merged['ratio'].fillna(0)
     ()
-    return energy_use_merged, energy_use_esto, energy_use_output_ref, energy_use_esto_pipeline,energy_use_output
+    return energy_use_merged, energy_use_esto, energy_use_esto_pipeline
 
 
 #############
 
 def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energy_use_merged,road_model_input_wide,non_road_model_input_wide,energy_use_output,TESTING):
-    breakpoint()
     #CLEAN INPUT DATA 
     #get dates that match the esto data:
     input_data_new = input_data_based_on_previous_model_run.loc[input_data_based_on_previous_model_run['Date'].isin(energy_use_merged['Date'].unique())].copy()
@@ -294,7 +293,7 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     ##################
     
     #merge energy_use_merged to energy_use_output using a right merge and times the ratio by the energy use in the model to get the new energy use (and the effect of timesing by the ratio will be that the total difference for that ['Economy', 'Date', 'Medium','Fuel'] spread equally among all rows for that ['Economy', 'Date', 'Medium','Fuel') (except for supply side fuel mixing fuels, which we will handle separately, and demand side fuel mixing fuels, which we will drop as they are too ahrd to handle)
-    energy_use_merged_merged = energy_use_merged.merge(energy_use_output, on=['Economy', 'Date', 'Medium','Fuel'], how='right')
+    energy_use_merged_merged = energy_use_merged.merge(energy_use_output, on=['Economy', 'Date','Scenario', 'Medium','Fuel'], how='right')
     #To make it a bit more simple, lets called Energy, Energy old. Then when we calcualte Energy*ratio it can be called Energy new. then rename it to energy and drop energy old before we move on:
     energy_use_merged_merged.rename(columns={'Energy': 'Energy_old'}, inplace=True)   
     
@@ -302,7 +301,7 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')['New_fuel'].unique().tolist()
     energy_use_merged_merged = energy_use_merged_merged.loc[~energy_use_merged_merged['Fuel'].isin(supply_side_fuel_mixing_fuels)].copy()
     #then for any phevs sum their electricity row for each economy and date, then minus that off the bev electricity. NOTE that this only works because phevs are currently a small share of use and decreaing their enegry use in elec would probably have a minimal effect. if they were bigger we'd have to find some way to handle this properly
-    phev=False#i dont think i need to do this actually. the stocks for phevs will end up half what they should be if we do it, and i think it is fine to keep them in here, as well just sum their energy use like so it is not by fuel later?
+    phev=False#i dont think i need to do this actually. the stocks for phevs will end up half what they should be if we do it, and i think it is fine to keep them in here, as well just sum their energy use like so it is not by fuel later?#NOTE THAT I HAVENT CONSIDERED HOW SCENARIOS ADDITION TO GORUPING WILL AFFECT THIS> SO BE CAREFUL
     if phev:
         demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data\model_inputs\demand_side_fuel_mixing_COMPGEN.csv')['Drive'].unique().tolist()
         if set(demand_side_fuel_mixing_drives) != set(['phev_d', 'phev_g']):
@@ -315,7 +314,7 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
         energy_use_merged_merged = energy_use_merged_merged.loc[~(energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])&energy_use_merged_merged['Fuel'].isin(['17_electricity']))].copy()
         
     #lastly idenifty any nas. they are probably okay bnut useful to observe for nwo: #the nas that ive seen here are to be expected, such as for bevs and phevs. Its better just to notice potential issues elswehre.
-    do_this = False
+    do_this = False#NOTE THAT I HAVENT CONSIDERED HOW SCENARIOS ADDITION TO GORUPING WILL AFFECT THIS> SO BE CAREFUL
     if do_this:
         nas = energy_use_merged_merged.loc[energy_use_merged_merged.isna().any(axis=1)]
         if len(nas) > 0:
@@ -330,15 +329,31 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     #do the ratio times enegry calc":
     energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_old']*energy_use_merged_merged['ratio']
 
-    #additions need to be split equally where they are made. do this using the proprtion of each energy use out of the total energy use for that fuel, medium, economy and date to do this:
+    #additions need to be split equally where they are made. do this using the proprtion of each energy use out of the total energy use for that fuel, scveanrio, medium, economy and date to do this:
     
     #replace energy with 0 where its na for the calcualtion
     energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_new'].fillna(0)
-    energy_use_merged_merged['proportion_of_group'] = energy_use_merged_merged.groupby(['Economy', 'Date', 'Medium'])['Energy_new'].transform(lambda x: x/x.sum(numeric_only=True))
+    energy_use_merged_merged['proportion_of_group'] = energy_use_merged_merged.groupby(['Economy', 'Date','Scenario', 'Medium', 'Fuel'])['Energy_new'].transform(lambda x: x/x.sum(numeric_only=True))#theres an issue here that if the energy use for the whole group is 0 then the proportion will just be nan. There would be no way to estimate  the proportion bsdes absing ti off the previous year. however, this happening is really just a warning that there is somethign going wrong in the other code. To catch it, lets identify if tehre is any nan in the proportion_of_group col and if so, whether the addition col is >0. if so, then we know that there should be some energy use but its not possible to calculate the proportion. So thorw an error so the suer can track down why its happeneing
+    na_df = energy_use_merged_merged.loc[(energy_use_merged_merged['proportion_of_group'].isna()) & (energy_use_merged_merged['addition'] > 0)]
+    
+    #there is one exception here, which is because 14_PE started using 07_08_fuel_oil and 07_x_other_petroleum_products in 2020. So, if that exception is inthere, extract it and do the calcualtion for it manually:
+    na_df_peru_exception = na_df.loc[(na_df['Economy'] == '14_PE') & (na_df['Date'] == 2020)&(na_df['Medium'] != 'road')&(na_df['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products']))].copy()
+    #and drop that from na_df and energy_use_merged_merged
+    na_df = na_df.loc[~((na_df['Economy'] == '14_PE') & (na_df['Date'] == 2020)&(na_df['Medium'] != 'road')&(na_df['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products'])))].copy()
+    energy_use_merged_merged = energy_use_merged_merged.loc[~((energy_use_merged_merged['Economy'] == '14_PE') & (energy_use_merged_merged['Date'] == 2020)&(energy_use_merged_merged['Medium'] != 'road')&(energy_use_merged_merged['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products'])))].copy()
+    #split proportion of group equally into all rows for that fuel, scenario, medium, economy and date:
+    na_df_peru_exception['proportion_of_group'] = na_df_peru_exception.groupby(['Economy', 'Date','Scenario', 'Medium','Fuel'])['Energy_new'].transform(lambda x: 1/x.count())
+    #add it to energy_use_merged_merged
+    energy_use_merged_merged = pd.concat([energy_use_merged_merged, na_df_peru_exception])
+    
+    if len(na_df) > 0:
+        breakpoint()
+        raise ValueError('There are nans in proportion_of_group where there should be energy use in at least one of the following rows: {}'.format(na_df))
 
     energy_use_merged_merged['addition'] = energy_use_merged_merged['addition']*energy_use_merged_merged['proportion_of_group'].replace(np.nan, 0)
     #now need to add any additions to the Energy. this is where the ratio was inf because the model had 0 energy use but the esto data had >0. so we will add the esto data energy use to the model data energy use and just times by a ratio of 1
     energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_new'] + energy_use_merged_merged['addition'].replace(np.nan, 0)
+    #NOTE THAT I HAVENT CONSIDERED HOW SCENARIOS ADDITION TO GORUPING WILL AFFECT THIS> SO BE CAREFUL
     if phev:
         #now change teh bev energy use by the phev electriicty amount we calculated earlier
         energy_use_merged_merged = energy_use_merged_merged.merge(phev_elec[['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type', 'decrease']], on=['Economy', 'Date', 'Scenario', 'Drive', 'Transport Type'], how='left')
@@ -350,20 +365,19 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
         #drop decrease
         energy_use_merged_merged = energy_use_merged_merged.drop(columns=['decrease'])
         
-    
+    # breakpoint()
     #drop unneeded cols
     energy_use_merged_merged = energy_use_merged_merged.drop(columns=['ratio','addition','proportion_of_group', 'Energy_esto', 'Energy_model', 'Energy_old', 'Fuel'])
     #and sum now that we've calclate the new enegry use for each 'Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'
     energy_use_merged_merged = energy_use_merged_merged.groupby(['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario']).sum(numeric_only=True).reset_index()
-    breakpoint()
     # #replicate the dfs for the other scenarios
     # energy_use_merged_merged_copy = energy_use_merged_merged.copy()
     # for scenario in scenario_list:
     #     energy_use_merged_merged_copy['Scenario'] = scenario
     #     energy_use_merged_merged = pd.concat([energy_use_merged_merged, energy_use_merged_merged_copy])
     #####################################
-    #Now join on the efficiency, Occupancy_or_load, Mileage, inteisntiy from the detailed data so we can calcualte the new inputs for the model:
-    energy_use_merged_merged = energy_use_merged_merged.merge(input_data_new[['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Efficiency', 'Occupancy_or_load', 'Mileage', 'Intensity']], on=['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], how='left')
+    #Now join on the measures we need from the detailed data so we can calcualte the new inputs for the model:
+    energy_use_merged_merged = energy_use_merged_merged.merge(input_data_new[['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Efficiency', 'Occupancy_or_load', 'Mileage', 'Intensity','Activity_per_Stock']], on=['Economy', 'Date', 'Medium', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], how='left')
     #split into medium = road and not, then recalcualte the other measures. for road we will calcuialte travel km and activity and stocks, wehreas for non road we will just recalcualte energy use using itnsntiy instead of effcieincy
     #road:
     input_data_new_road = energy_use_merged_merged.loc[energy_use_merged_merged['Medium'] == 'road'].copy()
@@ -378,12 +392,16 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     input_data_new_road.rename(columns={'Energy_new': 'Energy'}, inplace=True)
     
     #########
+    # breakpoint()
     # non road:
     input_data_new_non_road = energy_use_merged_merged.loc[energy_use_merged_merged['Medium'] != 'road'].copy()
     input_data_new_non_road['Activity'] = input_data_new_non_road['Energy_new'] / input_data_new_non_road['Intensity']
     
-    input_data_new_non_road.loc[(input_data_new_non_road['Energy_new'] > 0), 'Stocks'] = 1
-    input_data_new_non_road.loc[(input_data_new_non_road['Energy_new'] == 0), 'Stocks'] = 0
+    # #TEMP, set Activity_per_Stock to 1
+    # input_data_new_non_road['Activity_per_Stock'] = 1
+    input_data_new_non_road['Stocks'] = input_data_new_non_road['Activity'] / input_data_new_non_road['Activity_per_Stock']
+    # input_data_new_non_road.loc[(input_data_new_non_road['Energy_new'] > 0), 'Stocks'] = 1
+    # input_data_new_non_road.loc[(input_data_new_non_road['Energy_new'] == 0), 'Stocks'] = 0
 
     #rename Energy_new to Energy
     input_data_new_non_road.rename(columns={'Energy_new': 'Energy'}, inplace=True)
@@ -421,7 +439,7 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     #drop cols that end with _new
     road_all_wide = road_all_wide.loc[:,~road_all_wide.columns.str.endswith('_new')].copy()
     
-    #NOW FOR NON ROAD
+    #NOW FOR NON ROAD    
     non_road_all_wide = input_data_new_non_road.copy()
     non_road_all_wide = non_road_all_wide.merge(non_road_model_input_wide, on=['Date', 'Economy', 'Medium','Vehicle Type', 'Transport Type', 'Drive', 'Scenario'], how='left', suffixes=('', '_new'))
     #check what new cols there are by seeing what cols are different between input_data_new_road and non_road_model_input_wide
@@ -487,6 +505,19 @@ def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,AD
     supply_side_fuel_mixing = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')
     energy_use_output = pd.read_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(model_output_file_name))
     
+    #make the values before and including the OUTLOOK_BASE_YEAR all equal to the Reference scenario values. This is because we are assuming that the Reference scenario reflects the reality of the OUTLOOK_BASE_YEAR, and it will reflect it even more so once we have adjusted the energy use to match the esto data!
+    if ADVANCE_BASE_YEAR:
+        energy_use_output_post_base_year = energy_use_output.loc[energy_use_output['Date'] > OUTLOOK_BASE_YEAR].copy()
+        energy_use_output_pre_base_year_ref = energy_use_output.loc[(energy_use_output['Date'] <= OUTLOOK_BASE_YEAR) & (energy_use_output['Scenario'] == 'Reference')].copy()
+        #for each otehr scenario in scenario_list, just creatre a copy of energy_use_output_pre_base_year_ref:
+        energy_use_output_pre_base_year = energy_use_output_pre_base_year_ref.copy()
+        for scenario in SCENARIOS_LIST:
+            if scenario == 'Reference':
+                continue
+            energy_use_output_pre_base_year_new = energy_use_output_pre_base_year_ref.copy()
+            energy_use_output_pre_base_year_new['Scenario'] = scenario
+            energy_use_output_pre_base_year = pd.concat([energy_use_output_pre_base_year, energy_use_output_pre_base_year_new])
+        energy_use_output = pd.concat([energy_use_output_pre_base_year, energy_use_output_post_base_year])
     if TESTING:
         
         #filter for only 01_AUS and year <= 2025 to make it run faster
@@ -505,8 +536,8 @@ def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,AD
         
         energy_use_esto = energy_use_esto[energy_use_esto['Date'] <= 2025].copy()
         energy_use_output = energy_use_output[energy_use_output['Date'] <= 2025].copy()
-        
-    energy_use_merged, energy_use_esto, energy_use_output_ref,energy_use_esto_pipeline,energy_use_output = format_energy_use_for_rescaling(energy_use_esto, energy_use_output,spread_non_specified_and_separate_pipeline = True, remove_annoying_fuels = True, TESTING=TESTING)
+    
+    energy_use_merged, energy_use_esto, energy_use_esto_pipeline = format_energy_use_for_rescaling(energy_use_esto, energy_use_output,spread_non_specified_and_separate_pipeline = True, remove_annoying_fuels = True, TESTING=TESTING)
 
     supply_side_fuel_mixing_new = adjust_supply_side_fuel_share(energy_use_esto,supply_side_fuel_mixing)
     
@@ -523,6 +554,7 @@ def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,AD
 
 #why is ratio so high in places? maybe need to fix.
 def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_use_merged, ADVANCE_BASE_YEAR=True):
+    breakpoint()
     #calcauklte total energy use by year and economy for both road and non road.
     #first rmeove the supply_side_fuel_mixing_fuels from esto data!
     supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data\model_inputs\supply_side_fuel_mixing_COMPGEN.csv')['New_fuel'].unique().tolist()
@@ -530,18 +562,18 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     ################
     road_all_wide_total_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
     non_road_all_wide_total_energy_use = non_road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
-    esto_total_energy_use_non_road = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
-    esto_total_energy_use_road = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
+    esto_total_energy_use_non_road = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy','Scenario', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
+    esto_total_energy_use_road = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy','Scenario', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
     #print the differentce between total energy in the years 2017 to 2022
     print('road energy use difference (PJ)')
-    diff = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
+    diff = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
         diff = diff.loc[(diff.Date>BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
     else:
         diff = diff.loc[(diff.Date>=BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
     print(diff['Energy'].sum(numeric_only=True) - diff['Energy_esto'].sum(numeric_only=True))
     
-    diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
+    diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
         diff2 = diff2.loc[(diff2.Date>BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
     else:
@@ -551,12 +583,12 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     ###################TESTING###############
     #Another test using the proportion difference between teh two:
     total_road_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()
-    total_esto_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy', 'Date']).sum(numeric_only=True).reset_index()
+    total_esto_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy','Scenario',  'Date']).sum(numeric_only=True).reset_index()
     
     total_non_road_energy_use = non_road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()
-    total_esto_non_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy', 'Date']).sum(numeric_only=True).reset_index()
+    total_esto_non_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy', 'Scenario', 'Date']).sum(numeric_only=True).reset_index()
 
-    diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
+    diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     #filter for dates after base year
     if ADVANCE_BASE_YEAR:
         diff_road = diff_road.loc[diff_road.Date>=OUTLOOK_BASE_YEAR]
@@ -564,7 +596,7 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
         diff_road = diff_road.loc[diff_road.Date>=BASE_YEAR]
     diff_road_proportion = sum(diff_road['Energy'].dropna()) / sum(diff_road['Energy_esto'].dropna())
     
-    diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Date'], how='left', suffixes=('', '_esto'))
+    diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
         diff_non_road = diff_non_road.loc[diff_non_road.Date>=OUTLOOK_BASE_YEAR]
     else:

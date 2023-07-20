@@ -15,3 +15,4 @@ turnover_rate_parameters_dict:
   std_deviation_share: 0.1
   midpoint_new: 12.5
   midpoint_old: 25
+  midpoint_non_road: 30

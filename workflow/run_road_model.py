@@ -9,6 +9,7 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
 import road_model_functions
 import logistic_fitting_functions
+import yaml
 #%%
 def run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BASE_YEAR=False,run_model_before_gompertz=True,  USE_ADVANCED_TURNOVER_RATES = True):
     

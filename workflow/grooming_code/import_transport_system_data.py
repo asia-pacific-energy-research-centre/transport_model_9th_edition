@@ -412,12 +412,12 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
         else:
             #drop the rows where the drive is na
             final_df = final_df.dropna(subset=['Drive'])
-    #adust intensity where electi4ricty is being used:
+    #adust intensity where electi4ricty/ammonia/hydrogen is being used:
     
-    electric_drive_types = [drive for drive in final_df.Drive.dropna().unique().tolist() if 'electric' in drive]
+    new_drive_types = [drive for drive in final_df.Drive.dropna().unique().tolist() if 'electric' in drive or 'ammonia' in drive or 'hydrogen' in drive]
 
     #set intensity to 0.5 for electric drive types
-    final_df['Intensity'] = final_df.apply(lambda row: set_electric_non_road_to_0_5_intensity(row,electric_drive_types), axis=1)
+    final_df['Intensity'] = final_df.apply(lambda row: set_new_non_road_drives_to_half_intensity(row,new_drive_types), axis=1)
     
     #where the drive is in electric_drive_types, set the intensity to 0.5 of the intensity 
     # final_df.loc[final_df['Drive'].isin(electric_drive_types), 'Intensity'] = final_df.loc[final_df['Drive'].isin(electric_drive_types)].Intensity * 0.5
@@ -447,9 +447,9 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     return transport_data_system_df_new
 
     
-def set_electric_non_road_to_0_5_intensity(row,electric_drive_types):
+def set_new_non_road_drives_to_half_intensity(row,new_drive_types):
     #made in to a funciton for visibilty!
-    if row.Drive in electric_drive_types:
+    if row.Drive in new_drive_types:
         return row.Intensity * 0.5
     else:
         return row.Intensity

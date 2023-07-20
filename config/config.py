@@ -52,7 +52,7 @@ ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to []
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 USE_LATEST_OUTPUT_DATE_ID = True
 #create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
-# FILE_DATE_ID ='_20230718'
+# FILE_DATE_ID ='_20230719'
 try:
     if FILE_DATE_ID:
        pass
@@ -98,7 +98,7 @@ SCENARIO_OF_INTEREST = 'Reference'
 
 user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
        'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth', 'Mileage_growth','Gompertz_gamma']#, 'Gompertz_beta''Gompertz_alpha', 
-user_input_measures_list_NON_ROAD = ['Non_road_intensity_improvement']
+user_input_measures_list_NON_ROAD = ['Vehicle_sales_share','Non_road_intensity_improvement']
 
 base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
 base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Stocks', 'Intensity']
