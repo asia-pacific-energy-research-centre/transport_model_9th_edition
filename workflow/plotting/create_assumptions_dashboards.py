@@ -161,8 +161,39 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measu
     # Energy Use by Fuel Type
     energy_transport_types = [p.split('_')[-1] for p in plots if 'energy_use_by_fuel_type' in p]
     for transport_type in energy_transport_types:
-        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(fig_dict, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict, economy_scenario_concordance, color_preparation_list, colors_dict, transport_type=transport_type)
+        if f'energy_use_by_fuel_type_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(fig_dict, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict, economy_scenario_concordance, color_preparation_list, colors_dict, transport_type=transport_type)
+            
+    
+    #Non road energy Use by Fuel Type
+    energy_transport_types = [p.split('_')[-1] for p in plots if 'non_road_energy_use_by_fuel_type' in p]
+    for transport_type in energy_transport_types:
+        if f'non_road_energy_use_by_fuel_type_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_non_road_energy_use(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type=transport_type)
 
+    non_road_activity_types = [p.split('_')[-1] for p in plots if 'non_road_activity_by_drive' in p]
+    for transport_type in non_road_activity_types:
+        if f'non_road_activity_by_drive_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.non_road_activity_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type=transport_type)
+        
+    non_road_stocks_types = [p.split('_')[-1] for p in plots if 'non_road_stocks_by_drive' in p]
+    for transport_type in non_road_stocks_types:
+        if f'non_road_stocks_by_drive_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.non_road_stocks_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type=transport_type)
+            
+            
+    # turnover_rate_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type)
+    turnover_rate_types = [p.split('_')[-1] for p in plots if 'turnover_rate_by_drive' in p]
+    for transport_type in turnover_rate_types:
+        if f'turnover_rate_by_drive_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.turnover_rate_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type=transport_type)        
+        
+    avg_age_types = [p for p in plots if 'avg_age' in p]
+    for title in avg_age_types:
+        #could be avg_age_nonroad, avg_age_road, avg_age_all
+        medium = title.split('_')[-1]
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,medium, title)
+        
         
     if 'freight_tonne_km_by_drive' in plots:
         #create freight tonne km by drive plots
@@ -189,12 +220,13 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measu
     if 'lmdi_freight' in plots:
         #LMDI
         fig_dict = assumptions_dashboard_plotting_scripts.prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, transport_type = 'freight')
-    if 'avg_age' in plots:
-        #avg_age
-        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
     if 'stocks_per_capita' in plots:
-        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_stocks_per_capita(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_stocks_per_capita(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict, economy_scenario_concordance, color_preparation_list, colors_dict)
+        
+        
     check_colors_in_color_preparation_list(color_preparation_list, colors_dict)
+    
+    
     #now create the dashboards:
     for economy in fig_dict.keys():
         for scenario in fig_dict[economy].keys():
@@ -218,7 +250,6 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measu
                 for i, plot in enumerate(fig_dict[economy][scenario].keys()):
                     row = int(i/cols)+1
                     col = i%cols+1
-                    breakpoint()
                     #add the traceas for entire fig_i to the fig. This is because we are suing plotly express which returns a fig with multiple traces, however, plotly subplots only accepts one trace per subplot
                     for trace in fig_dict[economy][scenario][plot][0]['data']:
                         #we need to change the line_dash in the sales shares data and this is the only way i could find how:
@@ -275,18 +306,21 @@ def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
 # lmdi
 # avg_age
 # stocks_per_capita
-
-####################################'
+# non_road_activity_by_drive_{transport_type}
+# non_road_energy_use_by_fuel_type_{transport_type}
+# non_road_stocks_by_drive_{transport_type}
+# turnover_rate_by_drive_{transport_type}
+# avg_age_nonroad, avg_age_road, avg_age_all
+#####################################'
 hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
 #%%
-plots = ['stocks_per_capita', 'avg_age']
+plots = ['stocks_per_capita', 'avg_age_all']
 
 
 create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names)
 #%%
 #THAILAND DASHBOARD:
 plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'lmdi_freight', 'lmdi_passenger']#, 'charging']#activity_growth# 'charging',
-#%%
 create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names)
 #%%
 
@@ -300,9 +334,15 @@ create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_t
 
 #create a development dashboard:
 
-plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'lmdi_freight', 'lmdi_passenger','avg_age','stocks_per_capita']
+plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','share_of_transport_type_all',  'lmdi_freight', 'lmdi_passenger','stocks_per_capita', 'turnover_rate_by_drive_all']#, 'charging']#activity_growth# 'charging',
 
 
 create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names)
 
 # %%
+
+#checkout turnover rate and average age related data:
+plots = ['avg_age_road','avg_age_non_road','turnover_rate_by_drive_all','energy_use_by_fuel_type_all']#, 'charging']#activity_growth# 'charging',
+create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance,colors_dict, dashboard_name_id = 'turnover_rate',hidden_legend_names = hidden_legend_names)
+
+#%%

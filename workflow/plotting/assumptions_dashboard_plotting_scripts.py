@@ -27,7 +27,7 @@ def remap_vehicle_types(df, value_col='Value', index_cols = ['Scenario', 'Econom
     df = df.groupby(index_cols).sum().reset_index()
     return df
     
-def remap_drive_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum')):
+def remap_drive_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum',)):
     if mapping_type == 'original':
         drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'phev', 'phev_g':'phev', 'bev':'bev', 'fcev':'fcev', 'cng':'gas', 'lpg':'gas',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
         df["Drive new"] = df['Drive'].map(drive_type_combinations)
@@ -593,6 +593,7 @@ def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_conc
         #create a new df with only the data we need:
         passenger_km_by_drive = model_output_detailed.copy()
         passenger_km_by_drive = passenger_km_by_drive[['Economy', 'Date', 'Drive', 'passenger_km']].groupby(['Economy', 'Date', 'Drive']).sum().reset_index()
+        
         #simplfiy drive type using remap_drive_types
         passenger_km_by_drive = remap_drive_types(passenger_km_by_drive, value_col='passenger_km', index_cols = ['Economy', 'Date', 'Drive'])
         
@@ -923,7 +924,7 @@ def prodcue_LMDI_mutliplicative_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_t
     return fig_dict
     
 
-def plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, medium, title):
     #since average age starts off at  1 or 5 years (depending on if the drive type is a new or old type) we are probably best plotting the average age grouped into these types. So group all ice style engines, and ev/hydrogen/phev engines. then grouping by vehicle type transport type and drive, find the weighted average age of each engine type over time. plot as a line. 
     # model_output_detailed.pkl
     # #
@@ -933,7 +934,14 @@ def plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, 
         model_output_detailed = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_detailed.pkl')
         #and filter so data is less than GRAPHING_END_YEAR
         model_output_detailed = model_output_detailed.loc[(model_output_detailed['Date']<=GRAPHING_END_YEAR)].copy()
-        model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']=='road'].copy()
+        if medium=='road':
+            model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']==medium].copy()
+        elif medium=='all':
+            pass
+        elif medium=='nonroad':
+            model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']!='road'].copy()
+        else:
+            raise ValueError('medium must be road, non_road or all')
         #create a new df with only the data we need:
         avg_age = model_output_detailed.copy()
         # #map drive types:
@@ -962,7 +970,7 @@ def plot_average_age_by_simplified_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, 
             # fig.update_yaxes(title_text='Freight Tonne Km ({})'.format(avg_age_economy['Unit'].unique()[0]))
 
             #add fig to dictionary for scenario and economy:
-            fig_dict[economy][scenario]['avg_age'] = [fig, title_text]
+            fig_dict[economy][scenario][title] = [fig, title_text]
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
     color_preparation_list.append(avg_age_economy['Drive'].unique().tolist())
     return fig_dict, color_preparation_list
@@ -1026,3 +1034,331 @@ def plot_stocks_per_capita(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_con
     #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
     color_preparation_list.append(stocks_per_capita_economy['Transport Type'].unique().tolist())
     return fig_dict, color_preparation_list
+
+
+def plot_non_road_energy_use(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+    #we will plot the energy use by fuel type for non road as an area chart.
+    
+    #load in data and recreate plot, as created in all_economy_graphs
+    #loop through scenarios and grab the data for each scenario:
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+            
+        # pkl : plotting_output\all_economy_graphs\_20230614\model_output_with_fuels.pkl
+        model_output_with_fuels = pd.read_pickle(f'plotting_output/all_economy_graphs/{FILE_DATE_ID}/{scenario}/model_output_with_fuels.pkl')
+        #and filter so data is less than GRAPHING_END_YEAR\
+        model_output_with_fuels = model_output_with_fuels.loc[(model_output_with_fuels['Date']<=GRAPHING_END_YEAR)].copy()
+        model_output_with_fuels = model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road'].copy()
+        
+        #create a new df with only the data we need: 
+        energy_use_by_fuel_type = model_output_with_fuels.copy()
+        energy_use_by_fuel_type= energy_use_by_fuel_type[['Economy', 'Date', 'Fuel', 'Transport Type','Energy']].groupby(['Economy', 'Date','Transport Type', 'Fuel']).sum().reset_index()
+        
+        #add units (by setting measure to Energy haha)
+        energy_use_by_fuel_type['Measure'] = 'Energy'
+        #add units
+        energy_use_by_fuel_type['Unit'] = energy_use_by_fuel_type['Measure'].map(measure_to_unit_concordance_dict)
+        
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            energy_use_by_fuel_type_economy = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Economy']==economy].copy()
+            
+            # calculate total 'Energy' for each 'Fuel' 
+            total_energy_per_fuel = energy_use_by_fuel_type_economy.groupby('Fuel')['Energy'].sum()
+
+            # Create an ordered category of 'Fuel' labels sorted by total 'Energy'
+            energy_use_by_fuel_type_economy['Fuel'] = pd.Categorical(
+                energy_use_by_fuel_type_economy['Fuel'],
+                categories = total_energy_per_fuel.sort_values(ascending=False).index,
+                ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Fuel' column:
+            energy_use_by_fuel_type_economy.sort_values(by='Fuel', inplace=True)
+            if transport_type=='passenger':
+                #now plot
+                fig = px.area(energy_use_by_fuel_type_economy.loc[energy_use_by_fuel_type_economy['Transport Type']=='passenger'], x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road energy by Fuel {} ({})'.format(transport_type, energy_use_by_fuel_type_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_energy_use_by_fuel_type_passenger'] = [fig, title_text]
+                
+            elif transport_type == 'freight':
+                #now plot
+                fig = px.area(energy_use_by_fuel_type_economy.loc[energy_use_by_fuel_type_economy['Transport Type']=='freight'], x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road energy by Fuel {} ({})'.format(transport_type, energy_use_by_fuel_type_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_energy_use_by_fuel_type_freight'] = [fig, title_text]
+                
+            elif transport_type == 'all':
+                #sum across transport types
+                energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum().reset_index()
+                #now plot
+                fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_energy_use_by_fuel_type_all'] = [fig, title_text]
+            else:
+                raise ValueError('transport_type must be passenger, all or freight')
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
+    return fig_dict, color_preparation_list
+
+def non_road_activity_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+    #break activity into its ddrive types and plot as an area chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
+    # model_output_detailed.pkl
+    #loop through scenarios and grab the data for each scenario:
+    #since we need detail on non road drive types, we have to pull the data fromm here:
+    # 'output_data/model_output/NON_ROAD_DETAILED_{}'.format(model_output_file_name)
+    breakpoint()
+    model_output = pd.read_csv(f'output_data/model_output/NON_ROAD_DETAILED_{model_output_file_name}')
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        #filter for the scenario:
+        model_output_scenario = model_output.loc[model_output['Scenario']==scenario].copy()
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_scenario = model_output_scenario.loc[(model_output_scenario['Date']<=GRAPHING_END_YEAR)].copy()  
+        model_output_scenario = model_output_scenario.loc[model_output_scenario['Medium']!='road'].copy()
+        
+        #create a new df with only the data we need:
+        activity_by_drive = model_output_scenario.copy()
+        activity_by_drive = activity_by_drive[['Economy', 'Date', 'Drive','Transport Type', 'Activity']].groupby(['Economy', 'Date', 'Transport Type','Drive']).sum().reset_index()
+        
+        
+        # #simplfiy drive type using remap_drive_types
+        # activity_by_drive = remap_drive_types(activity_by_drive, value_col='Activity', index_cols = ['Economy', 'Date', 'Transport Type','Drive'])
+        
+        #add units (by setting measure to Freight_tonne_km haha)
+        activity_by_drive['Measure'] = 'Activity'
+        #add units
+        activity_by_drive['Unit'] = 'Activity'
+
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            activity_by_drive_economy = activity_by_drive.loc[activity_by_drive['Economy']==economy].copy()
+            
+            # calculate total 'passenger_km' for each 'Drive' 
+            total_activity = activity_by_drive_economy.groupby('Drive')['Activity'].sum()
+
+            # Create an ordered category of 'Drive' labels sorted by total 'passenger_km'
+            activity_by_drive_economy['Drive'] = pd.Categorical(
+            activity_by_drive_economy['Drive'],
+            categories = total_activity.sort_values(ascending=False).index,
+            ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Drive' column:
+            activity_by_drive_economy.sort_values(by='Drive', inplace=True)
+            #sort by date
+
+            if transport_type=='passenger':
+                #now plot
+                fig = px.area(activity_by_drive_economy.loc[activity_by_drive_economy['Transport Type']=='passenger'], x='Date', y='Activity', color='Drive', title='Non road passenger activity by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road passenger Km (Billions)'#.format(activity_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_activity_by_drive_passenger'] = [fig, title_text]
+                
+            elif transport_type == 'freight':
+                #now plot
+                fig = px.area(activity_by_drive_economy.loc[activity_by_drive_economy['Transport Type']=='freight'], x='Date', y='Activity', color='Drive', title='Non road freight activity by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road freight tonne Km (Billions)'#.format(activity_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_activity_by_drive_freight'] = [fig, title_text]
+                
+            elif transport_type == 'all':
+                #sum across transport types
+                fig = px.area(activity_by_drive_economy, x='Date', y='Activity', color='Drive',pattern_shape="Transport Type" , title='Non road activity by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road activity (Freight/Passenger km)'#.format(activity_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_activity_by_drive_all'] = [fig, title_text]
+                
+            else:
+                raise ValueError('transport_type must be passenger, all or freight')
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(activity_by_drive_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
+
+
+
+def non_road_stocks_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+    #break activity into its ddrive types and plot as an area chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
+    # model_output_detailed.pkl
+    #loop through scenarios and grab the data for each scenario:
+    #since we need detail on non road drive types, we have to pull the data fromm here:
+    # 'output_data/model_output/NON_ROAD_DETAILED_{}'.format(model_output_file_name)
+    breakpoint()
+    model_output = pd.read_csv(f'output_data/model_output/NON_ROAD_DETAILED_{model_output_file_name}')
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        #filter for the scenario:
+        model_output_scenario = model_output.loc[model_output['Scenario']==scenario].copy()
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_scenario = model_output_scenario.loc[(model_output_scenario['Date']<=GRAPHING_END_YEAR)].copy()  
+        model_output_scenario = model_output_scenario.loc[model_output_scenario['Medium']!='road'].copy()
+        
+        #create a new df with only the data we need:
+        stocks_by_drive = model_output_scenario.copy()
+        stocks_by_drive = stocks_by_drive[['Economy', 'Date', 'Drive','Transport Type', 'Stocks']].groupby(['Economy', 'Date', 'Transport Type','Drive']).sum().reset_index()
+        
+        
+        #add units (by setting measure to Freight_tonne_km haha)
+        stocks_by_drive['Measure'] = 'Stocks'
+        #add units
+        stocks_by_drive['Unit'] = 'Stocks'
+
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            stocks_by_drive_economy = stocks_by_drive.loc[stocks_by_drive['Economy']==economy].copy()
+            
+            # calculate total 'passenger_km' for each 'Drive' 
+            total_stocks = stocks_by_drive_economy.groupby('Drive')['Stocks'].sum()
+
+            # Create an ordered category of 'Drive' labels sorted by total 'passenger_km'
+            stocks_by_drive_economy['Drive'] = pd.Categorical(
+            stocks_by_drive_economy['Drive'],
+            categories = total_stocks.sort_values(ascending=False).index,
+            ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Drive' column:
+            stocks_by_drive_economy.sort_values(by='Drive', inplace=True)
+            #sort by date
+
+            if transport_type=='passenger':
+                #now plot
+                fig = px.line(stocks_by_drive_economy.loc[stocks_by_drive_economy['Transport Type']=='passenger'], x='Date', y='Stocks', color='Drive', title='Non road passenger stocks by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road passenger Km (Billions)'#.format(stocks_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_stocks_by_drive_passenger'] = [fig, title_text]
+                
+            elif transport_type == 'freight':
+                #now plot
+                fig = px.line(stocks_by_drive_economy.loc[stocks_by_drive_economy['Transport Type']=='freight'], x='Date', y='Stocks', color='Drive', title='Non road freight stocks by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road freight tonne Km (Billions)'#.format(stocks_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_stocks_by_drive_freight'] = [fig, title_text]
+                
+            elif transport_type == 'all':
+                #sum across transport types
+                fig = px.line(stocks_by_drive_economy, x='Date', y='Stocks', color='Drive',line_dash="Transport Type" , title='Non road stocks by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Non road stocks (Freight/Passenger km)'#.format(stocks_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['non_road_stocks_by_drive_all'] = [fig, title_text]
+                
+            else:
+                raise ValueError('transport_type must be passenger, all or freight')
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(stocks_by_drive_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
+
+
+
+def turnover_rate_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+    #break activity into its ddrive types and plot the variation by medium and treansport type on a box chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
+    # model_output_detailed.pkl
+    #loop through scenarios and grab the data for each scenario:
+    #since we need detail on non road drive types, we have to pull the data fromm here:
+    # 'output_data/model_output/NON_ROAD_DETAILED_{}'.format(model_output_file_name)
+    model_output = pd.read_csv(f'output_data/model_output_detailed/NON_ROAD_DETAILED_{model_output_file_name}')
+    for scenario in economy_scenario_concordance['Scenario'].unique():
+        
+        #filter for the scenario:
+        model_output_scenario = model_output.loc[model_output['Scenario']==scenario].copy()
+        #and filter so data is less than GRAPHING_END_YEAR
+        model_output_scenario = model_output_scenario.loc[(model_output_scenario['Date']<=GRAPHING_END_YEAR)].copy()  
+        # model_output_scenario = model_output_scenario.loc[model_output_scenario['Medium']!='road'].copy()
+        
+        #create a new df with only the data we need:
+        turnover_rate_by_drive = model_output_scenario.copy()
+        turnover_rate_by_drive = turnover_rate_by_drive[['Economy', 'Date', 'Medium','Drive','Transport Type', 'Turnover_rate']].groupby(['Economy', 'Date', 'Medium','Transport Type','Drive']).median().reset_index()
+        
+        
+        #add units (by setting measure to Freight_tonne_km haha)
+        turnover_rate_by_drive['Measure'] = 'Turnover_rate'
+        #add units
+        turnover_rate_by_drive['Unit'] = '%'
+
+        for economy in ECONOMIES_TO_PLOT_FOR:
+            #filter to economy
+            turnover_rate_by_drive_economy = turnover_rate_by_drive.loc[turnover_rate_by_drive['Economy']==economy].copy()
+            
+            # calculate total 'passenger_km' for each 'Drive' 
+            total_turnover_rate = turnover_rate_by_drive_economy.groupby('Drive')['Turnover_rate'].mean()
+
+            # Create an ordered category of 'Drive' labels sorted by total 'passenger_km'
+            turnover_rate_by_drive_economy['Drive'] = pd.Categorical(
+            turnover_rate_by_drive_economy['Drive'],
+            categories = total_turnover_rate.sort_values(ascending=False).index,
+            ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Drive' column:
+            turnover_rate_by_drive_economy.sort_values(by='Drive', inplace=True)
+            #sort by date
+
+            if transport_type=='passenger':
+                #now plot
+                # fig = px.line(turnover_rate_by_drive_economy.loc[turnover_rate_by_drive_economy['Transport Type']=='passenger'], x='Date', y='Turnover_rate', color='Drive', title='Passenger turnover_rate by drive', color_discrete_map=colors_dict)
+                fig = px.box(turnover_rate_by_drive_economy.loc[turnover_rate_by_drive_economy['Transport Type']=='passenger'],x='Medium', y='Turnover_rate', color='Drive', title='Passenger turnover_rate by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Passenger turnover rate box (based on median)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['turnover_rate_by_drive_passenger'] = [fig, title_text]
+                
+            elif transport_type == 'freight':
+                #now plot
+                fig = px.box(turnover_rate_by_drive_economy.loc[turnover_rate_by_drive_economy['Transport Type']=='freight'],x='Medium', y='Turnover_rate', color='Drive', title='Freight turnover_rate by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Freight turnover rate box (based on median)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['turnover_rate_by_drive_freight'] = [fig, title_text]
+                
+            elif transport_type == 'all':
+                #sum across transport types
+                fig = px.box(turnover_rate_by_drive_economy,x='Medium', y='Turnover_rate', color='Drive', title='Passenger turnover_rate by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'turnover_rate box (Freight/Passenger km) (based on median)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['turnover_rate_by_drive_all'] = [fig, title_text]
+                
+            else:
+                raise ValueError('transport_type must be passenger, all or freight')
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(turnover_rate_by_drive_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
+

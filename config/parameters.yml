@@ -6,13 +6,17 @@ vehicle_gompertz_factors:
   suv: 1
   bus: 5
   2w: 0.5
-  lcv: 20
-  mt: 30
+  lcv: 10
+  mt: 20
   ht: 30
 #can edit these to adjust the amount of vehicles in the fleet. it is important to watch stocks per capita, by transport type to udnerstand the impact of these changes.
 turnover_rate_parameters_dict:
-  turnover_rate_steepness: 0.5
-  std_deviation_share: 0.1
-  midpoint_new: 12.5
-  midpoint_old: 25
-  midpoint_non_road: 30
+  turnover_rate_steepness: 0.3
+  std_deviation_share: 0.2
+
+
+
+#   vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 30, 'ht': 30}
+# turnover_rate_parameters_dict = {'turnover_rate_steepness':0.5,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':25}
+# #tried std_deviation_share = 0.25, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #old vehicles never left the fleet once we reached 80% ev stock share
+# # tried std_deviation_share = 0.5, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #WAS TOO STEEP

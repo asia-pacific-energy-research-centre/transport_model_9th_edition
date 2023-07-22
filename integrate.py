@@ -59,10 +59,7 @@ if PREPARE_DATA:
         communicate_missing_input_data.communicate_missing_input_data()
     
 #%%
-vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 30, 'ht': 30}
-turnover_rate_parameters_dict = {'turnover_rate_steepness':0.5,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':25}
-#tried std_deviation_share = 0.25, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #old vehicles never left the fleet once we reached 80% ev stock share
-# tried std_deviation_share = 0.5, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #WAS TOO STEEP
+
 
 MODEL_RUN_1  = True
 if MODEL_RUN_1:
@@ -74,11 +71,11 @@ if MODEL_RUN_1:
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)
+    run_road_model.run_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False)
     # exec(open("./workflow/1_run_non_road_model.py").read())
         
-    import NEW_run_non_road_model
-    NEW_run_non_road_model.run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR, output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name))
+    import run_non_road_model
+    run_non_road_model.run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR, output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name))
                                                          
     # import run_non_road_model
     # run_non_road_model.run_non_road_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR)# sometimes this doesnt work. dont know why.
@@ -106,11 +103,11 @@ if MODEL_RUN_2:
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model
-    run_road_model.run_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
+    run_road_model.run_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR,USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False)
     # exec(open("./workflow/1_run_non_road_model.py").read())
     
-    import NEW_run_non_road_model
-    NEW_run_non_road_model.run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name))
+    import run_non_road_model
+    run_non_road_model.run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name))
                                               
     # import run_non_road_model
     # run_non_road_model.run_non_road_model(ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR,, output_file = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)

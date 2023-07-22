@@ -380,6 +380,9 @@ new_final_df['Energy'] = new_final_df['Energy'].fillna(0)
 #        'Drive', 'Medium', 'Fuel'
 new_final_df = new_final_df.drop(['Fuel', 'Transport Type', 'Vehicle Type', 'Drive', 'Medium'], axis=1)
 
+#sum up, now that weve dropped the cols (there will be duplicates for biofuels in non road definitely:
+new_final_df = new_final_df.groupby(['Date', 'Economy', 'Scenario', 'fuels', 'subfuels', 'subsectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors']).sum().reset_index()
+
 #check for duplicates:
 if new_final_df.duplicated().sum() > 0:
     duplicates = new_final_df[new_final_df.duplicated()]

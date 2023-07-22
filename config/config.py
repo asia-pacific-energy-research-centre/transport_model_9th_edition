@@ -96,15 +96,16 @@ SCENARIOS_LIST = SCENARIOS_LIST[SCENARIOS_LIST['Use'] == True]['Scenario'].tolis
 #For graphing and analysis we sometimes will single out a scenario to look at. This is the scenario we will use for that:
 SCENARIO_OF_INTEREST = 'Reference'
 
-user_input_measures_list_ROAD = ['Vehicle_sales_share', 'Turnover_rate_growth',
-       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth', 'Mileage_growth','Gompertz_gamma']#, 'Gompertz_beta''Gompertz_alpha', 
-user_input_measures_list_NON_ROAD = ['Vehicle_sales_share','Non_road_intensity_improvement']
+user_input_measures_list_ROAD = ['Vehicle_sales_share', 
+       'New_vehicle_efficiency_growth', 'Occupancy_or_load_growth', 'Mileage_growth','Gompertz_gamma', 'Turnover_rate_midpoint', 'Average_age']
 
-base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
+user_input_measures_list_NON_ROAD = ['Vehicle_sales_share','Non_road_intensity_improvement','Turnover_rate_midpoint', 'Average_age']
+
+base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate_midpoint', 'New_vehicle_efficiency', 'Efficiency','Mileage', 'Average_age']
 base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Stocks', 'Intensity']
 
-calculated_measures_ROAD = ['Travel_km','Surplus_stocks']#tinclude travel km as to be calcualted as it is not widely available publicly, so its best just to calculate it.its also kind of an intermediate measure as it is reliant on what mileage,efficiency and stocks are, but is not the goal like energy or activity really are
-calculated_measures_NON_ROAD = []
+calculated_measures_ROAD = ['Travel_km','Surplus_stocks', 'Turnover_rate']#tinclude travel km as to be calcualted as it is not widely available publicly, so its best just to calculate it.its also kind of an intermediate measure as it is reliant on what mileage,efficiency and stocks are, but is not the goal like energy or activity really are
+calculated_measures_NON_ROAD = ['Turnover_rate']
 
 #%%
 #import measure to unit concordance
@@ -270,6 +271,7 @@ fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_
 '07_02_aviation_gasoline':'07_petroleum_products', '07_x_jet_fuel':'07_petroleum_products', 
 '01_coal':'01_coal',
 '07_08_fuel_oil':'07_petroleum_products', '07_x_other_petroleum_products':'07_petroleum_products',
+'16_01_biogas':'16_others',
 '16_06_biodiesel':'16_others', 
 '16_05_biogasoline':'16_others', 
 '16_x_efuel':'16_others',

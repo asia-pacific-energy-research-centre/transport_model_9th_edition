@@ -76,11 +76,13 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
     road_model_input_wide['Stocks_per_thousand_capita'] = (road_model_input_wide['Stocks']/road_model_input_wide['Population'])*1000000
     # road_model_input_wide.loc[(road_model_input_wide['Vehicle_sales_share'].isna()), 'Vehicle_sales_share'] = 0#TO DO THIS SHOULD BE FIXED EARLIER IN THE PROCESS
     ################################################################################
-
+    #create emptry Turnvoer rate column in both:
+    road_model_input_wide['Turnover_rate'] = np.nan
+    non_road_model_input_wide['Turnover_rate'] = np.nan
     
     #TEMP, set Activity_per_Stock to 1
     non_road_model_input_wide['Activity_per_Stock'] = 1
-    non_road_model_input_wide['Turnover_rate'] = 0.03
+    # non_road_model_input_wide['Turnover_rate'] = 0.03
     #CREATE STOCKS FOR NON ROAD
     #this is an adjsutment to the road stocks data from 8th edition by setting stocks to 1 for all non road vehicles that have a value >0 for Energy
     non_road_model_input_wide['Stocks'] = non_road_model_input_wide['Activity'] / non_road_model_input_wide['Activity_per_Stock']
@@ -149,15 +151,15 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
     ##########
     #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)
     #insert average age column in road_model_input_wide. the average age will be set to 10 for all vehicles except those where drive is bev, phev_g, phev_d and fcev. Those will have an average age of 1
-    #depening on the economy make it younger or older:
-    old_vehicle_economies = ['19_THA']
-    old_age = 10
-    new_age = 5
-    road_model_input_wide['Average_age'] = road_model_input_wide['Economy'].map(lambda x: old_age if x in old_vehicle_economies else new_age)
-    road_model_input_wide.loc[(road_model_input_wide['Drive'].isin(['bev', 'phev_g', 'phev_d', 'fcev'])), 'Average_age'] = 1  
+    # #depening on the economy make it younger or older:
+    # old_vehicle_economies = ['19_THA']
+    # old_age = 10
+    # new_age = 5
+    # road_model_input_wide['Average_age'] = road_model_input_wide['Economy'].map(lambda x: old_age if x in old_vehicle_economies else new_age)
+    # road_model_input_wide.loc[(road_model_input_wide['Drive'].isin(['bev', 'phev_g', 'phev_d', 'fcev'])), 'Average_age'] = 1  
     
-    #do the same for non road but dont worry about new or old vehicle economies. set to 15 for all
-    non_road_model_input_wide['Average_age'] = 15
+    # #do the same for non road but dont worry about new or old vehicle economies. set to 15 for all
+    # non_road_model_input_wide['Average_age'] = 15
     
     
     #TEMPORARY UNTIL WE KNOW IT WORKS: (AVGERAGE AGE ADJSUTMENTS TO TURNOVER RATE)
@@ -194,7 +196,6 @@ def calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREV
     
         #apply growth rates up to the outlook base year for all the growth rates that are in the model
         growth_columns_dict = {'New_vehicle_efficiency_growth':'New_vehicle_efficiency', 
-        'Turnover_rate_growth':'Turnover_rate', 
         'Occupancy_or_load_growth':'Occupancy_or_load'}
         new_road_model_input_wide = apply_growth_up_to_outlook_base_year(new_road_model_input_wide,growth_columns_dict)
         growth_columns_dict = {'Non_road_intensity_improvement':'Intensity'}
@@ -248,7 +249,7 @@ def apply_growth_up_to_outlook_base_year(road_model_input_wide,growth_columns_di
 #%%
 
 # calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,ADVANCE_BASE_YEAR=False, adjust_data_to_match_esto_TESTING=False)
-# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True)
+calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True)
 
 # calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True,adjust_data_to_match_esto_TESTING=True,TEST_ECONOMY='20_USA')
 #%%

@@ -159,6 +159,8 @@ def create_and_clean_user_input():
         if len(user_input_new[user_input_new.Value.isna()]) >0:
             #identify the rows where there are still nas in the Value col:
             user_input_new_nas = user_input_new[user_input_new.Value.isna()]
+            #save them to csv
+            user_input_new_nas.to_csv('intermediate_data/errors/user_input_new_nas.csv', index=False)
             breakpoint()
             raise ValueError('There are still some rows where Value is NA. Please check this.')
         # #there will be soe cases where there are still nas because there are nas for every year in the group of INDEX_COLS_no_date. We will check for these cases and separate them for analysis. THen identify any extra cases where there are still nas in the Value col. these are problematic and we will raise an error
@@ -194,6 +196,6 @@ def create_and_clean_user_input():
 
     
 #%%
-# create_and_clean_user_input()
+create_and_clean_user_input()
 #%%
 

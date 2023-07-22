@@ -334,21 +334,28 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     #replace energy with 0 where its na for the calcualtion
     energy_use_merged_merged['Energy_new'] = energy_use_merged_merged['Energy_new'].fillna(0)
     energy_use_merged_merged['proportion_of_group'] = energy_use_merged_merged.groupby(['Economy', 'Date','Scenario', 'Medium', 'Fuel'])['Energy_new'].transform(lambda x: x/x.sum(numeric_only=True))#theres an issue here that if the energy use for the whole group is 0 then the proportion will just be nan. There would be no way to estimate  the proportion bsdes absing ti off the previous year. however, this happening is really just a warning that there is somethign going wrong in the other code. To catch it, lets identify if tehre is any nan in the proportion_of_group col and if so, whether the addition col is >0. if so, then we know that there should be some energy use but its not possible to calculate the proportion. So thorw an error so the suer can track down why its happeneing
+    #actually, it seems there arent going to be cases where proprotion of group is na bnut there was energy use in previous years. instead its where there is new energy use added. So we will just spread the new energy use equally among all rows for that fuel, scenario, medium, economy and date:
     na_df = energy_use_merged_merged.loc[(energy_use_merged_merged['proportion_of_group'].isna()) & (energy_use_merged_merged['addition'] > 0)]
-    
-    #there is one exception here, which is because 14_PE started using 07_08_fuel_oil and 07_x_other_petroleum_products in 2020. So, if that exception is inthere, extract it and do the calcualtion for it manually:
-    na_df_peru_exception = na_df.loc[(na_df['Economy'] == '14_PE') & (na_df['Date'] == 2020)&(na_df['Medium'] != 'road')&(na_df['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products']))].copy()
-    #and drop that from na_df and energy_use_merged_merged
-    na_df = na_df.loc[~((na_df['Economy'] == '14_PE') & (na_df['Date'] == 2020)&(na_df['Medium'] != 'road')&(na_df['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products'])))].copy()
-    energy_use_merged_merged = energy_use_merged_merged.loc[~((energy_use_merged_merged['Economy'] == '14_PE') & (energy_use_merged_merged['Date'] == 2020)&(energy_use_merged_merged['Medium'] != 'road')&(energy_use_merged_merged['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products'])))].copy()
-    #split proportion of group equally into all rows for that fuel, scenario, medium, economy and date:
-    na_df_peru_exception['proportion_of_group'] = na_df_peru_exception.groupby(['Economy', 'Date','Scenario', 'Medium','Fuel'])['Energy_new'].transform(lambda x: 1/x.count())
+    energy_use_merged_merged = energy_use_merged_merged.loc[~((energy_use_merged_merged['proportion_of_group'].isna()) & (energy_use_merged_merged['addition'] > 0))]
+    #spread the addition equally among all rows for that fuel, scenario, medium, economy and date:
+    na_df['proportion_of_group'] = na_df.groupby(['Economy', 'Date','Scenario', 'Medium','Fuel'])['Energy_new'].transform(lambda x: 1/x.count())
     #add it to energy_use_merged_merged
-    energy_use_merged_merged = pd.concat([energy_use_merged_merged, na_df_peru_exception])
+    energy_use_merged_merged = pd.concat([energy_use_merged_merged, na_df])
     
-    if len(na_df) > 0:
-        breakpoint()
-        raise ValueError('There are nans in proportion_of_group where there should be energy use in at least one of the following rows: {}'.format(na_df))
+    
+    
+    # # #there is one exception here, which is because 14_PE started using 07_08_fuel_oil and 07_x_other_petroleum_products in 2020. So, if that exception is inthere, extract it and do the calcualtion for it manually:
+    # # na_df_peru_exception = na_df.loc[(na_df['Economy'] == '14_PE') & (na_df['Date'] == 2020)&(na_df['Medium'] != 'road')&(na_df['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products']))].copy()
+    # # #and drop that from na_df and energy_use_merged_merged
+    # # na_df = na_df.loc[~((na_df['Economy'] == '14_PE') & (na_df['Date'] == 2020)&(na_df['Medium'] != 'road')&(na_df['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products'])))].copy()
+    # # energy_use_merged_merged = energy_use_merged_merged.loc[~((energy_use_merged_merged['Economy'] == '14_PE') & (energy_use_merged_merged['Date'] == 2020)&(energy_use_merged_merged['Medium'] != 'road')&(energy_use_merged_merged['Fuel'].isin(['07_08_fuel_oil', '07_x_other_petroleum_products'])))].copy()
+    # # #split proportion of group equally into all rows for that fuel, scenario, medium, economy and date:
+    # # na_df_peru_exception['proportion_of_group'] = na_df_peru_exception.groupby(['Economy', 'Date','Scenario', 'Medium','Fuel'])['Energy_new'].transform(lambda x: 1/x.count())
+    
+    # if len(na_df) > 0:
+    #     breakpoint()
+    #     na_df.to_csv('intermediate_data\energy_use_merged_merged_na_df.csv')
+    #     raise ValueError('There are nans in proportion_of_group where there should be energy use in at least one of the following rows: {}'.format(na_df))
 
     energy_use_merged_merged['addition'] = energy_use_merged_merged['addition']*energy_use_merged_merged['proportion_of_group'].replace(np.nan, 0)
     #now need to add any additions to the Energy. this is where the ratio was inf because the model had 0 energy use but the esto data had >0. so we will add the esto data energy use to the model data energy use and just times by a ratio of 1
