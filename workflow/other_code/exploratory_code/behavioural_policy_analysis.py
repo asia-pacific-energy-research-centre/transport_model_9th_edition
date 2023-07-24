@@ -30,10 +30,13 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import plotly
 import plotly.express as px
@@ -44,7 +47,7 @@ import plotly.io as pio
 #%%
 
 #laod outputs
-model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 
 behavioural_policy_df = model_output.loc[model_output['Year'] >= 2018] #filter for 2018 to 2025
 behavioural_policy_df = behavioural_policy_df.loc[behavioural_policy_df['Year'] <= 2025] #filter for 2018 to 2025

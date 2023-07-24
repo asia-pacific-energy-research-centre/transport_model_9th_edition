@@ -1,18 +1,13 @@
 
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'/transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-#%%
-
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
+sys.path.append("./workflow/calculation_functions")
 import estimate_charging_requirements
 #%%    
 def plot_required_chargers(): 

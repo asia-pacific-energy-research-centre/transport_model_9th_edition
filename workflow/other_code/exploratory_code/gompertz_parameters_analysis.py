@@ -9,10 +9,13 @@ from runpy import run_path
 import numpy as np
 from scipy.optimize import newton
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import plotly.graph_objects as go
 import numpy as np
 from scipy.optimize import curve_fit

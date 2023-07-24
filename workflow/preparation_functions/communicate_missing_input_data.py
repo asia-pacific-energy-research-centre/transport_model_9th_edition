@@ -2,26 +2,20 @@
 
 
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-#%%
-#import graphing libraries
-import matplotlib
-import matplotlib.pyplot as plt
-# %matplotlib inline
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
+
 #%%
 #load in the transport dataset that contains all data and plot the data coverage usinga  kind of scatterplot. 
 #this will allow the user to understand where data is missing and where it is present so that if any errors occur they can find out with ease
 def communicate_missing_input_data():
-    aggregated_model_data = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_aggregated_model_data.csv'.format(FILE_DATE_ID))
+    aggregated_model_data = pd.read_csv('intermediate_data/model_inputs/{}/aggregated_model_data.csv'.format(config.FILE_DATE_ID))
 
     #now plot the data available column to see what data is available and what is not using the data coverage plotting style;
     #%%
@@ -66,7 +60,7 @@ def communicate_missing_input_data():
         plt.title('Colors to use')
         for i, color in enumerate(colors_to_use):
             plt.plot([i], [i], 'o', color=color)
-        plt.savefig('plotting_output/plot_data_coverage/{}_colors_to_use.png'.format(FILE_DATE_ID))
+        plt.savefig('plotting_output/plot_data_coverage/{}_colors_to_use.png'.format(config.FILE_DATE_ID))
         plt.close()
 
     #assign each color to a unique index row
@@ -180,9 +174,9 @@ def communicate_missing_input_data():
 
                 #save the plot with id for the date and the measure. Make the plot really high resolution so that it can be zoomed in on
                 if number_of_values == 0:
-                    plt.savefig('plotting_output/plot_data_coverage/NOVALUES_{}_{}_{}_{}_plot.png'.format(FILE_DATE_ID, measure, transport_type, scenario))
+                    plt.savefig('plotting_output/plot_data_coverage/NOVALUES_{}_{}_{}_{}_plot.png'.format(config.FILE_DATE_ID, measure, transport_type, scenario))
                 else:
-                    plt.savefig('plotting_output/plot_data_coverage/{}_{}_{}_{}_plot.png'.format(FILE_DATE_ID, measure, transport_type, scenario))
+                    plt.savefig('plotting_output/plot_data_coverage/{}_{}_{}_{}_plot.png'.format(config.FILE_DATE_ID, measure, transport_type, scenario))
 
     #%%
 

@@ -2,42 +2,34 @@
 
 #CLEANING IS anything that involves changing the format of the data. The next step is filling in missing values. 
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-import sys
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
-sys.path.append("./config/utilities")
-import archiving_scripts
-sys.path.append("./workflow/create_user_inputs")
+sys.path.append("./workflow/data_creation_functions")
 from create_vehicle_sales_share_data import create_vehicle_sales_share_input
+from create_demand_side_fuel_mix_input import create_demand_side_fuel_mixing_input
+from create_supply_side_fuel_mix_input import create_supply_side_fuel_mixing_input
 #%%
 # data_available
 def create_and_clean_user_input():
     
     ######################################################################################################
     #laod concordances for checking later
-    model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name))
+    model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_user_input_and_growth_rates_file_name))
 
     if NEW_SALES_SHARES:
-        create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST)
+        create_vehicle_sales_share_input(INDEX_COLS,config.SCENARIOS_LIST)
 
     if NEW_FUEL_MIXING_DATA:
         #note that this wont be saved to user input, as it has a different data structure.
-        import create_demand_side_fuel_mix_input
-        import concordance_scripts
-        import create_supply_side_fuel_mix_input
-
-        create_demand_side_fuel_mix_input.create_demand_side_fuel_mixing_input()
-        create_supply_side_fuel_mix_input.create_supply_side_fuel_mixing_input()
-        concordance_scripts.create_fuel_mixing_concordances()
+        create_demand_side_fuel_mixing_input()
+        create_supply_side_fuel_mixing_input()
     
     #first, prepare user input 
     #load these files in and concat them
@@ -59,7 +51,7 @@ def create_and_clean_user_input():
     #we need intensity improvement for all new non road drive types. so filter for non road in user input then merge with the concordance table to get the new drive types, and replicate the intensity improvement for all. 
     
     #drop any rows in user input that are for the base year (why? i geuss there arent any base year values in the user inputanyway, but could be useful not to rmeove them ?)
-    user_input = user_input[user_input.Date != BASE_YEAR]
+    user_input = user_input[user_input.Date != config.BASE_YEAR]
     
     #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
     
@@ -128,7 +120,7 @@ def create_and_clean_user_input():
     # # a= user_input.copy()
     # user_input = a.copy()
     
-    #we may be missing user inputs because the END_YEAR was extended. So just fill in missing values with the last available value when grouping by the index cols
+    #we may be missing user inputs because the config.END_YEAR was extended. So just fill in missing values with the last available value when grouping by the index cols
     #so first insert all the missing years
     #make sure to print strong wanrings so the user is aware that they could be filling in missing data where it should be missing
     #also, jsut to be safe, only do thisstep if the missing data is for years greater than 2050
@@ -152,7 +144,7 @@ def create_and_clean_user_input():
         user_input_missing_values_change.sort_values('Date', inplace=True)
 
         # now ffill na on Value col when grouping by the index cols
-        user_input_missing_values_change['Value'] = user_input_missing_values_change.groupby(INDEX_COLS_no_date)['Value'].apply(lambda group: group.ffill())
+        user_input_missing_values_change['Value'] = user_input_missing_values_change.groupby(config.INDEX_COLS_no_date)['Value'].apply(lambda group: group.ffill())
 
         # reset index
         user_input_missing_values_change.reset_index(drop=True, inplace=True)
@@ -167,13 +159,13 @@ def create_and_clean_user_input():
             user_input_new_nas.to_csv('intermediate_data/errors/user_input_new_nas.csv', index=False)
             breakpoint()
             raise ValueError('There are still some rows where Value is NA. Please check this.')
-        # #there will be soe cases where there are still nas because there are nas for every year in the group of INDEX_COLS_no_date. We will check for these cases and separate them for analysis. THen identify any extra cases where there are still nas in the Value col. these are problematic and we will raise an error
-        # user_input_new_groups_with_all_nas = user_input_new.groupby(INDEX_COLS_no_date).apply(lambda group: group.isna().all()).reset_index()
+        # #there will be soe cases where there are still nas because there are nas for every year in the group of config.INDEX_COLS_no_date. We will check for these cases and separate them for analysis. THen identify any extra cases where there are still nas in the Value col. these are problematic and we will raise an error
+        # user_input_new_groups_with_all_nas = user_input_new.groupby(config.INDEX_COLS_no_date).apply(lambda group: group.isna().all()).reset_index()
 
         # #drop tehse rwos from the user_input_new so we can check for any other cases where there are still nas in the Value col:
         # user_input_new = user_input_new.loc[~user_input_new_groups_with_all_nas[0]]
         # #then identify the other cases where there are still nas in the Value col:
-        # user_input_new_groups_with_nas_in_value = user_input_new.groupby(INDEX_COLS_no_date).apply(lambda group: group.Value.isna().any()).reset_index()
+        # user_input_new_groups_with_nas_in_value = user_input_new.groupby(config.INDEX_COLS_no_date).apply(lambda group: group.Value.isna().any()).reset_index()
     else:
         user_input_new = user_input.copy()
     
@@ -200,6 +192,6 @@ def create_and_clean_user_input():
 
     
 #%%
-create_and_clean_user_input()
+# create_and_clean_user_input()
 #%%
 

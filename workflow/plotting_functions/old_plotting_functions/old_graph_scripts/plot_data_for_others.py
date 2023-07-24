@@ -7,10 +7,13 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import plotly
 import plotly.express as px
@@ -20,18 +23,18 @@ import plotly.io as pio
 #%%
 
 #load data in
-model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
-model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
+model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name))
 #%%
 #FILTER FOR SCENARIO OF INTEREST
 #this should be temporary as the scenario should be passed in as a parameter through config if it is useed elsewhere
 
-model_output_all = model_output_all[model_output_all['Scenario']==SCENARIO_OF_INTEREST]
-model_output_detailed = model_output_detailed[model_output_detailed['Scenario']==SCENARIO_OF_INTEREST]
-change_dataframe_aggregation = change_dataframe_aggregation[change_dataframe_aggregation['Scenario']==SCENARIO_OF_INTEREST]
-model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Scenario']==SCENARIO_OF_INTEREST]
+model_output_all = model_output_all[model_output_all['Scenario']==config.SCENARIO_OF_INTEREST]
+model_output_detailed = model_output_detailed[model_output_detailed['Scenario']==config.SCENARIO_OF_INTEREST]
+change_dataframe_aggregation = change_dataframe_aggregation[change_dataframe_aggregation['Scenario']==config.SCENARIO_OF_INTEREST]
+model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Scenario']==config.SCENARIO_OF_INTEREST]
 #%%
 
 ################################################################################################################################################################

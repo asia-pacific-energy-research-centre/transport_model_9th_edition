@@ -11,26 +11,33 @@ NEW_FUEL_MIXING_DATA = True
 
 transport_data_system_FILE_DATE_ID ='DATE20230717' # 'DATE20230216'))
 
-FILE_DATE_ID ='_20230722'
+# FILE_DATE_ID ='_20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run
 
 #%%
 # FILE_DATE_ID ='_20230715'
 #import common libraries 
 import pandas as pd 
 import numpy as np
-import glob
-import os
-from string import digits#is this used?
+import yaml
+# import glob
+# from string import digits#is this used?
 import datetime
-import re
 import shutil
 import sys
+import os 
+import re
 
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
 # %config Completer.use_jedi = False#Jupiter lab specific setting to fix Auto fill bug
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 
 sys.path.append("./workflow/utility_functions")
 import utility_functions
+import archiving_scripts
 #%%
 #TODO find way to put this in a different file. 
 
@@ -57,9 +64,6 @@ except NameError:
     # FILE_DATE_ID = ''
     file_date = datetime.datetime.now().strftime("%Y%m%d")
     FILE_DATE_ID = '_{}'.format(file_date)#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
-   
-#%%
-
 
 #%%
 #state important modelling variables
@@ -76,9 +80,6 @@ INDEX_COLS_no_date.remove('Date')
 
 model_output_file_name = 'model_output_years_{}_to_{}{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID, ECONOMY_ID)
 
-gompertz_function_diagnostics_dataframe_file_name = 'gompertz_function_diagnostics_dataframe{}{}.csv'.format(FILE_DATE_ID,ECONOMY_ID)
-
-EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable
 
 #get sceanrios from scenarios_list file
 SCENARIOS_LIST = pd.read_csv('config/concordances_and_config_data/scenarios_list.csv')
@@ -145,8 +146,11 @@ model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_deman
 #AND A model_concordances_all_file_name
 # model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)
 #%%
-
-
+#check that importnat folders exist:
+# "intermediate_data/model_inputs/{}".format(FILE_DATE_ID)
+if not os.path.exists("intermediate_data/model_inputs/{}".format(FILE_DATE_ID)):
+    os.makedirs("intermediate_data/model_inputs/{}".format(FILE_DATE_ID))
+#%%
 
 #ESTO/9th_EBT to transport model mappings:
 medium_mapping = {'air': '15_01_domestic_air_transport', 'road': '15_02_road', 'rail': '15_03_rail', 'ship': '15_04_domestic_navigation', 'pipeline':'15_05_pipeline_transport', 'nonspecified': '15_06_nonspecified_transport'}

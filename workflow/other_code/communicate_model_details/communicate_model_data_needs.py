@@ -9,10 +9,13 @@ import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 
 #%%
@@ -23,7 +26,7 @@ from config import *
 # general_df = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name))
 
 user_input_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name))
-base_year_measure_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_base_year_measures_file_name))
+BASE_YEAR_measure_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_BASE_YEAR_measures_file_name))
 demand_side_fuel_mixing_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_demand_side_fuel_mixing_file_name))
 supply_side_fuel_mixing_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_supply_side_fuel_mixing_file_name))
 
@@ -31,7 +34,7 @@ supply_side_fuel_mixing_concordances = pd.read_csv('config/concordances_and_conf
 #realistically we just want data for the base year and then for user inputs and growth rates plus fuel mixing, we would jsut estimate our own growth rates for future years
 
 #so just remove year column from all dfs and then remove duplicates (including base year limtis us, better just to ask for the latest avaialble data, whether or not that is one or more years of data)
-base_year_measure_concordances = base_year_measure_concordances.drop(columns = ['Year']).drop_duplicates()
+BASE_YEAR_measure_concordances = BASE_YEAR_measure_concordances.drop(columns = ['Year']).drop_duplicates()
 demand_side_fuel_mixing_concordances = demand_side_fuel_mixing_concordances.drop(columns = ['Year']).drop_duplicates()
 supply_side_fuel_mixing_concordances = supply_side_fuel_mixing_concordances.drop(columns = ['Year']).drop_duplicates()
 user_input_concordances = user_input_concordances.drop(columns = ['Year']).drop_duplicates()
@@ -43,7 +46,7 @@ demand_side_fuel_mixing_concordances = demand_side_fuel_mixing_concordances.drop
 supply_side_fuel_mixing_concordances = supply_side_fuel_mixing_concordances.drop(columns = ['Scenario'])
 
 #and remove meidum column from all since it is reaally just a helper column
-base_year_measure_concordances = base_year_measure_concordances.drop(columns = ['Medium'])
+BASE_YEAR_measure_concordances = BASE_YEAR_measure_concordances.drop(columns = ['Medium'])
 demand_side_fuel_mixing_concordances = demand_side_fuel_mixing_concordances.drop(columns = ['Medium'])
 supply_side_fuel_mixing_concordances = supply_side_fuel_mixing_concordances.drop(columns = ['Medium'])
 user_input_concordances = user_input_concordances.drop(columns = ['Medium'])
@@ -56,27 +59,27 @@ user_input_concordances = user_input_concordances.drop(columns = ['Medium'])
 
 #lets try by using a sunburst diagram
 #drop ecconomy and measure cols 
-base_year_measure_concordances = base_year_measure_concordances.drop(columns = ['Economy', 'Measure']).drop_duplicates()
+BASE_YEAR_measure_concordances = BASE_YEAR_measure_concordances.drop(columns = ['Economy', 'Measure']).drop_duplicates()
 demand_side_fuel_mixing_concordances = demand_side_fuel_mixing_concordances.drop(columns = ['Economy', 'Measure']).drop_duplicates()
 supply_side_fuel_mixing_concordances = supply_side_fuel_mixing_concordances.drop(columns = ['Economy', 'Measure']).drop_duplicates()
 user_input_concordances = user_input_concordances.drop(columns = ['Economy', 'Measure']).drop_duplicates()
 
 
 #remove nonspecified from all columns in 'Transport Type' which will remove it from 'Vehicle Type', 'Drive'
-base_year_measure_concordances = base_year_measure_concordances[~base_year_measure_concordances['Transport Type'].isin(['nonspecified'])]
+BASE_YEAR_measure_concordances = BASE_YEAR_measure_concordances[~BASE_YEAR_measure_concordances['Transport Type'].isin(['nonspecified'])]
 demand_side_fuel_mixing_concordances = demand_side_fuel_mixing_concordances[~demand_side_fuel_mixing_concordances['Transport Type'].isin(['nonspecified'])]
 supply_side_fuel_mixing_concordances = supply_side_fuel_mixing_concordances[~supply_side_fuel_mixing_concordances['Transport Type'].isin(['nonspecified'])]
 user_input_concordances = user_input_concordances[~user_input_concordances['Transport Type'].isin(['nonspecified'])]
 
 
 #make Drive = None for all Vehicle Types in air ship and rail
-base_year_measure_concordances.loc[base_year_measure_concordances['Vehicle Type'].isin(['air', 'ship', 'rail']), 'Drive'] = None
+BASE_YEAR_measure_concordances.loc[BASE_YEAR_measure_concordances['Vehicle Type'].isin(['air', 'ship', 'rail']), 'Drive'] = None
 #remove duplicates
-# base_year_measure_concordances = base_year_measure_concordances.drop_duplicates()
+# BASE_YEAR_measure_concordances = BASE_YEAR_measure_concordances.drop_duplicates()
 #%%
 #now plot for jsut one of the concordances
 import plotly.express as px
-df = base_year_measure_concordances
+df = BASE_YEAR_measure_concordances
 fig = px.sunburst(df, path=['Transport Type', 'Vehicle Type', 'Drive'])
 #make fig bigger
 fig.update_layout(margin = dict(t=0, l=0, r=0, b=0))

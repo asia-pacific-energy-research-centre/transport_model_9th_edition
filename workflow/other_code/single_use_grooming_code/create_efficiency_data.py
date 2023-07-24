@@ -8,10 +8,13 @@ import pandas as pd
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import plotly.express as px
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 #%%
 #we're oging to take in the data that we have from teh transport datasyetm and see if we can calcualte vehicle efficiency.

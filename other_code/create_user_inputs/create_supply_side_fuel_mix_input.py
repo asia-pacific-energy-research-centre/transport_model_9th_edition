@@ -11,9 +11,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
+sys.path.append("./config")
 from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 #%%
 #create fake user input for demand side fuel mixes using model concordances
@@ -53,5 +53,5 @@ model_concordances_all = pd.concat([model_concordances_petrol_melt, model_concor
 
 #%%
 #save as user input csv
-model_concordances_all.to_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID), index=False)
+model_concordances_all.to_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID), index=False)
 #%%

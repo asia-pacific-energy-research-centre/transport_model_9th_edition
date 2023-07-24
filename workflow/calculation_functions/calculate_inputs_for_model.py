@@ -5,29 +5,23 @@
    
 
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-# FILE_DATE_ID = '_20230606'
-
-import sys
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 sys.path.append("./workflow")
-sys.path.append("./workflow/plotting")
-import utility_functions
+sys.path.append("./workflow/plotting_functions")
 import plot_user_input_data
 import adjust_data_to_match_esto
 
 def calculate_inputs_for_model(ADVANCE_BASE_YEAR=False, adjust_data_to_match_esto_TESTING=False, TEST_ECONOMY='19_THA'):
     
-    road_model_input_wide = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_road_model_input_wide.csv'.format(FILE_DATE_ID))
-    non_road_model_input_wide = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_non_road_model_input_wide.csv'.format(FILE_DATE_ID))
+    road_model_input_wide = pd.read_csv('intermediate_data/model_inputs/{}/road_model_input_wide.csv'.format(config.FILE_DATE_ID))
+    non_road_model_input_wide = pd.read_csv('intermediate_data/model_inputs/{}/non_road_model_input_wide.csv'.format(config.FILE_DATE_ID))
     
     #CALCUALTE TRAVEL KM 
     road_model_input_wide['Travel_km'] = road_model_input_wide['Activity']/road_model_input_wide['Occupancy_or_load']#TRAVEL KM is not provided by transport data system atm
@@ -85,12 +79,12 @@ def calculate_inputs_for_model(ADVANCE_BASE_YEAR=False, adjust_data_to_match_est
         # breakpoint()
         new_road_model_input_wide, new_non_road_model_input_wide, supply_side_fuel_mixing_new = adjust_data_to_match_esto.adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, TESTING=adjust_data_to_match_esto_TESTING, TEST_ECONOMY=TEST_ECONOMY)
         
-        supply_side_fuel_mixing_new.to_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID), index=False)
+        supply_side_fuel_mixing_new.to_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID), index=False)
     
         #save previous_year_main_dataframe as a temporary dataframe we can load in when we want to run the process below.
-        new_road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide_base_year_adv.csv', index=False)
-        new_non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide_base_year_adv.csv', index=False)
-        growth_forecasts_wide.to_csv('intermediate_data/model_inputs/growth_forecasts_base_year_adv.csv', index=False)
+        new_road_model_input_wide.to_csv('intermediate_data/model_inputs/road_model_input_wide_BASE_YEAR_adv.csv', index=False)
+        new_non_road_model_input_wide.to_csv('intermediate_data/model_inputs/non_road_model_input_wide_BASE_YEAR_adv.csv', index=False)
+        growth_forecasts_wide.to_csv('intermediate_data/model_inputs/growth_forecasts_BASE_YEAR_adv.csv', index=False)
         
     else:
         

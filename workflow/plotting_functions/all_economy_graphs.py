@@ -2,23 +2,15 @@
 
 
 #%%
-# FILE_DATE_ID = '_20230715'
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'/transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "plotly"#set pandas backend to plotly plotting instead of matplotlib
-import plotly.io as pio
-# pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import time
 import itertools
 AUTO_OPEN_PLOTLY_GRAPHS = False
@@ -26,29 +18,23 @@ dont_overwrite_existing_graphs = False
 plot_png = False
 plot_html = True
 subfolder_name = 'all_economy_graphs'
-original_default_save_folder = f'plotting_output/{subfolder_name}/{FILE_DATE_ID}/'#will add in scenario later to end of path
+original_default_save_folder = f'plotting_output/{subfolder_name}/{config.FILE_DATE_ID}/'#will add in scenario later to end of path
 save_pickle = True
 #get all useful graphs and put them in one folder
 useful_graphs = []
 
-beginning_year = OUTLOOK_BASE_YEAR
-end_year = GRAPHING_END_YEAR
+beginning_year = config.OUTLOOK_BASE_YEAR
+config.END_YEAR = config.GRAPHING_END_YEAR
 
 #plot all data in model_output_all:
 value_cols = ['passenger_km','freight_tonne_km', 'Energy', 'Stocks',
        'Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency',
        'Travel_km', 'Efficiency', 'Mileage', 'Surplus_stocks',
-       'Vehicle_sales_share',  'Gdp_per_capita','Gdp', 'Population', 'Stocks_per_thousand_capita']
-
-if USE_ADVANCED_TURNOVER_RATES:
-    value_cols = value_cols + ['Average_age']
+       'Vehicle_sales_share',  'Gdp_per_capita','Gdp', 'Population', 'Stocks_per_thousand_capita','Average_age']
     
 #some value cols are not summable because they are factors. so specify them for when we group by economy, then we can calculate the mean of them
-non_summable_value_cols = ['Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage']
+non_summable_value_cols = ['Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_efficiency', 'Efficiency','Mileage','Average_age']
 
-if USE_ADVANCED_TURNOVER_RATES:
-    non_summable_value_cols = non_summable_value_cols + ['Average_age']
-    
 categorical_cols = ['Vehicle Type', 'Medium', 'Transport Type', 'Drive']
 macro_cols = ['Gdp_per_capita','Gdp', 'Population', 'Activity_growth']
 
@@ -56,17 +42,17 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
     #create units dict for each value col so that wehn we plot them we can label them correctly
     #import measure to unit concordance
-    measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
     #convert to dict
-    measure_to_unit_concordance_dict = measure_to_unit_concordance.set_index('Measure')['Magnitude_adjusted_unit'].to_dict()
+    measure_to_unit_concordance_dict = config.measure_to_unit_concordance.set_index('Measure')['Magnitude_adjusted_unit'].to_dict()
 
 
     ##############FORMATTING#############
     #load data in
-    original_model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-    original_model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+    original_model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+    original_model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
     original_change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
-    original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
+    original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name))
     original_model_output_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv')
     #rename Year col into Date
     original_model_output_8th = original_model_output_8th.rename(columns={'Year':'Date'})
@@ -75,8 +61,8 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
     #loop thorugh scenarios:
 
     for scenario in original_model_output_all['Scenario'].unique():
-        SCENARIO_OF_INTEREST = scenario
-        default_save_folder = original_default_save_folder + f'{SCENARIO_OF_INTEREST}/'
+        config.SCENARIO_OF_INTEREST = scenario
+        default_save_folder = original_default_save_folder + f'{config.SCENARIO_OF_INTEREST}/'
         #CHECK THAT SAVE FOLDER EXISTS, IF NOT CREATE IT
         if not os.path.exists(default_save_folder):
             os.makedirs(default_save_folder)
@@ -85,12 +71,12 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
         #FILTER FOR SCENARIO OF INTEREST
         #this should be temporary as the scenario should be passed in as a parameter through config if it is useed elsewhere
 
-        model_output_all = original_model_output_all[original_model_output_all['Scenario']==SCENARIO_OF_INTEREST].copy()
-        model_output_detailed = original_model_output_detailed[original_model_output_detailed['Scenario']==SCENARIO_OF_INTEREST].copy()
-        change_dataframe_aggregation = original_change_dataframe_aggregation[original_change_dataframe_aggregation['Scenario']==SCENARIO_OF_INTEREST].copy()
-        model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Scenario']==SCENARIO_OF_INTEREST].copy()
-        activity_growth = original_activity_growth[original_activity_growth['Scenario']==SCENARIO_OF_INTEREST].copy()
-        if SCENARIO_OF_INTEREST == 'Target':
+        model_output_all = original_model_output_all[original_model_output_all['Scenario']==config.SCENARIO_OF_INTEREST].copy()
+        model_output_detailed = original_model_output_detailed[original_model_output_detailed['Scenario']==config.SCENARIO_OF_INTEREST].copy()
+        change_dataframe_aggregation = original_change_dataframe_aggregation[original_change_dataframe_aggregation['Scenario']==config.SCENARIO_OF_INTEREST].copy()
+        model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Scenario']==config.SCENARIO_OF_INTEREST].copy()
+        activity_growth = original_activity_growth[original_activity_growth['Scenario']==config.SCENARIO_OF_INTEREST].copy()
+        if config.SCENARIO_OF_INTEREST == 'Target':
             model_output_8th = original_model_output_8th[original_model_output_8th['Scenario']=='Carbon Neutral'].copy()
         else:
             model_output_8th = original_model_output_8th[original_model_output_8th['Scenario']=='Reference'].copy()
@@ -124,11 +110,11 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
         model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road', 'Vehicle Type'] = model_output_with_fuels['Medium']
 
         #filter for economies on all dfs
-        model_output_all = model_output_all[model_output_all['Economy'].isin(ECONOMIES_TO_PLOT_FOR)]
-        model_output_detailed = model_output_detailed[model_output_detailed['Economy'].isin(ECONOMIES_TO_PLOT_FOR)]
-        model_output_8th = model_output_8th[model_output_8th['Economy'].isin(ECONOMIES_TO_PLOT_FOR)]
-        model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Economy'].isin(ECONOMIES_TO_PLOT_FOR)]
-        activity_growth = activity_growth[activity_growth['Economy'].isin(ECONOMIES_TO_PLOT_FOR)]
+        model_output_all = model_output_all[model_output_all['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        model_output_detailed = model_output_detailed[model_output_detailed['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        model_output_8th = model_output_8th[model_output_8th['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        activity_growth = activity_growth[activity_growth['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
 
         #filter for certain years:
         if beginning_year != None:
@@ -137,12 +123,12 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
             model_output_8th = model_output_8th[model_output_8th['Date']>=beginning_year]
             model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Date']>=beginning_year]
             activity_growth = activity_growth[activity_growth['Date']>=beginning_year]
-        if end_year != None:
-            model_output_all = model_output_all[model_output_all['Date']<=end_year]
-            model_output_detailed = model_output_detailed[model_output_detailed['Date']<=end_year]
-            model_output_8th = model_output_8th[model_output_8th['Date']<=end_year]
-            model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Date']<=end_year]
-            activity_growth = activity_growth[activity_growth['Date']<=end_year]
+        if config.END_YEAR != None:
+            model_output_all = model_output_all[model_output_all['Date']<=config.END_YEAR]
+            model_output_detailed = model_output_detailed[model_output_detailed['Date']<=config.END_YEAR]
+            model_output_8th = model_output_8th[model_output_8th['Date']<=config.END_YEAR]
+            model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Date']<=config.END_YEAR]
+            activity_growth = activity_growth[activity_growth['Date']<=config.END_YEAR]
         
         #split freight tonne km and passenger km into two columns, as well as occupancy and load
         new_dfs_list = []
@@ -202,13 +188,13 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
             except FileNotFoundError:
                 times_df = pd.DataFrame(columns=['section', 'time'])
 
-            times_df = times_df.append({'section': section, 'time': elapsed_time, 'num_economies': len(ECONOMIES_TO_PLOT_FOR)}, ignore_index=True)
+            times_df = times_df.append({'section': section, 'time': elapsed_time, 'num_economies': len(config.ECONOMIES_TO_PLOT_FOR)}, ignore_index=True)
             times_df.to_csv('plotting_output/all_economy_graphs_plotting_times.csv', index=False)
         def print_expected_time_to_run(section):
             try:
                 times_df = pd.read_csv('plotting_output/all_economy_graphs_plotting_times.csv')
                 times_df = times_df[times_df['section']==section]
-                times_df = times_df[times_df['num_economies']==len(ECONOMIES_TO_PLOT_FOR)]
+                times_df = times_df[times_df['num_economies']==len(config.ECONOMIES_TO_PLOT_FOR)]
                 times_df = times_df['time']
                 times_df = times_df.mean()
                 print(f'Expected time to run {section} is {times_df} seconds')
@@ -876,7 +862,7 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
 #%%
 
-all_economy_graphs_massive_unwieldy_function(PLOT=False)
+# all_economy_graphs_massive_unwieldy_function(PLOT=False)
 
 #%%
 

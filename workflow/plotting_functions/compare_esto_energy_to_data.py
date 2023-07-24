@@ -1,29 +1,18 @@
 #we will always have issues with esto energy not matching expected enrgy because of the way we calculate energy from stocks and activity. so create graphs to compare the two. Since ESTO energy is for only a few years that we have model data for, we should compare it suing something different ot a line graph i think.
 #%%
-#aslo note that esto data is by medium. i think it ha road split into freight and passenger transport types too.
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
 import sys
-sys.path.append("./workflow")
-###IMPORT GLOBAL VARIABLES FROM config.py
-import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import matplotlib.pyplot as plt
 plt.rcParams['figure.facecolor'] = 'w'
 
-
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "plotly"#set pandas backend to plotly plotting instead of matplotlib
-import plotly.io as pio
-import utility_functions
-#do a bar chart faceted by  medium and transport type. x axis is year and source. y axis is energy?
 def compare_esto_energy_to_data():
     #TODO, THIS NEEDS TO BE MADE TO WORK WITH THE OUTPUT FOR 9TH OUTLOOK, AS THAT IS THE MOST ACCURATE REPRESENTATION OF ESTO DATA WE NOW HAVE. AND IT SWOULD MAKE IT MRESUSTAIBNLE.
     #find latest date for our energy data that was cleaned in transpoirt data system:
@@ -31,7 +20,7 @@ def compare_esto_energy_to_data():
     # energy_use_esto = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/model_input_9th_cleanedDATE{date_id}.csv')
 
 
-    # original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))#cols 	Date	Economy	Scenario	Transport Type	Vehicle Type	Drive	Medium	Fuel	Energy
+    # original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name))#cols 	Date	Economy	Scenario	Transport Type	Vehicle Type	Drive	Medium	Fuel	Energy
     # #grab scenario only = Reference
     # original_model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Scenario'] == 'Reference']
     # original_model_output_with_fuels_all_fuels = original_model_output_with_fuels.copy()

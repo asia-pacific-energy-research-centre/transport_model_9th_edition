@@ -8,9 +8,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
+sys.path.append("./config")
 from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import plotly
 import plotly.express as px
@@ -20,8 +20,8 @@ import plotly.io as pio
 #%%
 
 #load data in
-model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
 
 #lkoad 8th data
@@ -137,10 +137,10 @@ for key, grp in change_dataframe_aggregation_nz_lv.groupby(['Drive']):
 # change_dataframe_aggregation_growth3 = change_dataframe_aggregation_growth2.set_index(['Economy','Transport Type', 'Year']).pct_change()
 
 # #now set all vlaues during the base year (plus one cause this dtf ddoesnt have 2017 data) to 0 as the growth rate is not defined for the base year
-# if BASE_YEAR == 2017:
-#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == BASE_YEAR+1, 'Activity'] = 0
+# if config.BASE_YEAR == 2017:
+#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == config.BASE_YEAR+1, 'Activity'] = 0
 # else:
-#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == BASE_YEAR, 'Activity'] = 0
+#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == config.BASE_YEAR, 'Activity'] = 0
 
 # #replace NAN with 0
 # change_dataframe_aggregation_growth3 = change_dataframe_aggregation_growth3.fillna(0)
@@ -170,10 +170,10 @@ for key, grp in change_dataframe_aggregation_nz_lv.groupby(['Drive']):
 # change_dataframe_aggregation_growth4['Percentage_change'] = change_dataframe_aggregation_growth4['Activity'].pct_change()
 
 # #set base year values to 0
-# if BASE_YEAR == 2017:
-#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year'] == BASE_YEAR+1, 'Percentage_change'] = 0
+# if config.BASE_YEAR == 2017:
+#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year'] == config.BASE_YEAR+1, 'Percentage_change'] = 0
 # else:
-#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year']== BASE_YEAR, 'Percentage_change'] = 0
+#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year']== config.BASE_YEAR, 'Percentage_change'] = 0
 
 # #drop activity
 # change_dataframe_aggregation_growth4 = change_dataframe_aggregation_growth4.drop(['Activity'], axis=1)

@@ -1,24 +1,18 @@
 # STILL TO DO
 #need to do fuel mixes later
-# detailed_fuels = energy_base_year.merge(biofuel_blending_ratio, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
+# detailed_fuels = energy_BASE_YEAR.merge(biofuel_blending_ratio, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
 #is there a better way to to the new stock dist?
 
 
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import yaml
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-#%%
-import pandas as pd
-import numpy as np
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 def calculate_turnover_rate(df, k):
     df['Turnover_rate'] = 1 / (1 + np.exp(-k * (df['Average_age'] - df['Turnover_rate_midpoint'])))
@@ -45,7 +39,7 @@ def load_non_road_model_data():
     
 
 def run_non_road_model():
-    output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
+    output_file_name = 'intermediate_data/non_road_model/{}'.format(config.model_output_file_name)
     
     non_road_model_input, turnover_rate_steepness, std_deviation_share = load_non_road_model_data()
     
@@ -112,8 +106,8 @@ def run_non_road_model():
     output_df.to_csv(output_file_name, index=False)
     
 #%%
-# OUTLOOK_BASE_YEAR = 2020
+# config.OUTLOOK_BASE_YEAR = 2020
 # PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=True
-# output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
-# run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, output_file_name, ADVANCE_BASE_YEAR=False, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False)
+# output_file_name = 'intermediate_data/non_road_model/{}'.format(config.model_output_file_name)
+# run_non_road_model(config.OUTLOOK_BASE_YEAR,config.END_YEAR,config.BASE_YEAR, output_file_name, ADVANCE_BASE_YEAR=False, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False)
 #%%

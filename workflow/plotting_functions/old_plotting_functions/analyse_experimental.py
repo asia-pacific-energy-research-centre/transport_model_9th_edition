@@ -6,10 +6,13 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import matplotlib.pyplot as plt
@@ -25,13 +28,13 @@ import plotly.io as pio
 #%%
 
 #load data in
-model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 
 #FILTER FOR SCENARIO OF INTEREST
 #this should be temporary as the scenario should be passed in as a parameter through config if it is useed elsewhere
-SCENARIO_OF_INTEREST = 'Reference'
-model_output_all = model_output_all[model_output_all['Scenario']==SCENARIO_OF_INTEREST]
+config.SCENARIO_OF_INTEREST = 'Reference'
+model_output_all = model_output_all[model_output_all['Scenario']==config.SCENARIO_OF_INTEREST]
 
 ################################################################################
 ################################################################################
@@ -218,7 +221,7 @@ plotly.offline.plot(fig, filename='./plotting_output/input_exploration/' + title
 #we will plot it using a boxplot so we can plot all economys in one plot, then separate plots for each vehicle_type/transport type 
 model_output_detailed_eff_df = model_output_detailed[['Date', 'Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Efficiency', 'New_vehicle_efficiency']]
 
-model_output_detailed_eff_df = model_output_detailed_eff_df[model_output_detailed_eff_df['Date']==BASE_YEAR]
+model_output_detailed_eff_df = model_output_detailed_eff_df[model_output_detailed_eff_df['Date']==config.BASE_YEAR]
 
 #melt the efficiency and new vehicle efficiency columns to one measur col
 model_output_detailed_eff_df = pd.melt(model_output_detailed_eff_df, id_vars=['Date', 'Economy', 'Vehicle Type', 'Transport Type', 'Drive'], value_vars=['Efficiency', 'New_vehicle_efficiency'], var_name='Measure', value_name='Efficiency')

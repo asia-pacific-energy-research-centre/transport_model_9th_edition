@@ -11,9 +11,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
 # notebook in vscode #or set to notebook
 import plotly
@@ -346,10 +346,10 @@ for ttype in new_sales_shares_ref_plot['Transport Type'].unique():
 
 #%%
 #save using scenario_id
-new_sales_shares_all.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(FILE_DATE_ID), index = False)
+new_sales_shares_all.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(config.FILE_DATE_ID), index = False)
 
 #save the variables we used to calculate the data by just saving this file
-shutil.copyfile('other_code/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(FILE_DATE_ID))
+shutil.copyfile('other_code/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data_{}.py'.format(config.FILE_DATE_ID))
 
 #%%
 #before saving data to user input spreadsheety we will do some formatting:

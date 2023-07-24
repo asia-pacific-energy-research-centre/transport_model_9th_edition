@@ -1,24 +1,12 @@
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import shutil
-from turtle import title
-os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'/transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-# pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
-# notebook in vscode #or set to notebook
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "matplotlib"
-import plotly.io as pio
-pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 ######################################################################################################
 
@@ -102,12 +90,12 @@ user_input = user_input[~((user_input['Vehicle Type'] == '2w') & (~user_input['D
 #drop any nonspecified in any col
 user_input = user_input[~user_input.isin(['nonspecified']).any(axis=1)]
 #%%
-#Latly make sure that everything matches our concordances. eg. units match what is in measure_to_unit_concordance and the transport categories match what is in manually_defined_transport_categories
+#Latly make sure that everything matches our concordances. eg. units match what is in config.measure_to_unit_concordance and the transport categories match what is in manually_defined_transport_categories
 #import measure to unit concordance
-measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
 
 #join to user input on the measure col an check that the units match
-user_input = user_input.merge(measure_to_unit_concordance, on='Measure', how='left')
+user_input = user_input.merge(config.measure_to_unit_concordance, on='Measure', how='left')
 assert user_input[user_input.Unit_x != user_input.Unit_y].shape[0] == 0, 'There are some measures that do not match the unit in the measure_to_unit_concordance {} {}'.format(user_input[user_input.Unit_x != user_input.Unit_y].Measure.unique(), user_input[user_input.Unit_x != user_input.Unit_y].Unit_x.unique())
 #drop the unit_y col
 user_input.drop('Unit_y', axis=1, inplace=True)

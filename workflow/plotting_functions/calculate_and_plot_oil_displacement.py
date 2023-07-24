@@ -1,29 +1,14 @@
 #calcaulte oil displacement from evs and fcevs. This can be done by recalculating the oil use if fcevs and/or evs werent used. THis will jsut be efficiency * miles driven * number of cars.
 
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'/transport_model_9th_edition')
-from runpy import run_path
-
-###IMPORT GLOBAL VARIABLES FROM config.py
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-
-import plotly
-import plotly.express as px
-
-import plotly.graph_objects as go
-pd.options.plotting.backend = "plotly"#set pandas backend to plotly plotting instead of matplotlib
-import plotly.io as pio
-# pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-import time
-import itertools
-    
-
-
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
+#%%
 def calculate_and_plot_oil_displacement():
         
     AUTO_OPEN_PLOTLY_GRAPHS = False
@@ -31,11 +16,11 @@ def calculate_and_plot_oil_displacement():
     plot_png = False
     plot_html = True
     subfolder_name = 'all_economy_graphs'
-    default_save_folder = f'plotting_output/oil_displacement/{FILE_DATE_ID}/'
+    default_save_folder = f'plotting_output/oil_displacement/{config.FILE_DATE_ID}/'
     #CHECK THAT SAVE FOLDER EXISTS, IF NOT CREATE IT
     if not os.path.exists(default_save_folder):
         os.makedirs(default_save_folder)
-    model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+    model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 
     #create regions dataset and then concat that on with regions = Economy. so that we can plot regions too.
     region_economy_mapping = pd.read_csv('./config/concordances_and_config_data/region_economy_mapping.csv')
@@ -101,8 +86,8 @@ def calculate_and_plot_oil_displacement():
                 #sum or avg ice values
                 bev = ice_bev[ice_bev['Drive']=='bev']#later this willprobably need to include phev
                 #join
-                index_cols = ['Date', 'Vehicle Type']
-                ice_bev = pd.merge(ice, bev, on=index_cols, suffixes=('_ice', '_bev'))
+                config.INDEX_COLS = ['Date', 'Vehicle Type']
+                ice_bev = pd.merge(ice, bev, on=config.INDEX_COLS, suffixes=('_ice', '_bev'))
                 #now we have the data we can calculate oil use.
 
                 # get vehicle types
@@ -119,10 +104,10 @@ def calculate_and_plot_oil_displacement():
                 #note that we are using the mileage of bevs isteadn of ices. THis is probably not necessary to state as an assumption 
                 #to make it easy to plot we want to pivot so we have the energy use of each vehicle type as a column for each other index col
                 #so firt filter for only energy
-                ice_bev = ice_bev[index_cols + ['Oil_displacement', 'Energy_bev']]
+                ice_bev = ice_bev[config.INDEX_COLS + ['Oil_displacement', 'Energy_bev']]
                 #pivot vehile type so we have suffixes to determin which is which
-                index_cols.remove('Vehicle Type')
-                ice_bev = ice_bev.pivot(index=index_cols, columns='Vehicle Type', values=['Oil_displacement', 'Energy_bev'])
+                config.INDEX_COLS.remove('Vehicle Type')
+                ice_bev = ice_bev.pivot(index=config.INDEX_COLS, columns='Vehicle Type', values=['Oil_displacement', 'Energy_bev'])
                 #take away
                 v_types = ice_bev.columns.get_level_values(1).unique()
                 for v_type in v_types:
@@ -200,8 +185,8 @@ def calculate_and_plot_oil_displacement():
                 ice['Drive'] = 'ice'
                 
                 #join
-                index_cols = ['Date', 'Vehicle Type']
-                ice_fcev = pd.merge(ice, fcev, on=index_cols, suffixes=('_ice', '_fcev'))
+                config.INDEX_COLS = ['Date', 'Vehicle Type']
+                ice_fcev = pd.merge(ice, fcev, on=config.INDEX_COLS, suffixes=('_ice', '_fcev'))
                 #now we have the data we can calculate oil use.
                 
                 # get vehicle types
@@ -218,10 +203,10 @@ def calculate_and_plot_oil_displacement():
                 #note that we are using the mileage of fcevs isteadn of ices. THis is probably not necessary to state as an assumption 
                 #to make it easy to plot we want to pivot so we have the energy use of each vehicle type as a column for each other index col
                 #so firt filter for only energy
-                ice_fcev = ice_fcev[index_cols + ['Oil_displacement', 'Energy_fcev']]
+                ice_fcev = ice_fcev[config.INDEX_COLS + ['Oil_displacement', 'Energy_fcev']]
                 #pivot vehile type so we have suffixes to determin which is which
-                index_cols.remove('Vehicle Type')
-                ice_fcev = ice_fcev.pivot(index=index_cols, columns='Vehicle Type', values=['Oil_displacement', 'Energy_fcev'])
+                config.INDEX_COLS.remove('Vehicle Type')
+                ice_fcev = ice_fcev.pivot(index=config.INDEX_COLS, columns='Vehicle Type', values=['Oil_displacement', 'Energy_fcev'])
                 #take away
                 v_types = ice_fcev.columns.get_level_values(1).unique()
                 for v_type in v_types:

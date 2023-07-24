@@ -9,9 +9,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
+sys.path.append("./config")
 from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import plotly
 import plotly.express as px
@@ -21,10 +21,10 @@ import plotly.io as pio
 #%%
 
 #load data in
-model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
-model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
+model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name))
 #%%
 #FILTER FOR SCENARIO OF INTEREST
 #this should be temporary as the scenario should be passed in as a parameter through config if it is useed elsewhere

@@ -1,10 +1,20 @@
 
+###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
+import sys
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
+sys.path.append("./workflow/calculation_functions")
+import logistic_fitting_functions
 def plot_logistic_fit(date, stocks_per_capita, gdp_per_capita, gamma, growth_rate, midpoint, economy_ttype_scenario,show_plots, matplotlib_bool, plotly_bool):
     if plotly_bool:
         #now plot the results with x = date, y = stocks per capita
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=date, y=stocks_per_capita, mode='markers', name='data'))
-        fig.add_trace(go.Scatter(x=date, y=logistic_function(gdp_per_capita, gamma, growth_rate, midpoint), mode='lines', name='fit'))
+        fig.add_trace(go.Scatter(x=date, y=logistic_fitting_functions.logistic_function(gdp_per_capita, gamma, growth_rate, midpoint), mode='lines', name='fit'))
         fig.update_layout(title=f'Log fit for {economy_ttype_scenario}', xaxis_title='Year', yaxis_title='Stocks per capita')
         #plot gamma as its own value for every date
         fig.add_trace(go.Scatter(x=date, y=[gamma]*len(date), mode='lines', name='gamma'))
@@ -18,7 +28,7 @@ def plot_logistic_fit(date, stocks_per_capita, gdp_per_capita, gamma, growth_rat
         #and plot the same but wth gdp per capita in x
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=gdp_per_capita, y=stocks_per_capita, mode='markers', name='data'))
-        fig.add_trace(go.Scatter(x=gdp_per_capita, y=logistic_function(gdp_per_capita, gamma, growth_rate, midpoint), mode='lines', name='fit'))
+        fig.add_trace(go.Scatter(x=gdp_per_capita, y=logistic_fitting_functions.logistic_function(gdp_per_capita, gamma, growth_rate, midpoint), mode='lines', name='fit'))
         fig.update_layout(title=f'Log fit for {economy_ttype_scenario}', xaxis_title='Gdp per capita', yaxis_title='Stocks per capita')
         #plot gamma as its own value for every date
         fig.add_trace(go.Scatter(x=gdp_per_capita, y=[gamma]*len(gdp_per_capita), mode='lines', name='gamma'))
@@ -43,7 +53,7 @@ def plot_logistic_function_all_economies(model_data_logistic_predictions, activi
     #join on activity_growth_estimates. Note that this ISNT BY VEHIcle type
     all_data = pd.merge(all_data, activity_growth_estimates, on=['Date','Economy', 'Scenario', 'Transport Type'], how='left')
     
-    all_data = all_data.loc[(all_data['Scenario'] == SCENARIO_OF_INTEREST)]
+    all_data = all_data.loc[(all_data['Scenario'] == config.SCENARIO_OF_INTEREST)]
 
     if plotly_bool:
         #first plot will be on the comparitive stocks per capita
@@ -140,7 +150,7 @@ def plot_logistic_function_by_economy(model_data_logistic_predictions, activity_
     #join on activity_growth_estimates. Note that this ISNT BY VEHIcle type
     all_data = pd.merge(all_data, activity_growth_estimates, on=['Date','Economy', 'Transport Type','Scenario'], how='left')
     
-    # all_data = all_data.loc[(all_data['Scenario'] == SCENARIO_OF_INTEREST)]
+    # all_data = all_data.loc[(all_data['Scenario'] == config.SCENARIO_OF_INTEREST)]
 
 
     # #TEMP FIX SINCE WE ONLY CAULCATED STOCKS PER CAPITA FOR LDVS

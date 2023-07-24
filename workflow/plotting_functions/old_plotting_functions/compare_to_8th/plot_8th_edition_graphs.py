@@ -8,9 +8,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import plotly
 import plotly.express as px
@@ -24,7 +24,7 @@ AUTO_OPEN_PLOTLY_GRAPHS = True
 #laod output from 8th edition
 model_output_8th = pd.read_csv('intermediate_data/activity_efficiency_energy_road_stocks.csv')
 model_8th_by_fuel = pd.read_csv('intermediate_data/cleaned_input_data/energy_with_fuel.csv')
-SCENARIO_OF_INTEREST = 'Reference'
+config.SCENARIO_OF_INTEREST = 'Reference'
 #change 'Carbon Neutral' Scenario to Carbon Neutrality
 model_output_8th.loc[model_output_8th['Scenario']=='Carbon Neutral','Scenario'] = 'Carbon Neutrality'
 model_8th_by_fuel.loc[model_8th_by_fuel['Scenario']=='Carbon Neutral','Scenario'] = 'Carbon Neutrality'
@@ -39,7 +39,7 @@ model_output_8th_sum['TransportType_VehicleType_Drive_Scenario'] = model_output_
 #%%
 #filter dfata from after 2050
 model_output_8th_sum = model_output_8th_sum[model_output_8th_sum['Date']<=2050]
-# model_output_8th_sum = model_output_8th_sum[model_output_8th_sum['Scenario']==SCENARIO_OF_INTEREST]
+# model_output_8th_sum = model_output_8th_sum[model_output_8th_sum['Scenario']==config.SCENARIO_OF_INTEREST]
 
 #create verison of dataframe that doesnt have  economy groupings
 model_output_8th_sum_no_economy = model_output_8th_sum.copy()

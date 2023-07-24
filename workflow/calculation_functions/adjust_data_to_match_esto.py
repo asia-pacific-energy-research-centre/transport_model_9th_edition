@@ -5,7 +5,7 @@
 # - non road fuels: decrease use in non road
 # - gas: bit more difficult. decrease what vehicle types?
 
-#but also we need to know the expected energy use for the period betwen (and including) BASE_YEAR and OUTLOOK_BASE_YEAR. so we need to run the model for that period first to get the output energy use. so we need to run the model twice. once for the period between BASE_YEAR and OUTLOOK_BASE_YEAR, and then finally for the period between OUTLOOK_BASE_YEAR and OUTLOOK_END_YEAR (not base year and end year bcause its important the results in OUTLOOK_BASE_YEAR are what we expect) then we can adjust the data for the first period so that the output matches the ESTO data. then we can use the data for the second period as the input data for the outlook model.
+#but also we need to know the expected energy use for the period betwen (and including) config.BASE_YEAR and config.OUTLOOK_BASE_YEAR. so we need to run the model for that period first to get the output energy use. so we need to run the model twice. once for the period between config.BASE_YEAR and config.OUTLOOK_BASE_YEAR, and then finally for the period between config.OUTLOOK_BASE_YEAR and OUTLOOK_END_YEAR (not base year and end year bcause its important the results in config.OUTLOOK_BASE_YEAR are what we expect) then we can adjust the data for the first period so that the output matches the ESTO data. then we can use the data for the second period as the input data for the outlook model.
 #adjusting data will involve:
 #rescaling energy use for each fuel type so that the total energy use matches the ESTO data > apply this to the most suitable drive types/vehicle types so its less complicated.
 #then based on the new energy use for each vehicle type/drive  type, recalcualte the activity and stocks (given the data which should be constant for mielage/occupancy_load). 
@@ -16,19 +16,16 @@
 
 #%%
 #aslo note that esto data is by medium. i think it ha road split into freight and passenger transport types too.
+
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-import sys
-sys.path.append("./workflow")
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
 sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+import config
+####use this to load libraries and set variables. Feel free to edit that file as you need
 
-import utility_functions
 
 
 
@@ -175,12 +172,12 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
     energy_use_merged_merged.rename(columns={'Energy': 'Energy_old'}, inplace=True)   
     
     #first, drop any supply side fuel mixing fuels as thier energy use is handled separately
-    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID))['New_fuel'].unique().tolist()
+    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))['New_fuel'].unique().tolist()
     energy_use_merged_merged = energy_use_merged_merged.loc[~energy_use_merged_merged['Fuel'].isin(supply_side_fuel_mixing_fuels)].copy()
     #then for any phevs sum their electricity row for each economy and date, then minus that off the bev electricity. NOTE that this only works because phevs are currently a small share of use and decreaing their enegry use in elec would probably have a minimal effect. if they were bigger we'd have to find some way to handle this properly
     phev=False#i dont think i need to do this actually. the stocks for phevs will end up half what they should be if we do it, and i think it is fine to keep them in here, as well just sum their energy use like so it is not by fuel later?#NOTE THAT I HAVENT CONSIDERED HOW SCENARIOS ADDITION TO GORUPING WILL AFFECT THIS> SO BE CAREFUL
     if phev:
-        demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_demand_side_fuel_mixing.csv'.format(FILE_DATE_ID))['Drive'].unique().tolist()
+        demand_side_fuel_mixing_drives = pd.read_csv('intermediate_data/model_inputs/{}/demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))['Drive'].unique().tolist()
         if set(demand_side_fuel_mixing_drives) != set(['phev_d', 'phev_g']):
             raise ValueError('demand_side_fuel_mixing_drives has changed')
         phev_elec = energy_use_merged_merged.loc[energy_use_merged_merged['Drive'].isin(['phev_d', 'phev_g'])].groupby(['Economy', 'Date', 'Scenario']).sum(numeric_only=True).reset_index()
@@ -292,27 +289,27 @@ def adjust_energy_use_in_input_data(input_data_based_on_previous_model_run,energ
 def adjust_data_to_match_esto(road_model_input_wide,non_road_model_input_wide, TESTING=False, TEST_ECONOMY='19_THA'):
     energy_use_esto = format_9th_input_energy_from_esto()
     
-    input_data_based_on_previous_model_run = pd.read_csv('output_data/model_output_detailed/NON_ROAD_DETAILED_{}'.format(model_output_file_name))
-    energy_use_output = pd.read_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(model_output_file_name))
-    #double check that the max and min dates for the input data match the BASEYEAR AND OUTLOOK_BASE_YEAR, OTHERWISE THE USER NEEDS TO RUN THE MODEL WITH ADVANCE_BASE_YEAR SET TO FALSE AGAIN:
-    if input_data_based_on_previous_model_run['Date'].max() != OUTLOOK_BASE_YEAR or input_data_based_on_previous_model_run['Date'].min() != BASE_YEAR:
-        raise ValueError('The max and min dates for the input data do not match the base year and outlook base year. This means that the user needs to run the model with advance_base_year set to False again')
+    input_data_based_on_previous_model_run = pd.read_csv('output_data/model_output_detailed/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name))
+    energy_use_output = pd.read_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name))
+    #double check that the max and min dates for the input data match the BASEYEAR AND config.OUTLOOK_BASE_YEAR, OTHERWISE THE USER NEEDS TO RUN THE MODEL WITH ADVANCE_BASE_YEAR SET TO FALSE AGAIN:
+    if input_data_based_on_previous_model_run['Date'].max() != config.OUTLOOK_BASE_YEAR or input_data_based_on_previous_model_run['Date'].min() != config.BASE_YEAR:
+        raise ValueError('The max and min dates for the input data do not match the base year and outlook base year. This means that the user needs to run the model with advance_BASE_YEAR set to False again')
     
-    supply_side_fuel_mixing = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID))
+    supply_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
     
-    #make the values before and including the OUTLOOK_BASE_YEAR all equal to the Reference scenario values. This is because we are assuming that the Reference scenario reflects the reality of the OUTLOOK_BASE_YEAR, and it will reflect it even more so once we have adjusted the energy use to match the esto data!
-    energy_use_output_post_base_year = energy_use_output.loc[energy_use_output['Date'] > OUTLOOK_BASE_YEAR].copy()
-    energy_use_output_pre_base_year_ref = energy_use_output.loc[(energy_use_output['Date'] <= OUTLOOK_BASE_YEAR) & (energy_use_output['Scenario'] == 'Reference')].copy()
-    #for each otehr scenario in scenario_list, just creatre a copy of energy_use_output_pre_base_year_ref:
-    energy_use_output_pre_base_year = energy_use_output_pre_base_year_ref.copy()
-    for scenario in SCENARIOS_LIST:
+    #make the values before and including the config.OUTLOOK_BASE_YEAR all equal to the Reference scenario values. This is because we are assuming that the Reference scenario reflects the reality of the config.OUTLOOK_BASE_YEAR, and it will reflect it even more so once we have adjusted the energy use to match the esto data!
+    energy_use_output_post_BASE_YEAR = energy_use_output.loc[energy_use_output['Date'] > config.OUTLOOK_BASE_YEAR].copy()
+    energy_use_output_pre_BASE_YEAR_ref = energy_use_output.loc[(energy_use_output['Date'] <= config.OUTLOOK_BASE_YEAR) & (energy_use_output['Scenario'] == 'Reference')].copy()
+    #for each otehr scenario in scenario_list, just creatre a copy of energy_use_output_pre_BASE_YEAR_ref:
+    energy_use_output_pre_BASE_YEAR = energy_use_output_pre_BASE_YEAR_ref.copy()
+    for scenario in config.SCENARIOS_LIST:
         if scenario == 'Reference':
             continue
-        energy_use_output_pre_base_year_new = energy_use_output_pre_base_year_ref.copy()
-        energy_use_output_pre_base_year_new['Scenario'] = scenario
-        energy_use_output_pre_base_year = pd.concat([energy_use_output_pre_base_year, energy_use_output_pre_base_year_new])
+        energy_use_output_pre_BASE_YEAR_new = energy_use_output_pre_BASE_YEAR_ref.copy()
+        energy_use_output_pre_BASE_YEAR_new['Scenario'] = scenario
+        energy_use_output_pre_BASE_YEAR = pd.concat([energy_use_output_pre_BASE_YEAR, energy_use_output_pre_BASE_YEAR_new])
         
-    energy_use_output = pd.concat([energy_use_output_pre_base_year, energy_use_output_post_base_year])
+    energy_use_output = pd.concat([energy_use_output_pre_BASE_YEAR, energy_use_output_post_BASE_YEAR])
     
     if TESTING:
         road_model_input_wide, non_road_model_input_wide, supply_side_fuel_mixing, input_data_based_on_previous_model_run, energy_use_output, energy_use_esto = filter_for_testing_data_only(road_model_input_wide, non_road_model_input_wide, supply_side_fuel_mixing, input_data_based_on_previous_model_run, energy_use_output, energy_use_esto,TEST_ECONOMY)
@@ -337,7 +334,7 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     breakpoint()
     #calcauklte total energy use by year and economy for both road and non road.
     #first rmeove the supply_side_fuel_mixing_fuels from esto data!
-    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID))['New_fuel'].unique().tolist()
+    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))['New_fuel'].unique().tolist()
     energy_use_merged = energy_use_merged.loc[~energy_use_merged['Fuel'].isin(supply_side_fuel_mixing_fuels)].copy()
     ################
     road_all_wide_total_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
@@ -348,16 +345,16 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     print('road energy use difference (PJ)')
     diff = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
-        diff = diff.loc[(diff.Date>BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
+        diff = diff.loc[(diff.Date>config.BASE_YEAR) & (diff.Date<=config.OUTLOOK_BASE_YEAR)]
     else:
-        diff = diff.loc[(diff.Date>=BASE_YEAR) & (diff.Date<=OUTLOOK_BASE_YEAR)]
+        diff = diff.loc[(diff.Date>=config.BASE_YEAR) & (diff.Date<=config.OUTLOOK_BASE_YEAR)]
     print(diff['Energy'].sum(numeric_only=True) - diff['Energy_esto'].sum(numeric_only=True))
     
     diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
-        diff2 = diff2.loc[(diff2.Date>BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
+        diff2 = diff2.loc[(diff2.Date>config.BASE_YEAR) & (diff2.Date<=config.OUTLOOK_BASE_YEAR)]
     else:
-        diff2 = diff2.loc[(diff2.Date>=BASE_YEAR) & (diff2.Date<=OUTLOOK_BASE_YEAR)]
+        diff2 = diff2.loc[(diff2.Date>=config.BASE_YEAR) & (diff2.Date<=config.OUTLOOK_BASE_YEAR)]
     print('non road energy use difference (PJ)')
     print(diff2['Energy'].sum(numeric_only=True) - diff2['Energy_esto'].sum(numeric_only=True))
     ###################TESTING###############
@@ -371,16 +368,16 @@ def test_output_matches_expectations(road_all_wide, non_road_all_wide, energy_us
     diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     #filter for dates after base year
     if ADVANCE_BASE_YEAR:
-        diff_road = diff_road.loc[diff_road.Date>=OUTLOOK_BASE_YEAR]
+        diff_road = diff_road.loc[diff_road.Date>=config.OUTLOOK_BASE_YEAR]
     else:
-        diff_road = diff_road.loc[diff_road.Date>=BASE_YEAR]
+        diff_road = diff_road.loc[diff_road.Date>=config.BASE_YEAR]
     diff_road_proportion = sum(diff_road['Energy'].dropna()) / sum(diff_road['Energy_esto'].dropna())
     
     diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
-        diff_non_road = diff_non_road.loc[diff_non_road.Date>=OUTLOOK_BASE_YEAR]
+        diff_non_road = diff_non_road.loc[diff_non_road.Date>=config.OUTLOOK_BASE_YEAR]
     else:
-        diff_non_road = diff_non_road.loc[diff_non_road.Date>=BASE_YEAR]
+        diff_non_road = diff_non_road.loc[diff_non_road.Date>=config.BASE_YEAR]
     diff_non_road_proportion = sum(diff_non_road['Energy'].dropna()) / sum(diff_non_road['Energy_esto'].dropna())
     if diff_road_proportion > 1.01 or diff_road_proportion < 0.99:
         breakpoint()
@@ -470,11 +467,11 @@ def format_9th_input_energy_from_esto():
     # #drop any 0's or nas:
     energy_use_esto = energy_use_esto.loc[energy_use_esto['Energy_esto'] > 0].copy()
 
-    #drop data that is less than the BASE_YEAR and more than OUTLOOK_BASE_YEAR
+    #drop data that is less than the config.BASE_YEAR and more than config.OUTLOOK_BASE_YEAR
     energy_use_esto['Date'] = energy_use_esto['Date'].apply(lambda x: x[:4])
     energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
-    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'] >= BASE_YEAR].copy()
-    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'] <= OUTLOOK_BASE_YEAR].copy()
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'] >= config.BASE_YEAR].copy()
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date'] <= config.OUTLOOK_BASE_YEAR].copy()
 
     #drop '22_SEA', '23_NEA', '23b_ONEA', '24_OAM','24b_OOAM', '25_OCE', 'APEC' Economys
     energy_use_esto = energy_use_esto.loc[~energy_use_esto['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM','24b_OOAM', '25_OCE', 'APEC'])].copy()
@@ -508,7 +505,7 @@ def format_9th_input_energy_from_esto():
             energy_use_esto.loc[(energy_use_esto['Medium'] == medium) & (energy_use_esto['Fuel'] == fuel), 'Fuel'] = new_fuel_and_medium[0]
             energy_use_esto.loc[(energy_use_esto['Medium'] == medium) & (energy_use_esto['Fuel'] == fuel), 'Medium'] = new_fuel_and_medium[1]
     
-    concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))
+    concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels))
     concordances_fuels = concordances_fuels[['Fuel', 'Medium']].drop_duplicates()
     energy_use_esto_fuel_medium = energy_use_esto[['Fuel', 'Medium']].drop_duplicates()
     #drop nonspecified and pipeline from energy_use_esto_fuel_medium

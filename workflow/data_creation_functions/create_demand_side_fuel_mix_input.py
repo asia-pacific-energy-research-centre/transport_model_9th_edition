@@ -4,20 +4,15 @@
 #this means that the supply side fuel mixing needs to occur after this script, because it will be merging on the fuel column.
 
 #%%
-# FILE_DATE_ID='_20230615'
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-import archiving_scripts
-
-sys.path.append("./workflow/plotting")
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
+sys.path.append("./workflow/plotting_functions")
 import plot_user_input_data
 #%%
 
@@ -26,7 +21,7 @@ import plot_user_input_data
 def create_demand_side_fuel_mixing_input():
     """Could do with some fixing up but for now it works"""
     #load model concordances for filling in 
-    model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))#its a bit weird, this concordance requires the output from this function to be built. It doesnt seem to be causing any issues but will check it later #essentially it seems like it jsut relies on the sstructure of the concordance but not the scpecific details. so it doesnt matter if the values in concordance are wwrong?, it just needs to be there?
+    model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels))#its a bit weird, this concordance requires the output from this function to be built. It doesnt seem to be causing any issues but will check it later #essentially it seems like it jsut relies on the sstructure of the concordance but not the scpecific details. so it doesnt matter if the values in concordance are wwrong?, it just needs to be there?
 
     
     #the process will run like:
@@ -93,11 +88,11 @@ def create_demand_side_fuel_mixing_input():
         demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, empty_ice_ldv_freight_econs], axis=0, ignore_index=True)
 
     
-    #to handle years that are before the BASE_YEAR, jsut carry the fuel shares backwards for 10 years
+    #to handle years that are before the config.BASE_YEAR, jsut carry the fuel shares backwards for 10 years
     data_base_minus_10 = demand_side_fuel_mixing.copy()
-    data_base_minus_10 = data_base_minus_10[data_base_minus_10['Date'] == BASE_YEAR+1]
+    data_base_minus_10 = data_base_minus_10[data_base_minus_10['Date'] == config.BASE_YEAR+1]
     demand_side_fuel_mixing_minus_10 = pd.DataFrame()
-    for year in range(BASE_YEAR-10, BASE_YEAR-1):
+    for year in range(config.BASE_YEAR-10, config.BASE_YEAR-1):
         data_base_minus_10['Date'] = year
         demand_side_fuel_mixing_minus_10 = pd.concat([demand_side_fuel_mixing_minus_10, data_base_minus_10], axis=0, ignore_index=True)
     #concat onto demand_side_fuel_mixing
@@ -106,13 +101,10 @@ def create_demand_side_fuel_mixing_input():
     #####################
 
     #archive previous results:
-    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID)
-    #save previous data
-    shutil.copy('intermediate_data/aggregated_model_inputs/{}_demand_side_fuel_mixing.csv'.format(FILE_DATE_ID), archiving_folder + '/{}_demand_side_fuel_mixing.csv'.format(FILE_DATE_ID))
-    # shutil.copy('input_data/vehicle_sales_share_inputs.xlsx', archiving_folder + '/vehicle_sales_share_inputs.xlsx')
+    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(config.FILE_DATE_ID)
     #save as user input csv
     
-    demand_side_fuel_mixing.to_csv('intermediate_data/aggregated_model_inputs/{}_demand_side_fuel_mixing.csv'.format(FILE_DATE_ID), index=False)
+    demand_side_fuel_mixing.to_csv('intermediate_data/model_inputs/{}/demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID), index=False)
     plot_user_input_data.plot_demand_side_fuel_mixing(demand_side_fuel_mixing)
 #%%
 

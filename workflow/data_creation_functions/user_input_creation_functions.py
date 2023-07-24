@@ -2,28 +2,14 @@
 
 #we will also create a vehicle sales distribution that replicates what each scenario in the 8th edition shows. We can use this to help also load all stocks data so that we can test the model works like the 8th edition
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import shutil
-from turtle import title
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-# pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
-# notebook in vscode #or set to notebook
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "matplotlib"
-import plotly.io as pio
-pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-import sys
-sys.path.append("./config/utilities")
-import archiving_scripts
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 ##########################################
 #UTILITY FUNCTIONS:

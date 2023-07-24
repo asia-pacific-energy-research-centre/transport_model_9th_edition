@@ -7,10 +7,13 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import plotly.express as px
 import plotly.graph_objects as go
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
@@ -22,8 +25,8 @@ save_fig=False
 #%%
 
 #load data in
-model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 # gompertz_function_diagnostics_dataframe = pd.read_csv('intermediate_data/road_model/{}'.format(gompertz_function_diagnostics_dataframe_file_name))
 
 model_output_8th = pd.read_csv('intermediate_data/activity_energy_road_stocks.csv')
@@ -90,10 +93,10 @@ if save_fig:
 #%%
 #FILTER FOR SCENARIO OF INTEREST
 #this should be temporary as the scenario should be passed in as a parameter through config if it is useed elsewhere
-SCENARIO_OF_INTEREST = 'Reference'
-model_output_all = model_output_all[model_output_all['Scenario']==SCENARIO_OF_INTEREST]
-model_output_8th = model_output_8th[model_output_8th['Scenario']==SCENARIO_OF_INTEREST]
-model_output_detailed = model_output_detailed[model_output_detailed['Scenario']==SCENARIO_OF_INTEREST]
+config.SCENARIO_OF_INTEREST = 'Reference'
+model_output_all = model_output_all[model_output_all['Scenario']==config.SCENARIO_OF_INTEREST]
+model_output_8th = model_output_8th[model_output_8th['Scenario']==config.SCENARIO_OF_INTEREST]
+model_output_detailed = model_output_detailed[model_output_detailed['Scenario']==config.SCENARIO_OF_INTEREST]
 #%%
 #create a dataframe that has the 8th and 9th concatenated
 #create column in both datasets that states the dataset
@@ -367,7 +370,7 @@ plt.savefig('./plotting_output/diagnostics/png/{}.png'.format(title))
 # #%%
 # #compare model output to 8th edition output. If there are any differences, print them
 # #laod output from 8th edition
-# model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+# model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 # model_output_8th = pd.read_csv('output_data/model_output_detailed/activity_efficiency_energy_road_stocks.csv')
 
 # #%%

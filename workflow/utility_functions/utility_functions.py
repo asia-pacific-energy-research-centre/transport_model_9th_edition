@@ -1,23 +1,23 @@
 
 
 #####################################################
+
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import datetime
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-import logging
-import numpy as np
-import pandas as pd
-import shutil
-import yaml 
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
-def copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR,SCENARIOS_LIST, output_folder_path='output_data/for_other_modellers'):
+def copy_required_output_files_to_one_folder(output_folder_path='output_data/for_other_modellers'):
     #to make it easier to give the output to others use ths function to make it a bit easier to group the files that people find useful together, so i can quickly send them.
     useful_file_paths = []
     output_file_paths = []
     #dashboard fiels:
-    for economy in ECONOMIES_TO_PLOT_FOR:
-        for scenario in SCENARIOS_LIST:
+    for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for scenario in config.SCENARIOS_LIST:
           useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard_detailed.html')
           output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard_detailed.html')
           useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard_presentation.html')
@@ -27,7 +27,7 @@ def copy_required_output_files_to_one_folder(FILE_DATE_ID, ECONOMIES_TO_PLOT_FOR
     #this one si already put there automatically so ignore it
     # useful_file_paths.append('output_data/' + 'for_other_modellers' + '/estimated_number_of_chargers.csv')
     # Energy use:
-    # output_data\for_other_modellers\transport_energy_use{FILE_DATE_ID}.csv
+    # output_data\for_other_modellers\transport_energy_use{config.FILE_DATE_ID}.csv
     
     #for every file in useful file paths, copy it to its corresponding output file path
     for f in range(len(useful_file_paths)):

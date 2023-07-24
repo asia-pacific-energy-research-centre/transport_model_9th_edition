@@ -11,9 +11,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
 # notebook in vscode #or set to notebook
 import plotly
@@ -54,10 +54,10 @@ new_sales_shares_sum = new_sales_shares_sum.rename(columns={'Year':'Date'})
 
 #sum all up in case we have multiple rows for the same economy, vehicle type, drive type, transport type and date
 new_sales_shares_sum = new_sales_shares_sum.groupby(['Economy', 'Scenario', 'Vehicle Type', 'Transport Type','Drive', 'Date']).sum().reset_index()
-#filter for only the Reference scenario and then duplicate the rows for each different scenario in SCENARIOS_LIST
+#filter for only the Reference scenario and then duplicate the rows for each different scenario in config.SCENARIOS_LIST
 new_sales_shares_sum = new_sales_shares_sum[new_sales_shares_sum['Scenario']=='Reference']
 new_sales_shares_sum_dummy  = new_sales_shares_sum.copy()
-for scenario in SCENARIOS_LIST:
+for scenario in config.SCENARIOS_LIST:
     if scenario != 'Reference':
         new_sales_shares_sum_2 = new_sales_shares_sum_dummy.copy()
         new_sales_shares_sum_2['Scenario'] = scenario
@@ -371,10 +371,10 @@ new_sales_shares_all_new = new_sales_shares_all_new.drop_duplicates()
 ###########################################################################
 #%%
 #save using scenario_id
-new_sales_shares_all_new.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(FILE_DATE_ID), index = False)
+new_sales_shares_all_new.to_csv('input_data/calculated/vehicle_stocks_change_share_{}.csv'.format(config.FILE_DATE_ID), index = False)
 
 #save the variables we used to calculate the data by just saving this file
-shutil.copyfile('workflow/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data{}.py'.format(FILE_DATE_ID))
+shutil.copyfile('workflow/create_user_inputs/edit_vehicle_sales_share_data.py', 'input_data/calculated/saved_scripts/edit_vehicle_sales_share_data{}.py'.format(config.FILE_DATE_ID))
 
 #%%
 #before saving data to user input spreadsheety we will do some formatting:

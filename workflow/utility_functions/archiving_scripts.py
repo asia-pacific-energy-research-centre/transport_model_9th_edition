@@ -1,7 +1,7 @@
 #most important thing is to save the input and CONCORDANCES data to a folder in case we need to use that data again. 
 # This saves the archived data to a folder with the date id. If the user needs to use that then they will use a separate script to extract the information they need from the data (as of 2022 this is not yet implemented)
 
-#name folder with the FILE_DATE_ID
+#name folder with the config.FILE_DATE_ID
 
 
 #set working directory as one folder back so that config works
@@ -14,19 +14,19 @@ exec(open("config/config.py").read())#usae this to load libraries and set variab
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
 # notebook in vscode #or set to notebook
 
-def create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID):
+def create_archiving_folder_for_FILE_DATE_ID():
     #create folder
     #if file data id is '' then just save the data to foler 'latest_test_run' as we assume this run isnt important enough to save the data in a unique folder
-    if FILE_DATE_ID == '':
+    if config.FILE_DATE_ID == '':
         archive_folder_name = 'input_data/previous_run_archive/latest_test_run'
     else:
-        archive_folder_name = 'input_data/previous_run_archive/' + FILE_DATE_ID
-        #since FILE_DATE_ID might not be the actual day, we need to create a subfolder for the actual day
+        archive_folder_name = 'input_data/previous_run_archive/' + config.FILE_DATE_ID
+        #since config.FILE_DATE_ID might not be the actual day, we need to create a subfolder for the actual day
         
         if os.path.exists(archive_folder_name):
             import datetime
             new_FILE_DATE_ID = '_{}'.format(datetime.datetime.now().strftime("%Y%m%d"))#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
-            archive_folder_name = 'input_data/previous_run_archive/' + FILE_DATE_ID +'/'+ new_FILE_DATE_ID
+            archive_folder_name = 'input_data/previous_run_archive/' + config.FILE_DATE_ID +'/'+ new_FILE_DATE_ID
         
             if not os.path.exists(archive_folder_name):
                 os.mkdir(archive_folder_name)
@@ -41,9 +41,9 @@ def archive_lots_of_files(archive_folder_name):
     # #Major model inputs:
 
     #load output data
-    model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
-    model_output_non_detailed = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name))
+    model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
+    model_output_non_detailed = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name))
 
     #save output data
     model_output_detailed.to_csv('{}/model_output_detailed.csv'.format(archive_folder_name))
@@ -99,7 +99,7 @@ def zip_up_folder(archive_folder_name):
     #     output_file = 'C:/Users/Finbar Maunsell/Documents'
 
     # create a zip archive with file date id
-    output_file = archive_folder_name +'/'+ FILE_DATE_ID + '_0'
+    output_file = archive_folder_name +'/'+ config.FILE_DATE_ID + '_0'
     #if it is already there then make the number at the end one higher
     while os.path.exists(output_file + '.zip'):
         output_file = output_file[:-1] + str(int(output_file[-1])+1)

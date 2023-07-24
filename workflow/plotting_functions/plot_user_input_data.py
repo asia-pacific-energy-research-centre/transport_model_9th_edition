@@ -1,45 +1,31 @@
 
 
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import shutil
-from turtle import title
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-# pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
-# notebook in vscode #or set to notebook
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "matplotlib"
-import plotly.io as pio
-pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-import sys
-sys.path.append("./config/utilities")
-import archiving_scripts
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 ###########################################
 #PLOTTING:
 ###########################################
 
 
-def plot_estimated_data_system_sales_share(sales, INDEX_COLS, SCENARIOS_LIST, YEARS_TO_KEEP_AFTER_BASE_YEAR):
+def plot_estimated_data_system_sales_share(sales):
     #plot to check., we will sum all values by everythign except col, then plot
     sales_plot = sales.copy()
     #filter for reference only
     sales_plot = sales_plot.loc[sales_plot['Scenario']=='Reference']
-    cols = INDEX_COLS.copy()
+    cols = config.INDEX_COLS.copy()
     cols.remove('Economy')
     sales_plot = sales_plot.groupby(cols)['Sales Share'].sum().reset_index()
     # plot using plotly
     fig = px.bar(sales_plot, x='Drive', y='Sales Share', color='Drive',facet_col='Vehicle Type', facet_col_wrap=2)
     #WRite to html in plotting_output/input_exploration/
-    fig.write_html('plotting_output/input_exploration/Transport_data_system_testing_{}_sales_share.html'.format(FILE_DATE_ID))
+    fig.write_html('plotting_output/input_exploration/Transport_data_system_testing_{}_sales_share.html'.format(config.FILE_DATE_ID))
     #it doesnt really matter what the values are since we'll be adjusting them as we get more data.
 
 def plot_new_sales_shares(new_sales_shares_all):
@@ -104,7 +90,7 @@ def plot_new_sales_shares(new_sales_shares_all):
                 # #write to html in plotting_output\input_exploration\vehicle_sales_shares
                 # fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/{Vehicle_Transport}_{scenario}Transport_type_share_pre_vehicke_share_adj.html', auto_open=False)
     #save vehicels sales share data for use in plotting our asumtions. we will save it as an excel file to be read in by the plotting assumptions script
-    new_sales_shares_all_plot.to_csv(f'output_data/assumptions_outputs/vehicle_sales_shares{FILE_DATE_ID}.csv', index=False)
+    new_sales_shares_all_plot.to_csv(f'output_data/assumptions_outputs/vehicle_sales_shares{config.FILE_DATE_ID}.csv', index=False)
 
 
 def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new_sales_shares_sum,new_sales_shares_all_new):

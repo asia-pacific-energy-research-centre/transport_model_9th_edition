@@ -9,10 +9,13 @@ from runpy import run_path
 import numpy as np
 from scipy.optimize import newton
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import plotly.graph_objects as go
 import numpy as np
 from scipy.optimize import curve_fit
@@ -27,8 +30,8 @@ from scipy.optimize import minimize
 #%%
 #the function will make use of the from scipy.optimize import minimize library to find the best parameters for the gompertz function given te values of gamma, the historical values and the gdp per capita and the stocks per capita in 2045 and 2050
 
-#to start we will attempt to use thw data from 'output_data/model_output_detailed/{}'.format(model_output_file_name), index=False)
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+#to start we will attempt to use thw data from 'output_data/model_output_detailed/{}'.format(config.model_output_file_name), index=False)
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 #and grab macro data too
 macro_data = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
 #and grab gompertz inputs*

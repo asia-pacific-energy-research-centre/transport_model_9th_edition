@@ -8,9 +8,9 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
+sys.path.append("./config")
 from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
 import matplotlib.pyplot as plt
@@ -18,8 +18,8 @@ plt.rcParams['figure.facecolor'] = 'w'
 #%%
 
 #load data in
-model_output_all = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
-model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 
 model_output_8th = pd.read_csv('intermediate_data/activity_efficiency_energy_road_stocks.csv')
 
@@ -236,7 +236,7 @@ plt.savefig('./plotting_output/diagnostics/{}.png'.format(title))
 # #%%
 # #compare model output to 8th edition output. If there are any differences, print them
 # #laod output from 8th edition
-# model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+# model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 # model_output_8th = pd.read_csv('output_data/model_output_detailed/activity_efficiency_energy_road_stocks.csv')
 
 # #%%

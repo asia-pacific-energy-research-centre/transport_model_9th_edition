@@ -1,28 +1,25 @@
 #take in the unique fuels from the output and match them to once of the unique fuels in the Outlook data columns. Depending on the column
 
 #load in data
-
-#set working directory as one folder back so that config works
+#%%
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
 sys.path.append("./config/utilities")
-from config import *
+import config
 ###
 
-
+#%%
 def create_output_for_outlook_data_system():
 
-    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(model_output_file_name))
+    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name))
 
     #drop dates after 2070
     model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']<=2070].copy()
-    #drop dates bnefore the OUTLOOK_BASE_YEAR
-    model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']>=OUTLOOK_BASE_YEAR].copy()
+    #drop dates bnefore the config.OUTLOOK_BASE_YEAR
+    model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']>=config.OUTLOOK_BASE_YEAR].copy()
     #load in EBT framework:
     model_variables = pd.read_excel('./config/9th_EBT_schema.xlsx', sheet_name='9th_EBT_schema', header = 2)
     #cols 'scenarios', 'economy', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'
@@ -208,7 +205,7 @@ def create_output_for_outlook_data_system():
         drive = row[1]['Drive']
         medium = row[1]['Medium']
         
-        new_medium = medium_mapping[medium]
+        new_medium = config.medium_mapping[medium]
         new_transport_type = transport_type_mapping[transport_type]
         if transport_type == 'passenger':
             new_vehicle_type = vehicle_type_mapping_passenger[vehicle_type]
@@ -421,5 +418,5 @@ def create_output_for_outlook_data_system():
 
 
     #save this file to output_data\for_other_modellers
-    new_final_df.to_csv(f'output_data/for_other_modellers/transport_energy_use{FILE_DATE_ID}{ECONOMY_ID}.csv', index=False)
+    new_final_df.to_csv(f'output_data/for_other_modellers/transport_energy_use{config.FILE_DATE_ID}{config.ECONOMY_ID}.csv', index=False)
     

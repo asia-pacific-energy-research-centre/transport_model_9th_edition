@@ -3,21 +3,19 @@
 #this will merge a fuel sharing dataframe onto the model output, by the fuel column, and apply the shares by doing that. There will be a new fuel column after this
 #%%
 
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 def apply_fuel_mix_supply_side():
-    supply_side_fuel_mixing = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID))
+    supply_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
 
-    model_output = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(model_output_file_name))
+    model_output = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(config.model_output_file_name))
     
     #merge the supply side fuel mixing data on the fuel column. This will result in a new supply side fuel column which reflects the splitting of the fuel into many types. We will replace the value in the fuel column with the value in the supply side fuel column, and times the energy value by the share. and Where the suply side fuel column contains no value (an NA) then the fuel and its energy use will be unchanged.
     df_with_new_fuels = model_output.merge(supply_side_fuel_mixing, on=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date'], how='left')
@@ -55,17 +53,17 @@ def apply_fuel_mix_supply_side():
     #set frequency to 'Yearly'#jsut to be safe.
     df_with_all_fuels['Frequency'] = 'Yearly'
     #save data
-    df_with_all_fuels.to_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name), index=False)
+    df_with_all_fuels.to_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(config.model_output_file_name), index=False)
 
     
 #%%
 # apply_fuel_mix_supply_side()
 #%%
-# # a = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name))
+# # a = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(config.model_output_file_name))
 # # #check for dupklicates:
 # # dupes = a[a.duplicated()].copy()
 # # # dupes2 = a[a.duplicated(subset=['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type','Drive', 'Medium', 'Fuel'], keep=False)].copy()
-#  a = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(model_output_file_name))
+#  a = pd.read_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(config.model_output_file_name))
 #  dupes2 = a[a.duplicated(subset=['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type','Drive', 'Medium', 'Fuel'], keep=False)].copy()
 #  dupes = a[a.duplicated()].copy()
 # # d = df_with_new_fuels[df_with_new_fuels .duplicated(subset=['Date', 'Economy', 'Scenario', 'Transport Type', 'Vehicle Type','Drive', 'Medium', 'Fuel', 'New_fuel'], keep=False)].copy()

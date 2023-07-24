@@ -1,27 +1,17 @@
-# %%
-# Modelling >> Data >> GDP >> GDP projections 9th >> GDP_estimates >> GDP_estimates_12May2023
-import pandas as pd
-#set working directory as one folder back so that config works
+#%%
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LassoCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import RidgeCV
-
 import statsmodels.api as sm
-import sys
-sys.path.append("./workflow")
-import utility_functions
-import pandas as pd
-import plotly.express as px
 
 standardize_growth_coefficients_dict = {'lasso': True, 'linear': False, 'ridge': True}
 drop_outliers = True
@@ -31,10 +21,10 @@ drop_outliers = True
 
 #%%
 #%%
-def prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_activity_9th, activity_growth_8th, activity_8th,independent_variables,models):
+def prepare_comparison_inputs(growth_coefficients_df, energy_macro, BASE_YEAR_activity_9th, activity_growth_8th, activity_8th,independent_variables,models):
     growth_coefficients_df_copy = growth_coefficients_df.copy()
     energy_macro_copy = energy_macro.copy()
-    base_year_activity_9th_copy = base_year_activity_9th.copy()
+    BASE_YEAR_activity_9th_copy = BASE_YEAR_activity_9th.copy()
     activity_growth_8th_copy = activity_growth_8th.copy()
     activity_8th_copy = activity_8th.copy()
     independent_variables_copy = independent_variables.copy()
@@ -44,7 +34,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_ac
     if copy:
         growth_coefficients_df= growth_coefficients_df_copy.copy()
         energy_macro= energy_macro_copy.copy()
-        base_year_activity_9th= base_year_activity_9th_copy.copy()
+        BASE_YEAR_activity_9th= BASE_YEAR_activity_9th_copy.copy()
         activity_growth_8th= activity_growth_8th_copy.copy()
         activity_8th= activity_8th_copy.copy()
         independent_variables= independent_variables_copy.copy()
@@ -53,7 +43,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_ac
     
     measures_to_index = ['passenger_activity_8th', 'freight_activity_8th','passenger_activity_growth_8th', 'freight_activity_growth_8th'] + useful_macro_vars
     #combine all dfs
-    df = pd.merge(base_year_activity_9th, activity_growth_8th, on=['Economy', 'Date'], how='outer')
+    df = pd.merge(BASE_YEAR_activity_9th, activity_growth_8th, on=['Economy', 'Date'], how='outer')
     df = pd.merge(df, activity_8th, on=['Economy', 'Date'], how='left')
     df = pd.merge(df, energy_macro[['Economy', 'Date'] + independent_variables], on=['Economy', 'Date'], how='outer')
     df = pd.merge(df, growth_coefficients_df, on=['Economy'], how='outer')
@@ -107,7 +97,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_ac
     
     for model in models:
         for edition in ['8th', '9th']:
-            for year in range(BASE_YEAR, END_YEAR+1):
+            for year in range(config.BASE_YEAR, config.END_YEAR+1):
                 if (year>2050) and (edition == '8th'):
                     break
                 for transport_type in ['freight', 'passenger']:
@@ -118,7 +108,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_ac
                     for economy in df['Economy'].unique():#doing this makes it a bit easier to visualise. but it takes longer.
                         df_economy = df[df['Economy'] == economy]
                         df = df[df['Economy'] != economy]
-                        if year == BASE_YEAR:
+                        if year == config.BASE_YEAR:
                             # prepare the base year data by creatinng a new col for the activity:
                             df_economy.loc[df_economy['Date'] == year, activity_column] = df_economy.loc[df_economy['Date'] == year, f'{transport_type}_activity_{edition}']
                             
@@ -132,8 +122,8 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_ac
     #now index everything to the base year so we can see how it all grows:
     def calc_index(df, col):
         df = df.sort_values(by='Date')
-        base_year_value = df[df.Date == BASE_YEAR][col].iloc[0]
-        df[col+'_index'] = df[col]/base_year_value
+        BASE_YEAR_value = df[df.Date == config.BASE_YEAR][col].iloc[0]
+        df[col+'_index'] = df[col]/BASE_YEAR_value
         return df    
     
     for measure_to_index in measures_to_index:
@@ -531,20 +521,20 @@ def import_activity_8th(activity_8th):
     activity_8th = activity_8th.rename(columns={'passenger':'passenger_activity_8th', 'freight':'freight_activity_8th'})
     return activity_8th
     
-def import_base_year_activity_9th(base_year_activity):
+def import_BASE_YEAR_activity_9th(BASE_YEAR_activity):
     #filter for Activity only
-    base_year_activity = base_year_activity[base_year_activity['Measure']=='Activity']
-    #filter for BASE_YEAR only
-    base_year_activity = base_year_activity[base_year_activity['Date']==BASE_YEAR]
+    BASE_YEAR_activity = BASE_YEAR_activity[BASE_YEAR_activity['Measure']=='Activity']
+    #filter for config.BASE_YEAR only
+    BASE_YEAR_activity = BASE_YEAR_activity[BASE_YEAR_activity['Date']==config.BASE_YEAR]
     #divide activity by 1billion to get on same scale as 8th edition
-    base_year_activity['Value'] = base_year_activity['Value']/1000000000
+    BASE_YEAR_activity['Value'] = BASE_YEAR_activity['Value']/1000000000
     
     #fitler for cols we need only
-    base_year_activity = base_year_activity[['Economy', 'Transport Type',  'Date', 'Value']].groupby(['Economy', 'Transport Type', 'Date']).sum().reset_index()
+    BASE_YEAR_activity = BASE_YEAR_activity[['Economy', 'Transport Type',  'Date', 'Value']].groupby(['Economy', 'Transport Type', 'Date']).sum().reset_index()
     #pivot the transport type column to make it into columns
-    base_year_activity = base_year_activity.pivot_table(index=['Economy', 'Date'], columns='Transport Type', values='Value').reset_index()
+    BASE_YEAR_activity = BASE_YEAR_activity.pivot_table(index=['Economy', 'Date'], columns='Transport Type', values='Value').reset_index()
     #reanme the columns to passenger_activity_9th and freight_activity_9th
-    base_year_activity = base_year_activity.rename(columns={'passenger':'passenger_activity_9th', 'freight':'freight_activity_9th'})
+    BASE_YEAR_activity = BASE_YEAR_activity.rename(columns={'passenger':'passenger_activity_9th', 'freight':'freight_activity_9th'})
     
-    return base_year_activity
+    return BASE_YEAR_activity
 # %%

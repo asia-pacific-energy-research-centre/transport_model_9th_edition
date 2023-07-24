@@ -2,18 +2,16 @@
 
 #NOTE that there is still the fuel mixing operation that is not in this file of code. 
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import road_model_functions
 import logistic_fitting_functions
-import yaml
 #%%
 def run_road_model(USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     
@@ -74,8 +72,8 @@ def incorporate_logisitc_fitting_functions_new_growth_rates(growth_forecasts, ac
     #so do a merge and only keep the new growth rates for the economies that have them
     new_growth_forecasts = growth_forecasts.copy()
     similar_cols = [col for col in growth_forecasts.columns if col in activity_growth_estimates.columns]
-    index_cols = ['Economy', 'Scenario', 'Date', 'Transport Type']
-    new_growth_forecasts = new_growth_forecasts.merge(activity_growth_estimates.drop_duplicates(), on=index_cols, how='left', suffixes=('', '_new'))
+    config.INDEX_COLS = ['Economy', 'Scenario', 'Date', 'Transport Type']
+    new_growth_forecasts = new_growth_forecasts.merge(activity_growth_estimates.drop_duplicates(), on=config.INDEX_COLS, how='left', suffixes=('', '_new'))
     #######################################################################
     CLEAN_UP_GROWTH = False
     if CLEAN_UP_GROWTH:

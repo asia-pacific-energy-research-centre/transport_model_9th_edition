@@ -7,10 +7,13 @@ import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
 ###IMPORT GLOBAL VARIABLES FROM config.py
+import os
+import re
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import plotly
 import plotly.express as px
@@ -21,7 +24,7 @@ import plotly.io as pio
 #%%
 #compare model output to 8th edition output. If there are any differences, print them
 #laod output from 8th edition
-model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(model_output_file_name))
+model_output = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
 model_output_8th = pd.read_csv('intermediate_data/activity_efficiency_energy_road_stocks.csv')
 
 #%%

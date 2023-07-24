@@ -1,14 +1,12 @@
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 
 def process_data(df, is_fuel=False):
@@ -55,8 +53,8 @@ def clean_non_road_drive_types(model_output_all_with_fuels, model_output_detaile
 
 def clean_model_output():
     #take in model ouput and clean ready to use in analysis
-    model_output_all_with_fuels = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name))
-    model_output_all = pd.read_csv('intermediate_data/model_output_concatenated/{}'.format(model_output_file_name))
+    model_output_all_with_fuels = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(config.model_output_file_name))
+    model_output_all = pd.read_csv('intermediate_data/model_output_concatenated/{}'.format(config.model_output_file_name))
     
     #if frequncy col is in either datafrasme, drop it
     if 'Frequency' in model_output_all.columns:
@@ -85,11 +83,11 @@ def clean_model_output():
     
     
     #save data without the new drive cols for non road
-    model_output_detailed.to_csv('output_data/model_output_detailed/NON_ROAD_DETAILED_{}'.format(model_output_file_name), index=False)
+    model_output_detailed.to_csv('output_data/model_output_detailed/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name), index=False)
 
-    model_output_non_detailed.to_csv('output_data/model_output/NON_ROAD_DETAILED_{}'.format(model_output_file_name), index=False)
+    model_output_non_detailed.to_csv('output_data/model_output/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name), index=False)
 
-    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(model_output_file_name), index=False)
+    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name), index=False)
    
     breakpoint()
     model_output_all_with_fuels,model_output_detailed,model_output_non_detailed = clean_non_road_drive_types(model_output_all_with_fuels,model_output_detailed,model_output_non_detailed)
@@ -97,11 +95,11 @@ def clean_model_output():
    
     #save data with the new drive cols for non road:
     
-    model_output_detailed.to_csv('output_data/model_output_detailed/{}'.format(model_output_file_name), index=False)
+    model_output_detailed.to_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name), index=False)
 
-    model_output_non_detailed.to_csv('output_data/model_output/{}'.format(model_output_file_name), index=False)
+    model_output_non_detailed.to_csv('output_data/model_output/{}'.format(config.model_output_file_name), index=False)
 
-    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/{}'.format(model_output_file_name), index=False)
+    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name), index=False)
    
    
 #%%

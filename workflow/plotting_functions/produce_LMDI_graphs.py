@@ -3,25 +3,14 @@
 #note that the library is in ../PyLMDI
 
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'/transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
+os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "plotly"#set pandas backend to plotly plotting instead of matplotlib
-from plotly.subplots import make_subplots
-import plotly.io as pio
-import pandas as pd
-
-import sys
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 sys.path.append("../PyLMDI")
 #PyLMDI functions:
 import main_function
@@ -34,14 +23,14 @@ import LMDI_functions
 
 def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=False):
     #take in energy and activity data 
-    all_data = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
+    all_data = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
 
     #here write the charts you want to produce.. can use this to make the function run quicker by only producing some of the charts
     if USE_LIST_OF_CHARTS_TO_PRODUCE:
         charts_to_produce = []
         for scenario in all_data.Scenario.unique():
             for transport_type in all_data['Transport Type'].unique():
-                for economy in ECONOMIES_TO_PLOT_FOR:
+                for economy in config.ECONOMIES_TO_PLOT_FOR:
                     charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_2_Energy use_Hierarchical')
                     charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__2_Energy use_Hierarchical')
                     # 19_THA_TGT_passenger_road_1_Energy use_additive_waterfall
@@ -55,10 +44,10 @@ def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING 
     temp['Drive'] = temp['Medium']
     temp['Vehicle Type'] = temp['Medium']
     all_data.loc[all_data['Medium'] != 'road'] = temp
-    # #filter for Date >= OUTLOOK_BASE_YEAR
-    # all_data = all_data[all_data['Date']>=OUTLOOK_BASE_YEAR]
-    # #and filter so data is less than GRAPHING_END_YEAR
-    # all_data = all_data[all_data['Date']<=GRAPHING_END_YEAR]
+    # #filter for Date >= config.OUTLOOK_BASE_YEAR
+    # all_data = all_data[all_data['Date']>=config.OUTLOOK_BASE_YEAR]
+    # #and filter so data is less than config.GRAPHING_END_YEAR
+    # all_data = all_data[all_data['Date']<=config.GRAPHING_END_YEAR]
     #drop Stocks col
     all_data = all_data.drop(columns = ['Stocks'])
     #create an emissions col and fill it with 0's for now

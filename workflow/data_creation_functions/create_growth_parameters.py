@@ -1,24 +1,15 @@
 # %%
-# Modelling >> Data >> GDP >> GDP projections 9th >> GDP_estimates >> GDP_estimates_12May2023
-import pandas as pd
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-from sklearn.linear_model import LinearRegression
-import statsmodels.api as sm
-import sys
-sys.path.append("./workflow")
-import utility_functions
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import growth_parameter_creation_functions
-import pandas as pd
-import plotly.express as px
+##########################
+#%%
 #grab the file D:\APERC\transport_model_9th_edition\input_data\macro\APEC_GDP_population.csv
 macro = pd.read_csv('input_data/macro/APEC_GDP_data.csv')
 #pull in activity_growth from 8th edition
@@ -58,9 +49,9 @@ def calculate_and_analyse_activity_growth_using_new_growth_coefficients(growth_c
     # breakpoint()
     activity_growth_8th, activity_8th = growth_parameter_creation_functions.format_8th_edition_data(activity_8th)
     
-    base_year_activity_9th = growth_parameter_creation_functions.import_base_year_activity_9th(activity_9th)
+    BASE_YEAR_activity_9th = growth_parameter_creation_functions.import_BASE_YEAR_activity_9th(activity_9th)
     
-    df, measures_to_plot,indexed_measures_to_plot = growth_parameter_creation_functions.prepare_comparison_inputs(growth_coefficients_df, energy_macro, base_year_activity_9th, activity_growth_8th, activity_8th,independent_variables,models)
+    df, measures_to_plot,indexed_measures_to_plot = growth_parameter_creation_functions.prepare_comparison_inputs(growth_coefficients_df, energy_macro, BASE_YEAR_activity_9th, activity_growth_8th, activity_8th,independent_variables,models)
     
     #####################
     # PLOTTING
@@ -102,7 +93,7 @@ def growth_analysis_handler(independent_variables, dependent_variable, macro, en
     # growth_coefficients_df = model_handler(df, x, y,independent_variables, drop_outliers=False)
     growth_coefficients_df = growth_parameter_creation_functions.find_growth_coefficients(df, independent_variables,dependent_variable,models)
     
-    growth_coefficients_df.to_csv(f'intermediate_data/growth_analysis/growth_coefficients_by_region{FILE_DATE_ID}.csv', index=False)
+    growth_coefficients_df.to_csv(f'intermediate_data/growth_analysis/growth_coefficients_by_region{config.FILE_DATE_ID}.csv', index=False)
     #ANALYSIS
     growth_parameter_creation_functions.plot_growth_coefficients(growth_coefficients_df, independent_variables)
     
@@ -123,7 +114,7 @@ def filter_coefficients_for_chosen_model(growth_coefficients_df, models):
 
 def choose_and_filter_for_model_by_region(chosen_model_by_region_dict, chosen_file_date_id=None,region_column = 'Region_growth_regression2'):
     #find latest date for this file: 
-    # csv(f'intermediate_data/growth_analysis/growth_coefficients_by_region{FILE_DATE_ID}.csv', index=False)
+    # csv(f'intermediate_data/growth_analysis/growth_coefficients_by_region{config.FILE_DATE_ID}.csv', index=False)
     if chosen_file_date_id is not None:
         date_id = chosen_file_date_id
     else:

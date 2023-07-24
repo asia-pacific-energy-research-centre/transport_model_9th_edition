@@ -6,28 +6,26 @@
 #this means that the supply side fuel mixing needs to occur after this script, because it will be merging on the fuel column.
  
 #%%
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
  #%%
 def apply_fuel_mix_demand_side():
     
     #load model output
-    model_output = pd.read_csv('intermediate_data/model_output_concatenated/{}'.format(model_output_file_name))
+    model_output = pd.read_csv('intermediate_data/model_output_concatenated/{}'.format(config.model_output_file_name))
 
     #load user input for fuel mixing 
-    demand_side_fuel_mixing = pd.read_csv('intermediate_data/aggregated_model_inputs/{}_demand_side_fuel_mixing.csv'.format(FILE_DATE_ID))
+    demand_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
     #load model concordances with fuels
-    model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))
+    model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels))
     
-    supply_side_fuel_mixing_fuels =  pd.read_csv('intermediate_data/aggregated_model_inputs/{}_supply_side_fuel_mixing.csv'.format(FILE_DATE_ID))['New_fuel'].unique().tolist()
+    supply_side_fuel_mixing_fuels =  pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))['New_fuel'].unique().tolist()
     #drop supply_side_fuel_mixing_fuels from model_concordances_fuels
     model_concordances_fuels = model_concordances_fuels[~model_concordances_fuels['Fuel'].isin(supply_side_fuel_mixing_fuels)]
     
@@ -59,7 +57,7 @@ def apply_fuel_mix_demand_side():
     
     new_df_with_fuels = pd.concat([df_with_fuels, model_output], axis=0)
     #save data
-    new_df_with_fuels.to_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(model_output_file_name), index=False)
+    new_df_with_fuels.to_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}'.format(config.model_output_file_name), index=False)
 
     
 #%%

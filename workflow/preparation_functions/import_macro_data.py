@@ -1,16 +1,12 @@
 #%%
-# Modelling >> Data >> Gdp >> Gdp projections 9th >> Gdp_estimates >> Gdp_estimates_12May2023
-import pandas as pd
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 def import_macro_data():
     #grab the file D:\APERC\transport_model_9th_edition\input_data\macro\APEC_Gdp_population.csv
@@ -114,14 +110,14 @@ def import_macro_data():
     
     #split macro into the required scenarios. perhaps later, if the macro differs by scenario we will do this somehwere ese:
     new_macro = pd.DataFrame()
-    for scenario in SCENARIOS_LIST:
+    for scenario in config.SCENARIOS_LIST:
         s_macro = macro1.copy()
         s_macro['Scenario'] = scenario
         new_macro = pd.concat([new_macro, s_macro])
     macro1 = new_macro.copy()
     
-    measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
-    macro1 = pd.merge(macro1, measure_to_unit_concordance[['Unit', 'Measure']], on=['Measure'], how='left')
+    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
+    macro1 = pd.merge(macro1, config.measure_to_unit_concordance[['Unit', 'Measure']], on=['Measure'], how='left')
 
     
     #save to intermediate_data/model_inputs/regression_based_growth_estimates.csv
@@ -228,17 +224,17 @@ def import_macro_data():
 # activity = activity[activity['Scenario'] == 'Reference']
 # 
 # #define index cols
-# INDEX_COLS = ['Economy','Date']
+# config.INDEX_COLS = ['Economy','Date']
 
-# #remove unnecessary cols and remove duplicates (all cols that arent INDEX_COLS or Value)
-# activity.drop([col for col in activity.columns if col not in INDEX_COLS + ['Activity']], axis=1, inplace=True)
+# #remove unnecessary cols and remove duplicates (all cols that arent config.INDEX_COLS or Value)
+# activity.drop([col for col in activity.columns if col not in config.INDEX_COLS + ['Activity']], axis=1, inplace=True)
 # activity.drop_duplicates(inplace=True)
 
 # #sum up Value col by index cols
-# activity_growth = activity.groupby(INDEX_COLS).sum().reset_index()
+# activity_growth = activity.groupby(config.INDEX_COLS).sum().reset_index()
 
 # #sort by year and everything else in ascending order
-# activity_growth = activity_growth.sort_values(by=INDEX_COLS)
+# activity_growth = activity_growth.sort_values(by=config.INDEX_COLS)
 
 # #make cols lower case
 # activity_growth.columns = [col.lower() for col in activity_growth.columns]
@@ -261,7 +257,7 @@ def import_macro_data():
 # macro2['Gdp_per_capita_growth'] = macro2.groupby('region_growth_analysis')['Gdp_per_capita'].pct_change()
 
 # #the base year to 1 as the growth rate is not defined for the base year (in the code its actually using the row above for 2050 currently)
-# macro2.loc[macro2['date'] == BASE_YEAR, ['Gdp_growth', 'Population_growth', 'Gdp_per_capita_growth']] = 0
+# macro2.loc[macro2['date'] == config.BASE_YEAR, ['Gdp_growth', 'Population_growth', 'Gdp_per_capita_growth']] = 0
 
 # # Calculate cumulative product of growth rates+1
 # #add 1 to the growth rates
@@ -275,7 +271,7 @@ def import_macro_data():
 
 # #calcuale activity using the growth rates
 # #grab the 8th activity in first year (and keep region_growth_analysis)
-# first_year_activity = macro2.loc[macro2['date'] == BASE_YEAR, ['region_growth_analysis', '8th_activity']]
+# first_year_activity = macro2.loc[macro2['date'] == config.BASE_YEAR, ['region_growth_analysis', '8th_activity']]
 # #call the col 8th_activity_first_year
 # first_year_activity = first_year_activity.rename(columns={'8th_activity': '8th_activity_first_year'})
 # #now join it on

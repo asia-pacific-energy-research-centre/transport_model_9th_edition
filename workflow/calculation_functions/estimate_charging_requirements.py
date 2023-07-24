@@ -3,26 +3,22 @@
 #expected cahrgers per ev (given avg kwh of ev battery capacity)
 #average kwh of ev battery capacity (also broken dwon by vehicle type and perhaps economy based on some kind of urbanisation metric - perhaps this will need another script to calculate)
 #%%
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
+sys.path.append("./config/")
+import config
 ####usae this to load libraries and set variables. Feel free to edit that file as you need
-import sys
-import plotly.express as px
-import utility_functions
-sys.path.append("./workflow/plotting")
+sys.path.append("./workflow/plotting_functions")
 import plot_charging_graphs
 #%%
 
 def prepare_inputs_for_estimating_charging_requirements():
     ##############################################
 
-    df = pd.read_csv('output_data/model_output/{}'.format(model_output_file_name))
+    df = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
     #reaple any nan values with 0
     df = df.fillna(0)#bit of a temp measure, but will do for now
     ##############################################

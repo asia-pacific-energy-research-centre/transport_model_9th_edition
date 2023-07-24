@@ -2,61 +2,28 @@
 
 #we will also create a vehicle sales distribution that replicates what each scenario in the 8th edition shows. We can use this to help also load all stocks data so that we can test the model works like the 8th edition
 #%%
-# FILE_DATE_ID='_20230615'
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import shutil
-from turtle import title
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-###IMPORT GLOBAL VARIABLES FROM config.py
 import sys
-sys.path.append("./config/utilities")
-from config import *
-####usae this to load libraries and set variables. Feel free to edit that file as you need
-# pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
-# notebook in vscode #or set to notebook
-import plotly
-import plotly.express as px
-pd.options.plotting.backend = "matplotlib"
-import plotly.io as pio
-pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
-import sys
-sys.path.append("./config/utilities")
-import archiving_scripts
+sys.path.append("./config")
+import config
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import user_input_creation_functions
-
-
-sys.path.append("./workflow/plotting")
+sys.path.append("./workflow/plotting_functions")
 import plot_user_input_data
 
 X_ORDER = 'linear'#set me to linear or the order for the spline
 #%%
 
-def estimate_transport_data_system_sales_share(new_transport_data_system_df, INDEX_COLS,SCENARIOS_LIST,YEARS_TO_KEEP_AFTER_BASE_YEAR):
-    
-    #first we need to get the stock for the previous year. we will do this by shifting the stock column down by one row, and then renaming it to previous stock
-    #sort by date
-
-    # sales = new_transport_data_system_df.copy()
-    
-    # #filter for Stocks in Measutre
-    # sales = sales.loc[sales['Measure']=='Stocks']
-    # #sort by date
-    # sales = sales.sort_values(by=INDEX_COLS)
-    # sales['Previous Stock'] = sales.groupby(INDEX_COLS)['Value'].shift(1)
-
-    #PLEASE NOTE THE ABOVE WASNT WORKING BECAUSE WE ODN THAVE ENOUGH DATA. SO WILL DO THIS FOR NOW BY CALCUALTING THE PROPORTION OF STOCKS OF EACH TYPE IN EACH YEAR THAT CAN BE OUR sales share.
-    # 
-    
-    # sales[sales.duplicated(subset=['Economy', 'Measure', 'Medium', 'Transport Type', 'Scenario', 'Unit', 'Frequency'])]
-
+def estimate_transport_data_system_sales_share(new_transport_data_system_df, YEARS_TO_KEEP_AFTER_BASE_YEAR):
+  
     
     sales = new_transport_data_system_df.copy()
     #filter for Stocks in Measutre
     sales = sales.loc[sales['Measure']=='Stocks']
-    cols = INDEX_COLS.copy()
+    cols = config.INDEX_COLS.copy()
     cols = cols + ['road']#used for allowing swithicvn between non road mediums
     cols.remove('Medium')
     cols.remove('Vehicle Type')
@@ -82,43 +49,36 @@ def estimate_transport_data_system_sales_share(new_transport_data_system_df, IND
     sales = sales.loc[sales['Date']==max_year]
     plotting = False
     if plotting:
-        plot_user_input_data.plot_estimated_data_system_sales_share(sales, INDEX_COLS, SCENARIOS_LIST, YEARS_TO_KEEP_AFTER_BASE_YEAR)
+        plot_user_input_data.plot_estimated_data_system_sales_share(sales, YEARS_TO_KEEP_AFTER_BASE_YEAR)
         
     #drop Total Stocks column and Value column
     sales = sales.drop(columns=['Total Stocks', 'Value'])
 
-    #now replicate the sales shares for each scenario and for each year between the BASE_YEAR and the END_YEAR of the scenario.
+    #now replicate the sales shares for each scenario and for each year between the config.BASE_YEAR and the config.END_YEAR of the scenario.
 
     #filter for a unique scenario in the sales df
     sales = sales[sales.Scenario==sales.Scenario.unique()[0]]
     sales_dummy = sales.copy()
     new_sales = pd.DataFrame()
-    for scenario in SCENARIOS_LIST:
+    for scenario in config.SCENARIOS_LIST:
         sales_dummy['Scenario'] = scenario
         new_sales = pd.concat([new_sales, sales_dummy])
     
-    #now we want to replicate the df (BUT NOT THE SALES SHARE) for each year between the BASE_YEAR and the END_YEAR of the scenario
+    #now we want to replicate the df (BUT NOT THE SALES SHARE) for each year between the config.BASE_YEAR and the config.END_YEAR of the scenario
     sales_dummy = new_sales.copy()
     new_sales_years = pd.DataFrame()
-    for year in range(BASE_YEAR, END_YEAR+1):
+    for year in range(config.BASE_YEAR, config.END_YEAR+1):
         sales_dummy['Date'] = year
         new_sales_years = pd.concat([new_sales_years, sales_dummy])
     
-    #set sales share for all values after BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR to np.nan (add three so that we still have a few values for the interpoaltion to go off)
-    new_sales_years.loc[new_sales_years['Date']>BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Sales Share'] = np.nan
+    #set sales share for all values after config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR to np.nan (add three so that we still have a few values for the interpoaltion to go off)
+    new_sales_years.loc[new_sales_years['Date']>config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Sales Share'] = np.nan
 
     #set unit to %
     new_sales_years['Unit'] = '%'
     # 
     #when we get to having great data it would be better to extend the years by using something like this:
     
-    # # first sort by date
-    # new_sales_shares_sum_missing_values_change.sort_values('Date', inplace=True)
-
-    # INDEX_COLS_no_date = INDEX_COLS.copy()
-    # INDEX_COLS_no_date.remove('Date')
-    # # now ffill na on Value col when grouping by the index cols
-    # new_sales_shares_sum_missing_values_change['Value'] = new_sales_shares_sum_missing_values_change.groupby(INDEX_COLS_no_date)['Value'].apply(lambda group: group.ffill())
     
     return new_sales_years
 
@@ -130,8 +90,8 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
     #model_concordances_user_input_and_growth_rates (which contaions the set of drives, vehicle types and transport types we need to set the drive shares for)
     #passenger_drive_shares and freight_drive_shares (which only contain the manually inputted data > we will sue this to extract the data we want from new_sales_shares_pre_interp)
     #so first we need to split new_sales_shares_pre_interp into the base year data and the manually inputted data
-    sales_share_base_year = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==BASE_YEAR]
-    sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
+    sales_share_BASE_YEAR = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==config.BASE_YEAR]
+    sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
     #extract unique drives, vehicle types and transport types from model_concordances_user_input_and_growth_rates
     # combinations = model_concordances_user_input_and_growth_rates[['Medium','Transport Type','road', 'Vehicle Type', 'Drive']].drop_duplicates()
     #find unique combiantions in passenger_drive_shares and freight_drive_shares
@@ -140,15 +100,15 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
     f = freight_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
     f['Transport Type'] = 'freight'
     combinations_manual_input = pd.concat([p , f])
-    #dropo the combinations in sales_share_manual_input from sales_share_base_year
-    sales_share_base_year = sales_share_base_year[~sales_share_base_year[['Transport Type', 'Medium','Vehicle Type','road', 'Drive']].apply(tuple,1).isin(combinations_manual_input[['Transport Type', 'road','Medium','Vehicle Type', 'Drive']].apply(tuple,1))]
+    #dropo the combinations in sales_share_manual_input from sales_share_BASE_YEAR
+    sales_share_BASE_YEAR = sales_share_BASE_YEAR[~sales_share_BASE_YEAR[['Transport Type', 'Medium','Vehicle Type','road', 'Drive']].apply(tuple,1).isin(combinations_manual_input[['Transport Type', 'road','Medium','Vehicle Type', 'Drive']].apply(tuple,1))]
 
     #set nas in drive share to 0
-    sales_share_base_year[ 'Drive_share'] = sales_share_base_year[ 'Drive_share'].fillna(0)
+    sales_share_BASE_YEAR[ 'Drive_share'] = sales_share_BASE_YEAR[ 'Drive_share'].fillna(0)
     #find the normalised shares for the available data in the base year data
-    sales_share_base_year['Drive_share'] = sales_share_base_year.groupby(['Economy', 'Scenario', 'Transport Type', 'road','Medium','Vehicle Type'])['Drive_share'].transform(lambda x: x/x.sum())
+    sales_share_BASE_YEAR['Drive_share'] = sales_share_BASE_YEAR.groupby(['Economy', 'Scenario', 'Transport Type', 'road','Medium','Vehicle Type'])['Drive_share'].transform(lambda x: x/x.sum())
     #set nas in drive share to 0
-    sales_share_base_year[ 'Drive_share'] = sales_share_base_year[ 'Drive_share'].fillna(0)
+    sales_share_BASE_YEAR[ 'Drive_share'] = sales_share_BASE_YEAR[ 'Drive_share'].fillna(0)
     #now get sum of manually inputted shares for each year
     sales_share_manual_input_sum = sales_share_manual_input.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Date'])['Drive_share'].sum().reset_index()
     #1 minus it
@@ -161,7 +121,7 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
         print(sales_share_manual_input_sum.loc[sales_share_manual_input_sum['Drive_share_remainder']<0])
         raise ValueError('Drive share remainder is less than 0')
     #join this to the base year data using right join
-    missing_sales_shares = sales_share_base_year[['Economy', 'Scenario', 'Transport Type','Medium', 'Vehicle Type','Drive', 'road','Drive_share']].merge(sales_share_manual_input_sum, on=['Economy','road', 'Scenario', 'Medium','Transport Type', 'Vehicle Type'], how='right')
+    missing_sales_shares = sales_share_BASE_YEAR[['Economy', 'Scenario', 'Transport Type','Medium', 'Vehicle Type','Drive', 'road','Drive_share']].merge(sales_share_manual_input_sum, on=['Economy','road', 'Scenario', 'Medium','Transport Type', 'Vehicle Type'], how='right')
     #times the base year data by the 1-x
     missing_sales_shares['Drive_share'] = missing_sales_shares['Drive_share'] * missing_sales_shares['Drive_share_remainder']
 
@@ -175,7 +135,7 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
     return final_df
 
 
-def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
+def create_vehicle_sales_share_input():
     YEARS_TO_KEEP_AFTER_BASE_YEAR= 3
     # new_sales_shares = pd.read_csv('input_data/from_8th/reformatted/vehicle_stocks_change_share_normalised.csv')
     #load groomed data from transport data system
@@ -202,7 +162,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     #this means we ahve to calcualte the sales by finding the difference between the stock in the current year and the stock in the previous year.
     #this could rersult in issues because we may have gaps in our data. but for now we will just assume that we have data for every year and see how it goes:
     new_transport_data_system_df['road'] = new_transport_data_system_df['Medium']=='road'
-    sales = estimate_transport_data_system_sales_share(new_transport_data_system_df, INDEX_COLS,SCENARIOS_LIST,YEARS_TO_KEEP_AFTER_BASE_YEAR)
+    sales = estimate_transport_data_system_sales_share(new_transport_data_system_df,YEARS_TO_KEEP_AFTER_BASE_YEAR)
     #drop 'road' for now (it wont work with the concordances)
     sales = sales.drop(columns=['road'])
     
@@ -244,23 +204,23 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
         raise ValueError('new_sales_shares_sum_dupes is not empty. This should not happen. Investigate')
         
     #now doulbe check we have therequired categories that are in the concordances
-    model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_user_input_and_growth_rates_file_name))
+    model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_user_input_and_growth_rates_file_name))
     #drop all measures that are not vehicle sales share
     model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Measure']=='Vehicle_sales_share']
     #drop any cols not in the new_sales_shares_sum
     cols = [col for col in model_concordances_user_input_and_growth_rates.columns if col in new_sales_shares_sum.columns]
     model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[cols]
     model_concordances_user_input_and_growth_rates.drop_duplicates(inplace=True)
-    INDEX_COLS = [col for col in INDEX_COLS if col in model_concordances_user_input_and_growth_rates.columns]
+    new_INDEX_COLS = [col for col in config.INDEX_COLS if col in model_concordances_user_input_and_growth_rates.columns]
 
-    #add BASE YEAR to the concordances which canb be a copy of the BASE_YEAR +1
-    model_concordances_user_input_and_growth_rates_base = model_concordances_user_input_and_growth_rates.loc[model_concordances_user_input_and_growth_rates['Date']==BASE_YEAR+1].copy()
-    model_concordances_user_input_and_growth_rates_base['Date'] = BASE_YEAR
+    #add BASE YEAR to the concordances which canb be a copy of the config.BASE_YEAR +1
+    model_concordances_user_input_and_growth_rates_base = model_concordances_user_input_and_growth_rates.loc[model_concordances_user_input_and_growth_rates['Date']==config.BASE_YEAR+1].copy()
+    model_concordances_user_input_and_growth_rates_base['Date'] = config.BASE_YEAR
     model_concordances_user_input_and_growth_rates = pd.concat([model_concordances_user_input_and_growth_rates,model_concordances_user_input_and_growth_rates_base])
 
     #set index for both dfs
-    new_sales_shares_sum.set_index(INDEX_COLS, inplace=True)
-    model_concordances_user_input_and_growth_rates.set_index(INDEX_COLS, inplace=True)
+    new_sales_shares_sum.set_index(new_INDEX_COLS, inplace=True)
+    model_concordances_user_input_and_growth_rates.set_index(new_INDEX_COLS, inplace=True)
 
     # use the difference method to find:
     #missing_index_values1 :  the index values that are missing from the new_sales_shares_sum 
@@ -279,7 +239,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
         new_sales_shares_sum = new_sales_shares_sum.reset_index()
         new_sales_shares_sum = pd.concat([missing_index_values1, new_sales_shares_sum], sort=False)
         print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
-        new_sales_shares_sum.set_index(INDEX_COLS, inplace=True)
+        new_sales_shares_sum.set_index(new_INDEX_COLS, inplace=True)
 
     if missing_index_values2.empty:
         pass#this is to be expected as the cocnordance should always have everything we need in it!
@@ -323,12 +283,12 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
     new_sales_shares_sum_0 = new_sales_shares_sum_clean.copy()
 
-    new_sales_shares_sum_0.loc[new_sales_shares_sum_0['Date']>BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Drive_share'] = np.nan
+    new_sales_shares_sum_0.loc[new_sales_shares_sum_0['Date']>config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Drive_share'] = np.nan
 
     #sort
     new_sales_shares_sum_0 = new_sales_shares_sum_0.sort_values(by=['Economy', 'Scenario', 'Date', 'Vehicle Type','Medium','road', 'Transport Type', 'Drive'])
 
-    #were getting no values fro Drive_share for <=BASE_YEar
+    #were getting no values fro Drive_share for <=config.BASE_YEAR
     ########################################################################################################################################################
     #BEGIN INCORPORATING USER INPUTTED SALES SHARES
     ########################################################################################################################################################
@@ -422,7 +382,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
         new_sales_shares_test = new_sales_shares_test[['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive']].drop_duplicates()
         #print unique groups when you ignore scenario and economy
         new_sales_shares_test_unique = new_sales_shares_test[['Transport Type', 'Medium','Vehicle Type', 'Drive']].drop_duplicates()
-        print('#####\nWARNING: The following groups have less than 4 sales shares to interpolate by. Sales shares for these groups will be set to 0 for all years.\n Please check the data and rerun the model if this is not what you want\n#####')
+        print('#####\nWARNING: The following groups have less than 4 sales shares to interpolate by. Sales shares for these groups will be set to 0 for beginnig years.\n Please check the data and rerun the model if this is not what you want\n#####')
         print(new_sales_shares_test_unique)
 
         #set sales share to 0 in the begbinning years for these groups by retrievinmg them by index. So set index of both to [['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Drive']] and then set the sales share to 0 for the index of the groups in new_sales_shares_test
@@ -431,10 +391,10 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 
         common_indices = new_sales_shares_test.index.intersection(new_sales_shares_pre_interp.index)
 
-        new_sales_shares_pre_interp.loc[(new_sales_shares_pre_interp.index.isin(common_indices))&(new_sales_shares_pre_interp['Date']<=BASE_YEAR + YEARS_TO_KEEP_AFTER_BASE_YEAR), 'Drive_share'] = 0
+        new_sales_shares_pre_interp.loc[(new_sales_shares_pre_interp.index.isin(common_indices))&(new_sales_shares_pre_interp['Date']<=config.BASE_YEAR + YEARS_TO_KEEP_AFTER_BASE_YEAR), 'Drive_share'] = 0
 
         
-        # new_sales_shares_pre_interp.loc[(new_sales_shares_test.index)&(new_sales_shares_pre_interp['Date']<=BASE_YEAR + YEARS_TO_KEEP_AFTER_BASE_YEAR), 'Drive_share'] = 0
+        # new_sales_shares_pre_interp.loc[(new_sales_shares_test.index)&(new_sales_shares_pre_interp['Date']<=config.config.BASE_YEAR + YEARS_TO_KEEP_AFTER_config.config.BASE_YEAR), 'Drive_share'] = 0
         #reset index
         new_sales_shares_pre_interp = new_sales_shares_pre_interp.reset_index()
     
@@ -544,7 +504,7 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
     ###########################################################################
     
     #archive previous results:
-    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(FILE_DATE_ID)
+    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(config.FILE_DATE_ID)
     #save previous sales shares
     shutil.copy('input_data/user_input_spreadsheets/Vehicle_sales_share.csv', archiving_folder + '/Vehicle_sales_share.csv')
     #save the variables we used to calculate the data by savinbg the 'input_data/vehicle_sales_share_inputs.xlsx' file
@@ -578,5 +538,4 @@ def create_vehicle_sales_share_input(INDEX_COLS,SCENARIOS_LIST):
 #%%
 
 
-# create_vehicle_sales_share_input(INDEX_COLS, SCENARIOS_LIST)
 #%%
