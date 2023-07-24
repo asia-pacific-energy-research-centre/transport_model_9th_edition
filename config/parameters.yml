@@ -6,9 +6,9 @@ vehicle_gompertz_factors:
   suv: 1
   bus: 5
   2w: 0.5
-  lcv: 10
-  mt: 20
-  ht: 30
+  lcv: 30
+  mt: 60
+  ht: 90
 #can edit these to adjust the amount of vehicles in the fleet. it is important to watch stocks per capita, by transport type to udnerstand the impact of these changes.
 turnover_rate_parameters_dict:
   turnover_rate_steepness: 0.3

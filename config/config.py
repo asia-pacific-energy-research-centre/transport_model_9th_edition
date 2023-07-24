@@ -52,7 +52,7 @@ ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to []
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 USE_LATEST_OUTPUT_DATE_ID = True
 #create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
-# FILE_DATE_ID ='_20230719'
+FILE_DATE_ID ='_20230722'
 try:
     if FILE_DATE_ID:
        pass

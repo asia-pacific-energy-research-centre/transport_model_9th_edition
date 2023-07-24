@@ -27,14 +27,20 @@ def remap_vehicle_types(df, value_col='Value', index_cols = ['Scenario', 'Econom
     df = df.groupby(index_cols).sum().reset_index()
     return df
     
-def remap_drive_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum',)):
+def remap_drive_types(df, value_col='Value', index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum',), include_non_road=True):
     if mapping_type == 'original':
-        drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'phev', 'phev_g':'phev', 'bev':'bev', 'fcev':'fcev', 'cng':'gas', 'lpg':'gas',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
+        if include_non_road:
+            drive_type_combinations = {'ice_g':'ice_g', 'ice_d':'ice_d', 'phev_d':'phev_d', 'phev_g':'phev_g', 'bev':'bev', 'fcev':'fcev', 'cng':'cng', 'lpg':'lpg',  'all':'all', 'air':'air', 'rail':'rail', 'ship':'ship'}
+        else:
+            drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'phev', 'phev_g':'phev', 'bev':'bev', 'fcev':'fcev', 'cng':'gas', 'lpg':'gas',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
         df["Drive new"] = df['Drive'].map(drive_type_combinations)
         df['Drive'] = df['Drive new']
         df.drop(columns=['Drive new'], inplace=True)
     elif mapping_type == 'simplified':
-        drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'ev', 'phev_g':'ev', 'bev':'ev', 'fcev':'ev', 'cng':'ice', 'lpg':'ice',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
+        if include_non_road:
+            drive_type_combinations = {'ice_g':'ice_g', 'ice_d':'ice_d', 'phev_d':'phev_d', 'phev_g':'phev_g', 'bev':'bev', 'fcev':'fcev', 'cng':'cng', 'lpg':'lpg',  'all':'all', 'air':'air', 'rail':'rail', 'ship':'ship'}
+        else:
+            drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'ev', 'phev_g':'ev', 'bev':'ev', 'fcev':'ev', 'cng':'ice', 'lpg':'ice',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
         df["Drive new"] = df['Drive'].map(drive_type_combinations)
         df['Drive'] = df['Drive new']
         df.drop(columns=['Drive new'], inplace=True)
@@ -139,7 +145,7 @@ def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
             elif share_of_transport_type_type == 'all':
                 title = f'Sales and stocks shares (%)'
                 # sum up, because 2w are used in freight and passenger:
-                plot_data = plot_data.groupby(['Scenario', 'Economy', 'Date', 'Drive']).sum().reset_index()
+                plot_data = plot_data.groupby(['Scenario', 'Economy', 'Date', 'Drive','line_dash']).sum().reset_index()
                 fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
 
                 #add fig to dictionary for scenario and economy:
@@ -527,7 +533,7 @@ def create_vehicle_type_stocks_plot(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to
     return fig_dict, color_preparation_list
 
 
-def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, include_non_road=True):
     # model_output_detailed.pkl
     # #
     #loop through scenarios and grab the data for each scenario:
@@ -543,7 +549,7 @@ def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_
         freight_tonne_km_by_drive = freight_tonne_km_by_drive[['Economy', 'Date', 'Drive', 'freight_tonne_km']].groupby(['Economy', 'Date', 'Drive']).sum().reset_index()
         
         #simplfiy drive type using remap_drive_types
-        freight_tonne_km_by_drive = remap_drive_types(freight_tonne_km_by_drive, value_col='freight_tonne_km', index_cols = ['Economy', 'Date', 'Drive'])
+        freight_tonne_km_by_drive = remap_drive_types(freight_tonne_km_by_drive, value_col='freight_tonne_km', index_cols = ['Economy', 'Date', 'Drive'], include_non_road=True)
         #add units (by setting measure to Freight_tonne_km haha)
         freight_tonne_km_by_drive['Measure'] = 'Freight_tonne_km'
         #add units
@@ -581,7 +587,7 @@ def freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_
     color_preparation_list.append(freight_tonne_km_by_drive_economy['Drive'].unique().tolist())
     return fig_dict, color_preparation_list
 
-def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, include_non_road=True):
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
     for scenario in economy_scenario_concordance['Scenario'].unique():

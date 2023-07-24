@@ -125,8 +125,8 @@ def run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, output_file_name, A
     output_df.to_csv(output_file_name, index=False)
     
 #%%
-OUTLOOK_BASE_YEAR = 2020
-PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=True
-output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
-run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, output_file_name, ADVANCE_BASE_YEAR=False, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False)
+# OUTLOOK_BASE_YEAR = 2020
+# PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=True
+# output_file_name = 'intermediate_data/non_road_model/{}'.format(model_output_file_name)
+# run_non_road_model(OUTLOOK_BASE_YEAR,END_YEAR,BASE_YEAR, output_file_name, ADVANCE_BASE_YEAR=False, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False)
 #%%

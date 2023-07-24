@@ -197,10 +197,10 @@ def create_dashboard(plots,ECONOMIES_TO_PLOT_FOR, DROP_NON_ROAD_TRANSPORT, measu
         
     if 'freight_tonne_km_by_drive' in plots:
         #create freight tonne km by drive plots
-        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.freight_tonne_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, include_non_road=True)
     if 'passenger_km_by_drive' in plots:
         #create passenger km by drive plots
-        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict)
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.passenger_km_by_drive(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, include_non_road=True)
     if 'activity_and_macro_lines' in plots:
         #create activity growth plots
         # fig_dict, color_preparation_list = activity_growth(fig_dict)

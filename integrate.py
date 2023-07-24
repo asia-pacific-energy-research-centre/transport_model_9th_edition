@@ -67,7 +67,7 @@ if MODEL_RUN_1:
     # exec(open("./workflow/grooming_code/4_calculate_inputs_for_model.py").read())
     PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = True
     import calculate_inputs_for_model
-    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False)
+    calculate_inputs_for_model.calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,ADVANCE_BASE_YEAR=False)
 
     # exec(open("./workflow/1_run_road_model.py").read())
     import run_road_model

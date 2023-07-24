@@ -248,8 +248,8 @@ def apply_growth_up_to_outlook_base_year(road_model_input_wide,growth_columns_di
 
 #%%
 
-# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,ADVANCE_BASE_YEAR=False, adjust_data_to_match_esto_TESTING=False)
-calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True)
+# # calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=False,ADVANCE_BASE_YEAR=False, adjust_data_to_match_esto_TESTING=False)
+# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True)
 
-# calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True,adjust_data_to_match_esto_TESTING=True,TEST_ECONOMY='20_USA')
+# # calculate_inputs_for_model(INDEX_COLS,RECALCULATE_ENERGY_USING_ESTO_AND_PREVIOUS_MODEL_RUN=True,ADVANCE_BASE_YEAR=True,adjust_data_to_match_esto_TESTING=True,TEST_ECONOMY='20_USA')
 #%%

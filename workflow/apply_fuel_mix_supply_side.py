@@ -98,7 +98,7 @@ def apply_fuel_mix_supply_side(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_B
 
     
 #%%
-apply_fuel_mix_supply_side()
+# apply_fuel_mix_supply_side()
 #%%
 # # a = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(model_output_file_name))
 # # #check for dupklicates:
