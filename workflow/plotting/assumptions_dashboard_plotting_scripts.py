@@ -138,7 +138,8 @@ def plot_share_of_transport_type(fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_un
                 fig_dict[economy][scenario]['share_of_transport_type_freight'] = [fig,title]
             elif share_of_transport_type_type == 'all':
                 title = f'Sales and stocks shares (%)'
-
+                # sum up, because 2w are used in freight and passenger:
+                plot_data = plot_data.groupby(['Scenario', 'Economy', 'Date', 'Drive']).sum().reset_index()
                 fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='line_dash', color_discrete_map=colors_dict)
 
                 #add fig to dictionary for scenario and economy:
