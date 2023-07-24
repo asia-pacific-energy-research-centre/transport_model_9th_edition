@@ -111,7 +111,11 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import plotly.express as px
 import plotly.subplots as subplots
 import plotly.graph_objects as go
-exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+###IMPORT GLOBAL VARIABLES FROM config.py
+import sys
+sys.path.append("./config/utilities")
+from config import *
+####usae this to load libraries and set variables. Feel free to edit that file as you need
 
 #%%
 

@@ -1,5 +1,18 @@
 """This file is intended to be able ot be used in the beginnning of any jupyter ntoebook to set the config variables for the model. This helps to reduce clutter, as that is a big issue for notebooks. So if you ever need to chnage conifgurations, just change this. """
 #to make the code in this library clear we will name every variable that is stated in here with all caps
+
+#FREQUENTLY CHANGED CONFIG VARIABLES:
+
+ECONOMY_ID = '19_THA'#set this to '' if you want to solve the model for all economies. else you can do it for jsut one. 
+
+NEW_SALES_SHARES = True
+
+NEW_FUEL_MIXING_DATA = True
+
+transport_data_system_FILE_DATE_ID ='DATE20230717' # 'DATE20230216'))
+
+FILE_DATE_ID ='_20230722'
+
 #%%
 # FILE_DATE_ID ='_20230715'
 #import common libraries 
@@ -12,54 +25,33 @@ import datetime
 import re
 import shutil
 import sys
+
 # %config Completer.use_jedi = False#Jupiter lab specific setting to fix Auto fill bug
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 
+sys.path.append("./workflow/utility_functions")
+import utility_functions
 #%%
 #TODO find way to put this in a different file. 
-def get_latest_date_for_data_file(data_folder_path, file_name):
-    #get list of all files in the data folder
-    all_files = os.listdir(data_folder_path)
-    #filter for only the files with the correct file extension
-    all_files = [file for file in all_files if file_name in file]
-    #drop any files with no date in the name
-    all_files = [file for file in all_files if re.search(r'\d{8}', file)]
-    #get the date from the file name
-    all_files = [re.search(r'\d{8}', file).group() for file in all_files]
-    #convert the dates to datetime objects
-    all_files = [datetime.datetime.strptime(date, '%Y%m%d') for date in all_files]
-    #get the latest date
-    try:
-        latest_date = max(all_files)
-    except ValueError:
-        print('No files found for ' + file_name)
-        return None
-    #convert the latest date to a string
-    latest_date = latest_date.strftime('%Y%m%d')
-    return latest_date
+
 #can activate below to remove caveat warnings. but for now keep it there till confident:
 # pd.options.mode.chained_assignment = None  # default='warn'
 #%%
-#STATE VARIABLES USER MAY CHANGE OFTEN:
-USE_ADVANCED_TURNOVER_RATES =True
-NEW_SALES_SHARES = True
-NEW_FUEL_MIXING_DATA = True
-REPLACE_ACTIVITY_GROWTH_WITH_8TH = False#NOTE THAT THIS CURRENETLY DOESNT WORK BECAUSE OF NAS IN THE DATA
-transport_data_system_FILE_DATE_ID ='DATE20230717' # 'DATE20230216'))
-
-ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
+if ECONOMY_ID == '':
+    ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
+else:
+    ECONOMIES_TO_PLOT_FOR = [ECONOMY_ID]
 #%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 USE_LATEST_OUTPUT_DATE_ID = True
 #create option to set FILE_DATE_ID to the date_id of the latest created output files. this can be helpful when producing graphs and analysing output data
-FILE_DATE_ID ='_20230722'
 try:
     if FILE_DATE_ID:
        pass
     elif USE_LATEST_OUTPUT_DATE_ID:
         data_folder_path = './output_data/model_output/'
         file_name = 'model_output_years_'
-        date_id = get_latest_date_for_data_file(data_folder_path, file_name)
+        date_id = utility_functions.get_latest_date_for_data_file(data_folder_path, file_name)
         FILE_DATE_ID ='_'+ date_id
 except NameError:
     # FILE_DATE_ID = ''
@@ -82,9 +74,9 @@ INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
 INDEX_COLS_no_date = INDEX_COLS.copy()
 INDEX_COLS_no_date.remove('Date')
 
-model_output_file_name = 'model_output_years_{}_to_{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID)
+model_output_file_name = 'model_output_years_{}_to_{}{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID, ECONOMY_ID)
 
-gompertz_function_diagnostics_dataframe_file_name = 'gompertz_function_diagnostics_dataframe{}.csv'.format(FILE_DATE_ID)
+gompertz_function_diagnostics_dataframe_file_name = 'gompertz_function_diagnostics_dataframe{}{}.csv'.format(FILE_DATE_ID,ECONOMY_ID)
 
 EIGHTH_EDITION_DATA = True#this is used to determine if we are using the 8th edition data. Perhaps in the future we will determine this useing the 'dataset' columnn but for now we wexpect to be moving on from that dataset soon so we will just use this variable
 

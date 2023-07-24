@@ -6,7 +6,11 @@ import os
 import re
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
 from runpy import run_path
-exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+###IMPORT GLOBAL VARIABLES FROM config.py
+import sys
+sys.path.append("./config/utilities")
+from config import *
+####usae this to load libraries and set variables. Feel free to edit that file as you need
 
 import plotly
 import plotly.express as px
