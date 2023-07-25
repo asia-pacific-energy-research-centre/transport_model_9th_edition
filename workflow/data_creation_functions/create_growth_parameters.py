@@ -6,6 +6,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import growth_parameter_creation_functions
 ##########################
@@ -118,7 +133,7 @@ def choose_and_filter_for_model_by_region(chosen_model_by_region_dict, chosen_fi
     if chosen_file_date_id is not None:
         date_id = chosen_file_date_id
     else:
-        breakpoint()
+        
         date_id = utility_functions.get_latest_date_for_data_file('intermediate_data/growth_analysis/','growth_coefficients_by_region')
         date_id = '_' + date_id
     growth_coefficients_df = pd.read_csv(f'intermediate_data/growth_analysis/growth_coefficients_by_region{date_id}.csv')

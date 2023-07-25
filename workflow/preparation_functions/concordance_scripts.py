@@ -22,6 +22,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 
@@ -43,8 +58,8 @@ def create_all_concordances():
 
     #could create concordances for each year, economy and scenario and then cross that with the osemosys_concordances to get the final concordances
     model_concordances = pd.DataFrame(columns=manually_defined_transport_categories.columns)
-    for Date in range(config.BASE_YEAR, config.END_YEAR+1):
-        for economy in ECONOMY_LIST:#get economys from economy_code_to_name concordance in config.py
+    for Date in range(config.DEFAULT_BASE_YEAR, config.END_YEAR+1):
+        for economy in config.ECONOMY_LIST:#get economys from economy_code_to_name concordance in config.py
             for scenario in config.SCENARIOS_LIST:
                 #create concordances for each year, economy and scenario
                 manually_defined_transport_categories_year = manually_defined_transport_categories.copy()
@@ -81,24 +96,24 @@ def create_all_concordances():
 
     #save
     model_concordances_fuels.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels), index=False)
-    model_concordances_fuels_NO_BIOFUELS.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels_NO_BIOFUELS), index=False)
+    model_concordances_fuels_NO_BIOFUELS.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels_NO_BIOFUELS), index=False)
 
     ########################################################################################################################################################################
     
     #now for each measure create a copy of the model concordance for that medium and the base year only and add the measure to the copy (where non road is all non road mediums)
-    BASE_YEAR_model_concordances_ROAD = model_concordances.loc[(model_concordances['Medium'] == 'road') & (model_concordances['Date'] == config.BASE_YEAR)].drop(columns=['Scenario']).drop_duplicates()
-    BASE_YEAR_model_concordances_NON_ROAD = model_concordances.loc[(model_concordances['Medium'] != 'road') & (model_concordances['Date'] == config.BASE_YEAR)].drop(columns=['Scenario']).drop_duplicates()
+    BASE_YEAR_model_concordances_ROAD = model_concordances.loc[(model_concordances['Medium'] == 'road') & (model_concordances['Date'] == config.DEFAULT_BASE_YEAR)].drop(columns=['Scenario']).drop_duplicates()
+    BASE_YEAR_model_concordances_NON_ROAD = model_concordances.loc[(model_concordances['Medium'] != 'road') & (model_concordances['Date'] == config.DEFAULT_BASE_YEAR)].drop(columns=['Scenario']).drop_duplicates()
 
     #create empty dataframes
     BASE_YEAR_non_road_measures = pd.DataFrame()
     BASE_YEAR_road_measures = pd.DataFrame()
 
-    for measure in BASE_YEAR_measures_list_ROAD:
+    for measure in config.base_year_measures_list_ROAD:
         BASE_YEAR_model_concordances_ROAD_copy = BASE_YEAR_model_concordances_ROAD.copy()
         BASE_YEAR_model_concordances_ROAD_copy['Measure'] = measure
         BASE_YEAR_road_measures = pd.concat([BASE_YEAR_road_measures, BASE_YEAR_model_concordances_ROAD_copy])  
 
-    for measure in BASE_YEAR_measures_list_NON_ROAD:
+    for measure in config.base_year_measures_list_NON_ROAD:
         BASE_YEAR_model_concordances_NON_ROAD_copy = BASE_YEAR_model_concordances_NON_ROAD.copy()
         BASE_YEAR_model_concordances_NON_ROAD_copy['Measure'] = measure
         BASE_YEAR_non_road_measures = pd.concat([BASE_YEAR_non_road_measures, BASE_YEAR_model_concordances_NON_ROAD_copy])
@@ -107,7 +122,7 @@ def create_all_concordances():
     model_concordances_BASE_YEAR_measures = pd.concat([BASE_YEAR_road_measures, BASE_YEAR_non_road_measures])
     
     #Measure to Unit concordance (load it in and merge it to the model concordances)
-    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
+    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
     #keep only Measure and Unit columns
     config.measure_to_unit_concordance = config.measure_to_unit_concordance[['Measure', 'Unit']]
 
@@ -126,7 +141,7 @@ def create_all_concordances():
     # #TEMP Over
     
     #now save
-    model_concordances_BASE_YEAR_measures.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_BASE_YEAR_measures_file_name), index=False)
+    model_concordances_BASE_YEAR_measures.to_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_base_year_measures_file_name), index=False)
 
     ########################################################################################################################################################################
     #create a model concordance for growth rates and user defined inputs 
@@ -138,11 +153,11 @@ def create_all_concordances():
     non_road_user_input_and_growth_rates = pd.DataFrame()
     road_user_input_and_growth_rates = pd.DataFrame()
 
-    for measure in user_input_measures_list_ROAD:
+    for measure in config.user_input_measures_list_ROAD:
         model_concordances_ROAD_copy = model_concordances_ROAD.copy()
         model_concordances_ROAD_copy['Measure'] = measure
         road_user_input_and_growth_rates = pd.concat([road_user_input_and_growth_rates, model_concordances_ROAD_copy])  
-    for measure in user_input_measures_list_NON_ROAD:
+    for measure in config.user_input_measures_list_NON_ROAD:
         model_concordances_NON_ROAD_copy = model_concordances_NON_ROAD.copy()
         model_concordances_NON_ROAD_copy['Measure'] = measure
         non_road_user_input_and_growth_rates = pd.concat([non_road_user_input_and_growth_rates, model_concordances_NON_ROAD_copy])
@@ -152,7 +167,7 @@ def create_all_concordances():
     #join the two dfs using concat
     model_concordances_user_input_and_growth_rates = pd.concat([non_road_user_input_and_growth_rates, road_user_input_and_growth_rates], ignore_index=True)
     #remove the BASE year as we don't need it. 
-    model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Date'] != config.BASE_YEAR]
+    model_concordances_user_input_and_growth_rates = model_concordances_user_input_and_growth_rates[model_concordances_user_input_and_growth_rates['Date'] != config.DEFAULT_BASE_YEAR]
     #make units = %
     model_concordances_user_input_and_growth_rates['Unit'] = '%'
     
@@ -211,7 +226,7 @@ def create_fuel_mixing_concordances():
     
     #load in concordances and then keep only data that is in the drive_type_to_fuel_df:
     
-    model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name_fuels))
+    model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels))
     
     #first do demand side fuel mixing:
     drive_type_to_fuel_df_demand = drive_type_to_fuel_df[drive_type_to_fuel_df['Demand_side_fuel_mixing'].isin(['Original fuel', 'New fuel'])].copy()

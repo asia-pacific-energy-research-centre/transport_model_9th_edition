@@ -3,8 +3,6 @@
 
 #FREQUENTLY CHANGED CONFIG VARIABLES:
 
-ECONOMY_ID = '19_THA'#set this to '' if you want to solve the model for all economies. else you can do it for jsut one. 
-
 NEW_SALES_SHARES = True
 
 NEW_FUEL_MIXING_DATA = True
@@ -19,14 +17,11 @@ transport_data_system_FILE_DATE_ID ='DATE20230717' # 'DATE20230216'))
 import pandas as pd 
 import numpy as np
 import yaml
-# import glob
-# from string import digits#is this used?
 import datetime
 import shutil
 import sys
 import os 
 import re
-
 import plotly.express as px
 import plotly.io as pio
 import plotly.graph_objects as go
@@ -43,11 +38,7 @@ import archiving_scripts
 
 #can activate below to remove caveat warnings. but for now keep it there till confident:
 # pd.options.mode.chained_assignment = None  # default='warn'
-#%%
-if ECONOMY_ID == '':
-    ECONOMIES_TO_PLOT_FOR =[]#['08_JPN', '20_USA', '03_CDA', '19_THA'] #set me to [] if you want to plot all economies, as it will be set to all economies on line 100
-else:
-    ECONOMIES_TO_PLOT_FOR = [ECONOMY_ID]
+
 #%%
 #we can set FILE_DATE_ID to something other than the date here which is useful if we are running the script alone, versus through integrate.py
 USE_LATEST_OUTPUT_DATE_ID = True
@@ -63,23 +54,25 @@ try:
 except NameError:
     # FILE_DATE_ID = ''
     file_date = datetime.datetime.now().strftime("%Y%m%d")
-    FILE_DATE_ID = '_{}'.format(file_date)#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
+    FILE_DATE_ID = '{}'.format(file_date)#Note that this is not the official file date id anymore because it was interacting badly with how we should instead set it in onfig.py
 
 #%%
 #state important modelling variables
-BASE_YEAR= 2017
+DEFAULT_BASE_YEAR = 2017
 OUTLOOK_BASE_YEAR = 2020
 END_YEAR = 2100
 GRAPHING_END_YEAR = 2070
 USE_LOGISTIC_FUNCTION=True
 #this is important for defining how the dataframes are used. Generally this shouldnt change unless a column name changes or the model is changed
 INDEX_COLS = ['Date', 'Economy', 'Measure', 'Vehicle Type', 'Medium',
-       'Transport Type','Drive', 'Scenario', 'Unit', 'Frequency']
+       'Transport Type','Drive', 'Scenario', 'Unit']
 INDEX_COLS_no_date = INDEX_COLS.copy()
 INDEX_COLS_no_date.remove('Date')
+INDEX_COLS_NO_MEASURE = INDEX_COLS.copy()
+INDEX_COLS_NO_MEASURE.remove('Measure')
+INDEX_COLS_NO_MEASURE.remove('Unit')
 
-model_output_file_name = 'model_output_years_{}_to_{}{}{}.csv'.format(BASE_YEAR, END_YEAR, FILE_DATE_ID, ECONOMY_ID)
-
+model_output_file_name = 'model_output{}.csv'.format(FILE_DATE_ID)
 
 #get sceanrios from scenarios_list file
 SCENARIOS_LIST = pd.read_csv('config/concordances_and_config_data/scenarios_list.csv')
@@ -100,9 +93,17 @@ base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Stocks', 'Intensity']
 calculated_measures_ROAD = ['Travel_km','Surplus_stocks', 'Turnover_rate']#tinclude travel km as to be calcualted as it is not widely available publicly, so its best just to calculate it.its also kind of an intermediate measure as it is reliant on what mileage,efficiency and stocks are, but is not the goal like energy or activity really are
 calculated_measures_NON_ROAD = ['Turnover_rate']
 
+ROAD_MODEL_OUTPUT_COLS = ['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population', 'Average_age', 'Turnover_rate_midpoint']
+
+NON_ROAD_MODEL_OUTPUT_COLS = ['Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive', 'Scenario', 'Activity', 'Average_age', 'Energy', 
+    'Intensity', 'Non_road_intensity_improvement', 'Stocks', 'Turnover_rate_midpoint', 'Vehicle_sales_share', 'Population', 
+    'Gdp', 'Gdp_per_capita', 'Turnover_rate', 'Activity_per_Stock', 'Activity_growth']
 #%%
 #import measure to unit concordance
 measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
+
+# Convert to dict
+measure_to_unit_concordance_dict = measure_to_unit_concordance.set_index('Measure')['Magnitude_adjusted_unit'].to_dict()
 
 #import manually_defined_transport_categories
 transport_categories = pd.read_csv('config/concordances_and_config_data/manually_defined_transport_categories.csv')
@@ -120,8 +121,6 @@ ECONOMY_LIST = pd.read_csv(economy_codes_path).iloc[:,0]#get the first column
 economy_regions_path = 'config/concordances_and_config_data/region_economy_mapping.csv'
 ECONOMY_REGIONS = pd.read_csv(economy_regions_path)
 
-if len(ECONOMIES_TO_PLOT_FOR) == 0:
-    ECONOMIES_TO_PLOT_FOR = ECONOMY_LIST.tolist()
 ###################################################
 #%%
 import plotly.express as px
@@ -133,15 +132,21 @@ AUTO_OPEN_PLOTLY_GRAPHS = False
 # %%
 #state model concordances file names for concordances we create manually
 model_concordances_version = FILE_DATE_ID#'20220824_1256'
-model_concordances_file_name  = 'model_concordances{}.csv'.format(model_concordances_version)
-model_concordances_file_name_fuels = 'model_concordances_fuels{}.csv'.format(model_concordances_version)
-model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS{}.csv'.format(model_concordances_version)
+model_concordances_file_name  = 'model_concordances_{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels = 'model_concordances_fuels_{}.csv'.format(model_concordances_version)
+model_concordances_file_name_fuels_NO_BIOFUELS = 'model_concordances_fuels_NO_BIOFUELS_{}.csv'.format(model_concordances_version)
 
 #state model concordances file names for concordances we create using inputs into the model. these model concordances state what measures are used in the model
-model_concordances_base_year_measures_file_name = 'model_concordances_measures{}.csv'.format(model_concordances_version)
-model_concordances_user_input_and_growth_rates_file_name = 'model_concordances_user_input_and_growth_rates{}.csv'.format(model_concordances_version)
-model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_supply_side_fuel_mixing{}.csv'.format(model_concordances_version)
-model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing{}.csv'.format(model_concordances_version)
+model_concordances_base_year_measures_file_name = 'model_concordances_measures_{}.csv'.format(model_concordances_version)
+model_concordances_user_input_and_growth_rates_file_name = 'model_concordances_user_input_and_growth_rates_{}.csv'.format(model_concordances_version)
+model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_supply_side_fuel_mixing_{}.csv'.format(model_concordances_version)
+model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing_{}.csv'.format(model_concordances_version)
+
+
+# Load in model concordances
+model_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name))
+# Extract economy and scenario from df then drop dupes
+economy_scenario_concordance = model_concordances[['Economy', 'Scenario']].drop_duplicates().reset_index(drop=True)
 
 #AND A model_concordances_all_file_name
 # model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)

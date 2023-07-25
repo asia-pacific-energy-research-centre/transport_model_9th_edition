@@ -11,12 +11,27 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
-def concatenate_model_output():
+def concatenate_model_output(ECONOMY_ID):
     #load model output
-    road_model_output = pd.read_csv('intermediate_data/road_model/{}'.format(config.model_output_file_name))
-    non_road_model_output = pd.read_csv('intermediate_data/non_road_model/{}'.format(config.model_output_file_name))
+    road_model_output = pd.read_csv('intermediate_data/road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
+    non_road_model_output = pd.read_csv('intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
     
     # check if there are any NA's in any columns in the output dataframes. If there are, print them out
     if road_model_output.isnull().values.any():
@@ -38,7 +53,21 @@ def concatenate_model_output():
     model_output_all = pd.concat([road_model_output, non_road_model_output])
     
     #save
-    model_output_all.to_csv('intermediate_data/model_output_concatenated/{}'.format(config.model_output_file_name), index=False)
+    model_output_all.to_csv('intermediate_data/model_output_concatenated/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
+
+
+def fill_missing_output_cols_with_nans(ECONOMY_ID, road_model_input_wide, non_road_model_input_wide):
+    for col in config.ROAD_MODEL_OUTPUT_COLS:
+        if col not in road_model_input_wide.columns:
+            road_model_input_wide[col] = np.nan
+    for col in config.NON_ROAD_MODEL_OUTPUT_COLS:
+        if col not in non_road_model_input_wide.columns:
+            non_road_model_input_wide[col] = np.nan
+            
+    #save to file
+    road_model_input_wide.to_csv('intermediate_data/road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
+    non_road_model_input_wide.to_csv('intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
+    
 
 #%%
 # concatenate_model_output()

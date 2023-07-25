@@ -9,6 +9,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 sys.path.append("./workflow/data_creation_functions")
@@ -23,10 +38,10 @@ def create_and_clean_user_input():
     #laod concordances for checking later
     model_concordances_user_input_and_growth_rates = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_user_input_and_growth_rates_file_name))
 
-    if NEW_SALES_SHARES:
-        create_vehicle_sales_share_input(INDEX_COLS,config.SCENARIOS_LIST)
+    if config.NEW_SALES_SHARES:
+        create_vehicle_sales_share_input()
 
-    if NEW_FUEL_MIXING_DATA:
+    if config.NEW_FUEL_MIXING_DATA:
         #note that this wont be saved to user input, as it has a different data structure.
         create_demand_side_fuel_mixing_input()
         create_supply_side_fuel_mixing_input()
@@ -51,14 +66,14 @@ def create_and_clean_user_input():
     #we need intensity improvement for all new non road drive types. so filter for non road in user input then merge with the concordance table to get the new drive types, and replicate the intensity improvement for all. 
     
     #drop any rows in user input that are for the base year (why? i geuss there arent any base year values in the user inputanyway, but could be useful not to rmeove them ?)
-    user_input = user_input[user_input.Date != config.BASE_YEAR]
+    user_input = user_input[user_input.Date != config.DEFAULT_BASE_YEAR]
     
     #then filter for the same rows that are in the concordance table for user inputs and  grwoth rates. these rows will be based on a set of index columns as defined below. Once we have done this we can print out what data is unavailable (its expected that no data will be missing for the model to actually run)
     
     
     #set index
-    user_input.set_index(INDEX_COLS, inplace=True)
-    model_concordances_user_input_and_growth_rates.set_index(INDEX_COLS, inplace=True)
+    user_input.set_index(config.INDEX_COLS, inplace=True)
+    model_concordances_user_input_and_growth_rates.set_index(config.INDEX_COLS, inplace=True)
 
     #create empty list which we will append the data we extract from the user_inputs using an iterative loop. Then we will concat it all together into one dataframe
     new_user_inputs = []
@@ -94,7 +109,7 @@ def create_and_clean_user_input():
         user_input = user_input.reset_index()
         user_input = pd.concat([missing_index_values1, user_input], sort=False)
         print('Missing rows in our user input dataset when we compare it to the concordance:', missing_index_values1)
-        user_input.set_index(INDEX_COLS, inplace=True)
+        user_input.set_index(config.INDEX_COLS, inplace=True)
 
     
     if missing_index_values2.empty:

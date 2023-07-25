@@ -11,9 +11,27 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 sys.path.append("./workflow/plotting_functions")
 import plot_user_input_data
+
+sys.path.append("./workflow/utility_functions")
+import archiving_scripts
 #%%
 
 #create fake user input for demand side fuel mixes using model concordances
@@ -29,32 +47,29 @@ def create_demand_side_fuel_mixing_input():
     #first create a dummy value col for when pivoting
     model_concordances_fuels['dummy'] = np.nan
 
-    INDEX_COLS_no_measure = INDEX_COLS.copy()
-    INDEX_COLS_no_measure.remove('Measure')
-    INDEX_COLS_no_measure.remove('Unit')
     #PHEV_g
     model_concordances_PHEVD = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev_d')]
     #make wide
-    model_concordances_PHEVD = model_concordances_PHEVD.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+    model_concordances_PHEVD = model_concordances_PHEVD.pivot(index=config.INDEX_COLS_NO_MEASURE, columns='Fuel', values='dummy').reset_index()
     #fill cols with values
     model_concordances_PHEVD['17_electricity'] = 0.5
     model_concordances_PHEVD['07_07_gas_diesel_oil'] = 0.5
     #fill na with 0
     model_concordances_PHEVD = model_concordances_PHEVD.fillna(0)
     #now melt so we have a tall dataframe
-    model_concordances_PHEVD_melt = pd.melt(model_concordances_PHEVD, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+    model_concordances_PHEVD_melt = pd.melt(model_concordances_PHEVD, id_vars=config.INDEX_COLS_NO_MEASURE, var_name='Fuel', value_name='Demand_side_fuel_share')
 
     #PHEV ldv
     model_concordances_PHEVG = model_concordances_fuels.loc[(model_concordances_fuels['Drive'] == 'phev_g')]
     #make wide
-    model_concordances_PHEVG = model_concordances_PHEVG.pivot(index=INDEX_COLS_no_measure, columns='Fuel', values='dummy').reset_index()
+    model_concordances_PHEVG = model_concordances_PHEVG.pivot(index=config.INDEX_COLS_NO_MEASURE, columns='Fuel', values='dummy').reset_index()
     #fill cols with values
     model_concordances_PHEVG['17_electricity'] = 0.5
     model_concordances_PHEVG['07_01_motor_gasoline'] = 0.5
     #fill na with 0
     model_concordances_PHEVG = model_concordances_PHEVG.fillna(0)
     #now melt so we have a tall dataframe
-    model_concordances_PHEVG_melt = pd.melt(model_concordances_PHEVG, id_vars=INDEX_COLS_no_measure, var_name='Fuel', value_name='Demand_side_fuel_share')
+    model_concordances_PHEVG_melt = pd.melt(model_concordances_PHEVG, id_vars=config.INDEX_COLS_NO_MEASURE, var_name='Fuel', value_name='Demand_side_fuel_share')
 
     
     #CONCATENATE all
@@ -88,11 +103,11 @@ def create_demand_side_fuel_mixing_input():
         demand_side_fuel_mixing = pd.concat([demand_side_fuel_mixing, empty_ice_ldv_freight_econs], axis=0, ignore_index=True)
 
     
-    #to handle years that are before the config.BASE_YEAR, jsut carry the fuel shares backwards for 10 years
+    #to handle years that are before the config.DEFAULT_BASE_YEAR, jsut carry the fuel shares backwards for 10 years
     data_base_minus_10 = demand_side_fuel_mixing.copy()
-    data_base_minus_10 = data_base_minus_10[data_base_minus_10['Date'] == config.BASE_YEAR+1]
+    data_base_minus_10 = data_base_minus_10[data_base_minus_10['Date'] == config.DEFAULT_BASE_YEAR+1]
     demand_side_fuel_mixing_minus_10 = pd.DataFrame()
-    for year in range(config.BASE_YEAR-10, config.BASE_YEAR-1):
+    for year in range(config.DEFAULT_BASE_YEAR-10, config.DEFAULT_BASE_YEAR-1):
         data_base_minus_10['Date'] = year
         demand_side_fuel_mixing_minus_10 = pd.concat([demand_side_fuel_mixing_minus_10, data_base_minus_10], axis=0, ignore_index=True)
     #concat onto demand_side_fuel_mixing
@@ -101,7 +116,7 @@ def create_demand_side_fuel_mixing_input():
     #####################
 
     #archive previous results:
-    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(config.FILE_DATE_ID)
+    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID()
     #save as user input csv
     
     demand_side_fuel_mixing.to_csv('intermediate_data/model_inputs/{}/demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID), index=False)

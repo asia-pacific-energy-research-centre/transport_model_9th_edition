@@ -13,6 +13,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive notebook in vscode #or set to notebook
@@ -296,7 +311,7 @@ fig.write_image("./plotting_output/plot_input_data/static/" + title + '.png', sc
 #we will plot it using a boxplot so we can plot all economys in one plot, then separate plots for each vehicle_type/transport type 
 model_output_detailed_eff_df = model_output_detailed[['Date', 'Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Efficiency', 'New_vehicle_efficiency']]
 
-model_output_detailed_eff_df = model_output_detailed_eff_df[model_output_detailed_eff_df['Date']==config.BASE_YEAR]
+model_output_detailed_eff_df = model_output_detailed_eff_df[model_output_detailed_eff_df['Date']==config.DEFAULT_BASE_YEAR]
 
 #melt the efficiency and new vehicle efficiency columns to one measur col
 model_output_detailed_eff_df = pd.melt(model_output_detailed_eff_df, id_vars=['Date', 'Economy', 'Vehicle Type', 'Transport Type', 'Drive'], value_vars=['Efficiency', 'New_vehicle_efficiency'], var_name='Measure', value_name='Efficiency')

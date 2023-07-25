@@ -7,9 +7,24 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
-def calculate_and_plot_oil_displacement():
+def calculate_and_plot_oil_displacement(ECONOMY_ID):
         
     AUTO_OPEN_PLOTLY_GRAPHS = False
     dont_overwrite_existing_graphs = False
@@ -20,7 +35,7 @@ def calculate_and_plot_oil_displacement():
     #CHECK THAT SAVE FOLDER EXISTS, IF NOT CREATE IT
     if not os.path.exists(default_save_folder):
         os.makedirs(default_save_folder)
-    model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
+    model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
 
     #create regions dataset and then concat that on with regions = Economy. so that we can plot regions too.
     region_economy_mapping = pd.read_csv('./config/concordances_and_config_data/region_economy_mapping.csv')
@@ -76,7 +91,7 @@ def calculate_and_plot_oil_displacement():
                 ##############################################
                 #DO SEP PLOT FOR EACH DRIVE TYPE IN BEV AND FCEV
                 ##############################################
-                breakpoint()
+                
                 ice_bev = plotting_data.copy()
                 ice = ice_bev[ice_bev['Drive'].isin(['ice_g', 'ice_d'])]
                 #grab avg of Efficiency Occupancy_or_load and Mileage and the sum of stocks
@@ -268,7 +283,7 @@ def calculate_and_plot_oil_displacement():
                 #give it a title:
                 fig.update_layout(title=f'Oil displacement for {t_type} in {economy} in {scenario} (FCEV)')
                 fig.write_html(f'{default_save_folder}/oil_displacement_{t_type}_{economy}_fcev_{scenario}.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-                breakpoint()
+                
 
 
 

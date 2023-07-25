@@ -13,6 +13,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 #grab the file D:\APERC\transport_model_9th_edition\input_data\macro\APEC_GDP_population.csv
@@ -156,7 +171,7 @@ macro2['Population_growth'] = macro2.groupby('region_growth_analysis')['Populati
 macro2['GDP_per_capita_growth'] = macro2.groupby('region_growth_analysis')['GDP_per_capita'].pct_change()
 
 #the base year to 1 as the growth rate is not defined for the base year (in the code its actually using the row above for 2050 currently)
-macro2.loc[macro2['date'] == config.BASE_YEAR, ['GDP_growth', 'Population_growth', 'GDP_per_capita_growth']] = 0
+macro2.loc[macro2['date'] == config.DEFAULT_BASE_YEAR, ['GDP_growth', 'Population_growth', 'GDP_per_capita_growth']] = 0
 
 # Calculate cumulative product of growth rates+1
 #add 1 to the growth rates
@@ -170,7 +185,7 @@ macro2['GDP_per_capita_index'] = macro2.groupby('region_growth_analysis')['GDP_p
 
 #calcuale activity using the growth rates
 #grab the 8th activity in first year (and keep region_growth_analysis)
-first_year_activity = macro2.loc[macro2['date'] == config.BASE_YEAR, ['region_growth_analysis', '8th_activity']]
+first_year_activity = macro2.loc[macro2['date'] == config.DEFAULT_BASE_YEAR, ['region_growth_analysis', '8th_activity']]
 #call the col 8th_activity_first_year
 first_year_activity = first_year_activity.rename(columns={'8th_activity': '8th_activity_first_year'})
 #now join it on

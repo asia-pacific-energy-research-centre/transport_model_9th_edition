@@ -11,9 +11,24 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
-def aggregate_data_for_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BASE_YEAR=False):
+def aggregate_data_for_model():
     #load data from transport datasystem
     new_transport_dataset = pd.read_csv('intermediate_data/model_inputs/transport_data_system_extract.csv')
     user_input = pd.read_csv('intermediate_data/model_inputs/user_inputs_and_growth_rates.csv')
@@ -23,6 +38,7 @@ def aggregate_data_for_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BAS
     demand_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
     supply_side_fuel_mixing =  pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
 
+    
     #create Dataset column in user input and call it 'user_input'
     user_input['Dataset'] = 'user_input'
     #same for growth but call it 'growth_forecasts'
@@ -53,7 +69,7 @@ def aggregate_data_for_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BAS
     
     #convert units to similar magnitudes. We might need to change the units as well.
     #these are based off the units in config.measure_to_unit_concordance from config.py
-    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
+    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
     #convert to dict
     unit_to_adj_unit_concordance_dict = config.measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjusted_unit']
     value_adjustment_concordance_dict = config.measure_to_unit_concordance.set_index('Unit').to_dict()['Magnitude_adjustment']
@@ -88,8 +104,6 @@ def aggregate_data_for_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BAS
 
     ###############################
     # Make wide so each unique category of the measure col is a column with the values in the value col as the values. This is how we will use the data from now on.
-    #create config.INDEX_COLS with no measure
-    config.INDEX_COLS_NO_MEASURE.remove('Measure')
     
     road_model_input_wide = road_model_input.pivot(index=config.INDEX_COLS_NO_MEASURE, columns='Measure', values='Value').reset_index()
     non_road_model_input_wide = non_road_model_input.pivot(index=config.INDEX_COLS_NO_MEASURE, columns='Measure', values='Value').reset_index()
@@ -97,37 +111,7 @@ def aggregate_data_for_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BAS
     #join on the Population, GDP and activity_growth cols from growth_forecasts to the otehrs
     road_model_input_wide = road_model_input_wide.merge(growth_forecasts_wide[['Date', 'Economy', 'Population', 'Gdp','Gdp_per_capita', 'Activity_growth']].drop_duplicates(), on=['Date', 'Economy'], how='left')
     non_road_model_input_wide = non_road_model_input_wide.merge(growth_forecasts_wide[['Date', 'Economy', 'Population', 'Gdp','Gdp_per_capita', 'Activity_growth']].drop_duplicates(), on=['Date', 'Economy'], how='left')
-
-    ###############################
-    if config.ECONOMY_ID != '':
-        #select only the economy we want, which is what config.ECONOMY_ID is:   
-        supply_side_fuel_mixing = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Economy']==config.ECONOMY_ID]
-        demand_side_fuel_mixing = demand_side_fuel_mixing.loc[demand_side_fuel_mixing['Economy']==config.ECONOMY_ID]
-        road_model_input_wide = road_model_input_wide.loc[road_model_input_wide['Economy']==config.ECONOMY_ID]
-        non_road_model_input_wide = non_road_model_input_wide.loc[non_road_model_input_wide['Economy']==config.ECONOMY_ID]
     
-    if PROJECT_TO_JUST_OUTLOOK_BASE_YEAR:
-        #filter so the data is from config.OUTLOOK_BASE_YEAR and back
-        demand_side_fuel_mixing = demand_side_fuel_mixing[demand_side_fuel_mixing['Date'] <= config.OUTLOOK_BASE_YEAR]
-        supply_side_fuel_mixing = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] <= config.OUTLOOK_BASE_YEAR]
-        road_model_input_wide = road_model_input_wide[road_model_input_wide['Date'] <= config.OUTLOOK_BASE_YEAR]
-        non_road_model_input_wide = non_road_model_input_wide[non_road_model_input_wide['Date'] <= config.OUTLOOK_BASE_YEAR]
-        
-    elif ADVANCE_BASE_YEAR:
-        
-        #apply growth rates up to the outlook base year for all the growth rates that are in the model
-        growth_columns_dict = {'New_vehicle_efficiency_growth':'New_vehicle_efficiency', 
-        'Occupancy_or_load_growth':'Occupancy_or_load'}
-        road_model_input_wide = apply_growth_up_to_outlook_BASE_YEAR(road_model_input_wide,growth_columns_dict)
-        growth_columns_dict = {'Non_road_intensity_improvement':'Intensity'}
-        non_road_model_input_wide = apply_growth_up_to_outlook_BASE_YEAR(non_road_model_input_wide,growth_columns_dict)
-        
-        demand_side_fuel_mixing = demand_side_fuel_mixing[demand_side_fuel_mixing['Date'] >= config.OUTLOOK_BASE_YEAR]
-        supply_side_fuel_mixing = supply_side_fuel_mixing[supply_side_fuel_mixing['Date'] >= config.OUTLOOK_BASE_YEAR]
-        road_model_input_wide = road_model_input_wide[road_model_input_wide['Date'] >= config.OUTLOOK_BASE_YEAR]
-        non_road_model_input_wide = non_road_model_input_wide[non_road_model_input_wide['Date'] >= config.OUTLOOK_BASE_YEAR]
-               
-    ################################################################################
     #save
     # aggregated_model_data.to_csv('intermediate_data/model_inputs/{}/aggregated_model_data.csv'.format(config.FILE_DATE_ID), index=False)
     supply_side_fuel_mixing.to_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID), index=False)
@@ -137,41 +121,6 @@ def aggregate_data_for_model(PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False,ADVANCE_BAS
     non_road_model_input_wide.to_csv('intermediate_data/model_inputs/{}/non_road_model_input_wide.csv'.format(config.FILE_DATE_ID), index=False)
     growth_forecasts_wide.to_csv('intermediate_data/model_inputs/{}/growth_forecasts_wide.csv'.format(config.FILE_DATE_ID), index=False)
 
-#%%
-
-def apply_growth_up_to_outlook_BASE_YEAR(model_input_wide,growth_columns_dict):
-    #calcualte values from BASE YEAR up to OUTLOOK BASE YEAR just in case they are needed. that is, calcualte New Vehicle Efficienecy as the prodcut of the New Vehicle Efficienecy Growth of range(config.BASE_YEAR, config.OUTLOOK_BASE_YEAR-1) * the New Vehicle Efficienecy in the config.BASE_YEAR. Do this for all the other growth rates too.
-
-    for growth, value in growth_columns_dict.items():
-        
-        new_values = model_input_wide[(model_input_wide['Date'] >= config.BASE_YEAR) & (model_input_wide['Date'] <= config.OUTLOOK_BASE_YEAR)].copy()
-        BASE_YEAR_values = model_input_wide[model_input_wide['Date'] == config.BASE_YEAR].copy()
-        
-        # replace any nans with 1
-        new_values[growth] = new_values[growth].fillna(1)
-        
-        # Calculate cumulative product
-        new_values[growth] = new_values.groupby(['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'])[growth].transform('cumprod')
-        #filter for latest Date only
-        new_values = new_values[new_values['Date'] == config.OUTLOOK_BASE_YEAR]
-        # Match base year value for each group and multiply with cumulative growth
-        cum_growth = new_values[['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', growth]].merge(BASE_YEAR_values[['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', value]], on=['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario'])
-        if value == 'New_vehicle_efficiency':
-            breakpoint()
-        # Multiply cumulative growth with base year value
-        cum_growth[value] = cum_growth[growth] * cum_growth[value]
-
-        #make Date = config.OUTLOOK_BASE_YEAR as we want to save this value as the value used for the config.OUTLOOK_BASE_YEAR, so that in the first year forecasted (config.OUTLOOK_BASE_YEAR+1) we can use this value as the base year value
-        cum_growth['Date'] = config.OUTLOOK_BASE_YEAR
-        
-        #merge and replace original value column with adjusted growth
-        model_input_wide = model_input_wide.merge(cum_growth[['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Date', value]],on=['Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Scenario', 'Date'], how='left', suffixes=('', '_y'))
-
-        # Replace original value column with adjusted growth
-        model_input_wide[value] = model_input_wide[value+'_y'].fillna(model_input_wide[value])
-        model_input_wide = model_input_wide.drop(columns=[value+'_y'])
-        
-    return model_input_wide
 
 # aggregate_data_for_model()
 #%%
@@ -206,7 +155,7 @@ def apply_growth_up_to_outlook_BASE_YEAR(model_input_wide,growth_columns_dict):
 #     road_model_input = activity_energy_road_stocks.loc[(activity_energy_road_stocks['Medium'] == 'road')].drop(['Medium'], axis=1)
 
 #     #remove data that isnt in the base year
-#     road_model_input = road_model_input.loc[(road_model_input['Year'] == config.BASE_YEAR)]
+#     road_model_input = road_model_input.loc[(road_model_input['Year'] == config.DEFAULT_BASE_YEAR)]
 
 #     #continue joining on data
 #     road_model_input = road_model_input.merge(Vehicle_sales_share, on=['Economy', 'Scenario', 'Drive', 'Transport Type', 'Vehicle Type', 'Year'], how='left')
@@ -220,7 +169,7 @@ def apply_growth_up_to_outlook_BASE_YEAR(model_input_wide,growth_columns_dict):
 #     non_road_model_input = activity_energy_road_stocks.loc[(activity_energy_road_stocks['Medium'] != 'road')]
 
 #     #remove data that isnt in the base year
-#     non_road_model_input = non_road_model_input.loc[(non_road_model_input['Year'] == config.BASE_YEAR)]
+#     non_road_model_input = non_road_model_input.loc[(non_road_model_input['Year'] == config.DEFAULT_BASE_YEAR)]
 
 # 
 # run= False

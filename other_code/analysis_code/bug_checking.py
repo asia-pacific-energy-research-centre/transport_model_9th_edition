@@ -137,10 +137,10 @@ for key, grp in change_dataframe_aggregation_nz_lv.groupby(['Drive']):
 # change_dataframe_aggregation_growth3 = change_dataframe_aggregation_growth2.set_index(['Economy','Transport Type', 'Year']).pct_change()
 
 # #now set all vlaues during the base year (plus one cause this dtf ddoesnt have 2017 data) to 0 as the growth rate is not defined for the base year
-# if config.BASE_YEAR == 2017:
-#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == config.BASE_YEAR+1, 'Activity'] = 0
+# if config.DEFAULT_BASE_YEAR == 2017:
+#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == config.DEFAULT_BASE_YEAR+1, 'Activity'] = 0
 # else:
-#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == config.BASE_YEAR, 'Activity'] = 0
+#     change_dataframe_aggregation_growth3.loc[change_dataframe_aggregation_growth3.index.get_level_values('Year') == config.DEFAULT_BASE_YEAR, 'Activity'] = 0
 
 # #replace NAN with 0
 # change_dataframe_aggregation_growth3 = change_dataframe_aggregation_growth3.fillna(0)
@@ -170,10 +170,10 @@ for key, grp in change_dataframe_aggregation_nz_lv.groupby(['Drive']):
 # change_dataframe_aggregation_growth4['Percentage_change'] = change_dataframe_aggregation_growth4['Activity'].pct_change()
 
 # #set base year values to 0
-# if config.BASE_YEAR == 2017:
-#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year'] == config.BASE_YEAR+1, 'Percentage_change'] = 0
+# if config.DEFAULT_BASE_YEAR == 2017:
+#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year'] == config.DEFAULT_BASE_YEAR+1, 'Percentage_change'] = 0
 # else:
-#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year']== config.BASE_YEAR, 'Percentage_change'] = 0
+#     change_dataframe_aggregation_growth4.loc[change_dataframe_aggregation_growth4['Year']== config.DEFAULT_BASE_YEAR, 'Percentage_change'] = 0
 
 # #drop activity
 # change_dataframe_aggregation_growth4 = change_dataframe_aggregation_growth4.drop(['Activity'], axis=1)

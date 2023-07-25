@@ -6,6 +6,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LassoCV
@@ -97,7 +112,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, BASE_YEAR_ac
     
     for model in models:
         for edition in ['8th', '9th']:
-            for year in range(config.BASE_YEAR, config.END_YEAR+1):
+            for year in range(config.DEFAULT_BASE_YEAR, config.END_YEAR+1):
                 if (year>2050) and (edition == '8th'):
                     break
                 for transport_type in ['freight', 'passenger']:
@@ -108,7 +123,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, BASE_YEAR_ac
                     for economy in df['Economy'].unique():#doing this makes it a bit easier to visualise. but it takes longer.
                         df_economy = df[df['Economy'] == economy]
                         df = df[df['Economy'] != economy]
-                        if year == config.BASE_YEAR:
+                        if year == config.DEFAULT_BASE_YEAR:
                             # prepare the base year data by creatinng a new col for the activity:
                             df_economy.loc[df_economy['Date'] == year, activity_column] = df_economy.loc[df_economy['Date'] == year, f'{transport_type}_activity_{edition}']
                             
@@ -122,7 +137,7 @@ def prepare_comparison_inputs(growth_coefficients_df, energy_macro, BASE_YEAR_ac
     #now index everything to the base year so we can see how it all grows:
     def calc_index(df, col):
         df = df.sort_values(by='Date')
-        BASE_YEAR_value = df[df.Date == config.BASE_YEAR][col].iloc[0]
+        BASE_YEAR_value = df[df.Date == config.DEFAULT_BASE_YEAR][col].iloc[0]
         df[col+'_index'] = df[col]/BASE_YEAR_value
         return df    
     
@@ -524,8 +539,8 @@ def import_activity_8th(activity_8th):
 def import_BASE_YEAR_activity_9th(BASE_YEAR_activity):
     #filter for Activity only
     BASE_YEAR_activity = BASE_YEAR_activity[BASE_YEAR_activity['Measure']=='Activity']
-    #filter for config.BASE_YEAR only
-    BASE_YEAR_activity = BASE_YEAR_activity[BASE_YEAR_activity['Date']==config.BASE_YEAR]
+    #filter for config.DEFAULT_BASE_YEAR only
+    BASE_YEAR_activity = BASE_YEAR_activity[BASE_YEAR_activity['Date']==config.DEFAULT_BASE_YEAR]
     #divide activity by 1billion to get on same scale as 8th edition
     BASE_YEAR_activity['Value'] = BASE_YEAR_activity['Value']/1000000000
     

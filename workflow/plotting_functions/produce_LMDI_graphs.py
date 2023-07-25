@@ -10,6 +10,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 sys.path.append("../PyLMDI")
 #PyLMDI functions:
@@ -21,16 +36,19 @@ import LMDI_functions
 
 #%%
 
-def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=False):
+def produce_lots_of_LMDI_charts(ECONOMY_ID=None, USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=False):
     #take in energy and activity data 
-    all_data = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
+    if ECONOMY_ID == None:
+        all_data = pd.read_csv('output_data/model_output/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name))
+    else:
+        all_data = pd.read_csv('output_data/model_output/{}_{}'.format(ECONOMY_ID,config.model_output_file_name))
 
     #here write the charts you want to produce.. can use this to make the function run quicker by only producing some of the charts
     if USE_LIST_OF_CHARTS_TO_PRODUCE:
         charts_to_produce = []
         for scenario in all_data.Scenario.unique():
             for transport_type in all_data['Transport Type'].unique():
-                for economy in config.ECONOMIES_TO_PLOT_FOR:
+                for economy in all_data.Economy.unique():
                     charts_to_produce.append(f'{economy}_{scenario}_{transport_type}_road_2_Energy use_Hierarchical')
                     charts_to_produce.append(f'{economy}_{scenario}_{transport_type}__2_Energy use_Hierarchical')
                     # 19_THA_TGT_passenger_road_1_Energy use_additive_waterfall
@@ -131,8 +149,8 @@ def produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = False, PLOTTING 
     #create loop to run through the combinations
     i=0
     for combination_dict in combination_dict_list:
-        if combination_dict['scenario'] == 'Target':
-            breakpoint()
+        # if combination_dict['scenario'] == 'Target':
+        #     breakpoint()
                 
         if USE_LIST_OF_CHARTS_TO_PRODUCE and combination_dict['extra_identifier'] not in charts_to_produce and USE_LIST_FOR_DATASETS_TO_PRODUCE:
             continue

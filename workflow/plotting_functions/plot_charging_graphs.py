@@ -6,16 +6,33 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
+
+
 sys.path.append("./workflow/calculation_functions")
 import estimate_charging_requirements
 #%%    
-def plot_required_chargers(): 
+def plot_required_chargers(ECONOMY_ID): 
     # total_kwh_of_battery_capacity.to_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv', index=False) 
     #grab colors dict:
-    df, parameters, colors_dict, INCORPORATE_UTILISATION_RATE = estimate_charging_requirements.prepare_inputs_for_estimating_charging_requirements()
+    df, parameters, colors_dict, INCORPORATE_UTILISATION_RATE = estimate_charging_requirements.prepare_inputs_for_estimating_charging_requirements(ECONOMY_ID)
     
-    total_kwh_of_battery_capacity = pd.read_csv(r'output_data\for_other_modellers\estimated_number_of_chargers.csv')
+    total_kwh_of_battery_capacity = pd.read_csv(f'output_data/for_other_modellers/{ECONOMY_ID}_estimated_number_of_chargers.csv')
 
     #use plotly to plot the number of chargers required for each economy, date and scenario and also by vehicle type.
     #total_kwh_of_battery_capacity'Economy','Date','Scenario','Vehicle Type','Stocks', 'sum_of_stocks','kwh_of_battery_capacity','sum_of_kwh_of_battery_capacity','sum_of_expected_number_of_chargers','expected_kw_of_chargers','sum_of_expected_kw_of_chargers','expected_number_of_chargers','sum_of_fast_kw_of_chargers_needed',,'sum_of_slow_kw_of_chargers_needed','sum_of_fast_chargers_needed','sum_of_slow_chargers_needed','fast_charger_utilisation_rate','average_kwh_of_battery_capacity_by_vehicle_type','average_kw_per_charger','average_kw_per_non_fast_charger','average_kw_per_fast_charger','slow_kw_of_chargers_needed','fast_kw_of_chargers_needed','slow_chargers_needed','fast_chargers_needed'
@@ -45,7 +62,7 @@ def plot_required_chargers():
             title = f'Number of chargers and stocks for {economy} in {scenario}'
             # Create subplot with 1 row and 1 column, and specify secondary y-axis
             fig = make_subplots(rows=1, cols=1, specs=[[{'secondary_y': True}]])
-            breakpoint()
+            
             # Add a bar trace for the number of chargers
             sum_of_expected_number_of_chargers = df_filtered[['Date','sum_of_expected_number_of_chargers']].drop_duplicates()
             fig.add_trace(
@@ -258,7 +275,7 @@ def plot_required_chargers():
         
 
   
-def plot_required_evs(ev_stocks_and_chargers,colors_dict):
+def plot_required_evs(ev_stocks_and_chargers,colors_dict,economy, date, scenario):
     #[['Economy','Date','Scenario','Vehicle Type',"Transport Type",'expected_kwh_of_battery_capacity', 'sum_of_expected_kwh_of_battery_capacity','expected_stocks', 'total_expected_stocks', 'portion_of_stocks_kwh_of_battery_capacity','number_of_chargers','number_of_fast_chargers','number_of_non_fast_chargers','kw_of_charger_capacity','kw_of_fast_charger_capacity','kw_of_non_fast_charger_capacity']]
     #use plotly to plot the number of chargers required for each economy, date and scenario and also by vehicle type.
     
@@ -269,7 +286,6 @@ def plot_required_evs(ev_stocks_and_chargers,colors_dict):
     kw_of_charger_capacity = ev_stocks_and_chargers['kw_of_charger_capacity'].iloc[0]
     
     title = 'Number of EVs for {} public chargers {}kw in {}, {}, {}'.format(number_of_chargers, round(kw_of_charger_capacity,0),economy, date, scenario)
-    breakpoint()
     
     #set prder pf vehicle types using keys in colors_dict:
     vehicle_types_order = list(colors_dict.keys())

@@ -6,6 +6,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 
@@ -41,7 +56,6 @@ def process_data(df, is_fuel=False):
     return pd.concat([df[df['Medium'] == 'road'], grouped_df])
 
 def clean_non_road_drive_types(model_output_all_with_fuels, model_output_detailed,model_output_non_detailed):
-    # breakpoint()
     # Then you can use the function like this:
     new_model_output_all_with_fuels = process_data(model_output_all_with_fuels, is_fuel=True)
     new_model_output_detailed = process_data(model_output_detailed, is_fuel=False)
@@ -51,10 +65,10 @@ def clean_non_road_drive_types(model_output_all_with_fuels, model_output_detaile
     new_model_output_detailed['Stocks_per_thousand_capita'] = (new_model_output_detailed['Stocks']/new_model_output_detailed['Population'])* 1000000
     return new_model_output_all_with_fuels,new_model_output_detailed,new_model_output_non_detailed 
 
-def clean_model_output():
+def clean_model_output(ECONOMY_ID):
     #take in model ouput and clean ready to use in analysis
-    model_output_all_with_fuels = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(config.model_output_file_name))
-    model_output_all = pd.read_csv('intermediate_data/model_output_concatenated/{}'.format(config.model_output_file_name))
+    model_output_all_with_fuels = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
+    model_output_all = pd.read_csv('intermediate_data/model_output_concatenated/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
     
     #if frequncy col is in either datafrasme, drop it
     if 'Frequency' in model_output_all.columns:
@@ -83,25 +97,44 @@ def clean_model_output():
     
     
     #save data without the new drive cols for non road
-    model_output_detailed.to_csv('output_data/model_output_detailed/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name), index=False)
+    model_output_detailed.to_csv('output_data/model_output_detailed/{}_NON_ROAD_DETAILED_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
 
-    model_output_non_detailed.to_csv('output_data/model_output/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name), index=False)
+    model_output_non_detailed.to_csv('output_data/model_output/{}_NON_ROAD_DETAILED_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
 
-    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name), index=False)
+    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/{}_NON_ROAD_DETAILED_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
    
-    breakpoint()
     model_output_all_with_fuels,model_output_detailed,model_output_non_detailed = clean_non_road_drive_types(model_output_all_with_fuels,model_output_detailed,model_output_non_detailed)
    
    
     #save data with the new drive cols for non road:
     
-    model_output_detailed.to_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name), index=False)
+    model_output_detailed.to_csv('output_data/model_output_detailed/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
 
-    model_output_non_detailed.to_csv('output_data/model_output/{}'.format(config.model_output_file_name), index=False)
+    model_output_non_detailed.to_csv('output_data/model_output/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
 
-    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name), index=False)
+    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
    
-   
+
+
+def concatenate_output_data():
+    #concatenate all the other output data together
+    #concatenate all the other output data together
+    model_output_detailed = pd.DataFrame()
+    model_output_non_detailed = pd.DataFrame()
+    model_output_all_with_fuels = pd.DataFrame()
+    for e in config.ECONOMY_LIST:
+        model_output_detailed_economy = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(e, config.model_output_file_name))
+        model_output_non_detailed_economy = pd.read_csv('output_data/model_output/{}_{}'.format(e, config.model_output_file_name))
+        model_output_all_with_fuels_economy = pd.read_csv('output_data/model_output_with_fuels/{}_{}'.format(e, config.model_output_file_name))
+        
+        model_output_detailed = pd.concat([model_output_detailed, model_output_detailed_economy])
+        model_output_non_detailed = pd.concat([model_output_non_detailed, model_output_non_detailed_economy])
+        model_output_all_with_fuels = pd.concat([model_output_all_with_fuels, model_output_all_with_fuels_economy])
+    
+    #save the final df:
+    model_output_detailed.to_csv('output_data/model_output_detailed/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
+    model_output_non_detailed.to_csv('output_data/model_output/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
+    model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
 #%%
 # clean_model_output()
 #%%

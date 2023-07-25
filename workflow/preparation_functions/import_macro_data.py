@@ -6,6 +6,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 #%%
 def import_macro_data():
@@ -116,7 +131,7 @@ def import_macro_data():
         new_macro = pd.concat([new_macro, s_macro])
     macro1 = new_macro.copy()
     
-    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
+    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
     macro1 = pd.merge(macro1, config.measure_to_unit_concordance[['Unit', 'Measure']], on=['Measure'], how='left')
 
     
@@ -257,7 +272,7 @@ def import_macro_data():
 # macro2['Gdp_per_capita_growth'] = macro2.groupby('region_growth_analysis')['Gdp_per_capita'].pct_change()
 
 # #the base year to 1 as the growth rate is not defined for the base year (in the code its actually using the row above for 2050 currently)
-# macro2.loc[macro2['date'] == config.BASE_YEAR, ['Gdp_growth', 'Population_growth', 'Gdp_per_capita_growth']] = 0
+# macro2.loc[macro2['date'] == config.DEFAULT_BASE_YEAR, ['Gdp_growth', 'Population_growth', 'Gdp_per_capita_growth']] = 0
 
 # # Calculate cumulative product of growth rates+1
 # #add 1 to the growth rates
@@ -271,7 +286,7 @@ def import_macro_data():
 
 # #calcuale activity using the growth rates
 # #grab the 8th activity in first year (and keep region_growth_analysis)
-# first_year_activity = macro2.loc[macro2['date'] == config.BASE_YEAR, ['region_growth_analysis', '8th_activity']]
+# first_year_activity = macro2.loc[macro2['date'] == config.DEFAULT_BASE_YEAR, ['region_growth_analysis', '8th_activity']]
 # #call the col 8th_activity_first_year
 # first_year_activity = first_year_activity.rename(columns={'8th_activity': '8th_activity_first_year'})
 # #now join it on

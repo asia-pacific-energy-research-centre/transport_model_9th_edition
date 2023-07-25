@@ -7,6 +7,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 #######################################################################
@@ -192,7 +207,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     change_dataframe['Efficiency_numerator'] = (change_dataframe['New_stocks_needed'] * change_dataframe['New_vehicle_efficiency'] + change_dataframe['Stocks_in_use_from_last_period'] * change_dataframe['Efficiency'])
 
     change_dataframe['Original_efficiency'] = change_dataframe['Efficiency']
-    breakpoint() #can new stocks needed ever be na?
+    
     change_dataframe['Efficiency'] = np.where(change_dataframe['New_stocks_needed'] <= 0, change_dataframe['Original_efficiency'], change_dataframe['Efficiency_numerator'] / change_dataframe['Stocks'])
 
     #if the denominator and numerator are 0 (which will occur if we dont have any stocks in this year [and therefore the last]), then efficiency ends up as nan, so we will set this to the efficiency value for new vehicles even though it doesnt really matter what it is set to, it just helps with aggregates.
@@ -210,7 +225,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #finalisation processes
 
     #######################################################################
-    breakpoint() #can new stocks needed ever be na?
+    
     #calcualte stocks per capita as its a useful metric
     change_dataframe['Thousand_stocks_per_capita'] = change_dataframe['Stocks']/change_dataframe['Population']
     change_dataframe['Stocks_per_thousand_capita'] = change_dataframe['Thousand_stocks_per_capita'] * 1000000
@@ -218,7 +233,7 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #Now start cleaning up the changes dataframe to create the dataframe for the new year.
     addition_to_main_dataframe = change_dataframe.copy()
     
-    addition_to_main_dataframe = addition_to_main_dataframe[['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population', 'Average_age', 'Turnover_rate_midpoint']].copy()
+    addition_to_main_dataframe = addition_to_main_dataframe[config.ROAD_MODEL_OUTPUT_COLS].copy()
     # 
     #add new year to the main dataframe.
     main_dataframe = pd.concat([main_dataframe, addition_to_main_dataframe])
@@ -226,14 +241,14 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #if you want to analyse what is hapening in th model then set this to true and the model will output a dataframe with all the variables that are being calculated.
     if ANALYSE_CHANGE_DATAFRAME:
-        if year == config.BASE_YEAR+1:
+        if year == config.DEFAULT_BASE_YEAR+1:
             change_dataframe_aggregation = change_dataframe.copy()
         else:
             change_dataframe_aggregation = pd.concat([change_dataframe, change_dataframe_aggregation])
 
     #if we have a low ram computer then we will save the dataframe to a csv file at 10 year intervals. this is to save memory. during the proecss we will save a list of the file names that we have saved to, from which to stitch the new dataframe togehter from
     if low_ram_computer == True:
-        year_counter = year - config.BASE_YEAR
+        year_counter = year - config.DEFAULT_BASE_YEAR
         if year_counter % 10 == 0:
             print('The year is at the end of a ten year block, in year {}, saving interemediate results to csv.'.format(year))
             low_ram_file_name = 'intermediate_data/main_dataframe_10_year_blocks/main_dataframe_years_{}_to_{}.csv'.format(previous_10_year_block, year)
@@ -256,11 +271,10 @@ def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
         
     #separate user inputs into different dataframes
     gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna().copy()
-    
     #replace values for BASE YEAR with values from the first calculated year of the model
     BASE_YEAR_gompertz_parameters = gompertz_parameters[gompertz_parameters['Date']==gompertz_parameters['Date'].min()+1].copy()
     BASE_YEAR_gompertz_parameters['Date'] = gompertz_parameters['Date'].min()
-    gompertz_parameters = pd.concat([gompertz_parameters[gompertz_parameters['Date']!=gompertz_parameters['Date'].min(), :], BASE_YEAR_gompertz_parameters], ignore_index=True)
+    gompertz_parameters = pd.concat([gompertz_parameters[gompertz_parameters['Date']!=gompertz_parameters['Date'].min()], BASE_YEAR_gompertz_parameters], ignore_index=True)
     
     Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates().copy()
     Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates().copy()
@@ -293,9 +307,9 @@ def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
     return main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block, user_inputs_df_dict,low_ram_computer
 
 
-def join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation):
+def join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation):
     #this will be the name of the output file
-    new_output_file = 'intermediate_data/road_model/{}'.format(config.model_output_file_name)
+    new_output_file = 'intermediate_data/road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
 
     #now, we will save the main dataframe to a csv file. if the computer is low ram, we will create the file from the already saved 10 year block interval files
     if low_ram_computer == True:

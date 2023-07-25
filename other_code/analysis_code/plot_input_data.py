@@ -280,7 +280,7 @@ fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=200
 #we will plot it using a boxplot so we can plot all economys in one plot, then separate plots for each vehicle_type/transport type 
 model_output_detailed_eff_df = model_output_detailed[['Year', 'Economy', 'Vehicle Type', 'Transport Type', 'Drive', 'Efficiency', 'New_vehicle_efficiency']]
 
-model_output_detailed_eff_df = model_output_detailed_eff_df[model_output_detailed_eff_df['Year']==config.BASE_YEAR]
+model_output_detailed_eff_df = model_output_detailed_eff_df[model_output_detailed_eff_df['Year']==config.DEFAULT_BASE_YEAR]
 
 #melt the efficiency and new vehicle efficiency columns to one measur col
 model_output_detailed_eff_df = pd.melt(model_output_detailed_eff_df, id_vars=['Year', 'Economy', 'Vehicle Type', 'Transport Type', 'Drive'], value_vars=['Efficiency', 'New_vehicle_efficiency'], var_name='Measure', value_name='Efficiency')

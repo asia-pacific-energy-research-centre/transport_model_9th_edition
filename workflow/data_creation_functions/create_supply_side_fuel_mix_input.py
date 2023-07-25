@@ -10,10 +10,28 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import user_input_creation_functions
 sys.path.append("./workflow/plotting_functions")
 import plot_user_input_data
+
+sys.path.append("./workflow/utility_functions")
+import archiving_scripts
 #%%
 #create fake user input for demand side fuel mixes using model concordances
 def create_supply_side_fuel_mixing_input():
@@ -106,7 +124,7 @@ def create_supply_side_fuel_mixing_input():
     supply_side_fuel_mixing = new_supply_side_fuel_mixing.copy()
 
     #archive previous results:
-    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(config.FILE_DATE_ID)
+    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID()
     
     #save the variables we used to calculate the data by savinbg the 'input_data/vehicle_sales_share_inputs.xlsx' file
     shutil.copy('input_data/fuel_mixing_assumptions.xlsx', archiving_folder + '/fuel_mixing_assumptions.xlsx')

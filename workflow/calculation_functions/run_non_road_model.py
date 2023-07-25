@@ -12,6 +12,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 def calculate_turnover_rate(df, k):
@@ -19,12 +34,12 @@ def calculate_turnover_rate(df, k):
     df['Turnover_rate'].fillna(0, inplace=True)
     return df
 
-def load_non_road_model_data():
+def load_non_road_model_data(ECONOMY_ID):
     
     #load all data except activity data (which is calcualteed separately to other calcualted inputs)
-    growth_forecasts = pd.read_pickle('./intermediate_data/road_model/final_road_growth_forecasts.pkl')
+    growth_forecasts = pd.read_pickle(f'./intermediate_data/road_model/{ECONOMY_ID}_final_road_growth_forecasts.pkl')
     #load all other data
-    non_road_model_input = pd.read_csv('intermediate_data/model_inputs/non_road_model_input_wide.csv')
+    non_road_model_input = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{ECONOMY_ID}_non_road_model_input_wide.csv')
 
     #Merge growth forecasts with non_road_model_input:
     non_road_model_input.drop(columns=['Activity_growth'], inplace=True)
@@ -38,10 +53,10 @@ def load_non_road_model_data():
     return non_road_model_input, turnover_rate_steepness, std_deviation_share
     
 
-def run_non_road_model():
-    output_file_name = 'intermediate_data/non_road_model/{}'.format(config.model_output_file_name)
+def run_non_road_model(ECONOMY_ID):
+    output_file_name = 'intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
     
-    non_road_model_input, turnover_rate_steepness, std_deviation_share = load_non_road_model_data()
+    non_road_model_input, turnover_rate_steepness, std_deviation_share = load_non_road_model_data(ECONOMY_ID)
     
     non_road_model_input.sort_values(by=['Economy', 'Scenario','Transport Type','Date', 'Medium', 'Vehicle Type', 'Drive'])
 
@@ -64,7 +79,7 @@ def run_non_road_model():
             
             new_activity = previous_year['Activity'] * current_year['Activity_growth']
             total_new_stocks_for_activity = ((new_activity - previous_year['Activity']) / current_year['Activity_per_Stock']).sum()
-            breakpoint()#it seems turnover rate sint changing
+            
             current_year = calculate_turnover_rate(current_year, turnover_rate_steepness)
             stocks_to_replace = previous_year['Stocks'] * current_year['Turnover_rate']
 
@@ -103,11 +118,12 @@ def run_non_road_model():
             #set previous_year to current_year for next iteration
             previous_year = current_year.copy()
 
+    #double check that the cols are what we expect:
+    diff_cols = list(set(output_df.columns.to_list()) - set(config.NON_ROAD_MODEL_OUTPUT_COLS))
+    if len(diff_cols) > 0:
+        raise ValueError("The columns in the output_df are not what we expect. Please check the config file or any changes made to run_non_road_model.py")
     output_df.to_csv(output_file_name, index=False)
     
 #%%
-# config.OUTLOOK_BASE_YEAR = 2020
-# PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=True
-# output_file_name = 'intermediate_data/non_road_model/{}'.format(config.model_output_file_name)
-# run_non_road_model(config.OUTLOOK_BASE_YEAR,config.END_YEAR,config.BASE_YEAR, output_file_name, ADVANCE_BASE_YEAR=False, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=False)
+# run_non_road_modelcurrent_year('19_THA')
 #%%

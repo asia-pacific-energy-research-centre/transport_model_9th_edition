@@ -9,6 +9,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 import time
@@ -42,7 +57,7 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
     #create units dict for each value col so that wehn we plot them we can label them correctly
     #import measure to unit concordance
-    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/config.measure_to_unit_concordance.csv')
+    config.measure_to_unit_concordance = pd.read_csv('config/concordances_and_config_data/measure_to_unit_concordance.csv')
     #convert to dict
     measure_to_unit_concordance_dict = config.measure_to_unit_concordance.set_index('Measure')['Magnitude_adjusted_unit'].to_dict()
 

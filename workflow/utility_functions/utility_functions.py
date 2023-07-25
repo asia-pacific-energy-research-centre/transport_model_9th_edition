@@ -9,6 +9,21 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
 def copy_required_output_files_to_one_folder(output_folder_path='output_data/for_other_modellers'):
@@ -16,12 +31,14 @@ def copy_required_output_files_to_one_folder(output_folder_path='output_data/for
     useful_file_paths = []
     output_file_paths = []
     #dashboard fiels:
-    for economy in config.ECONOMIES_TO_PLOT_FOR:
+    for economy in config.ECONOMY_LIST:
         for scenario in config.SCENARIOS_LIST:
-          useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard_detailed.html')
-          output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard_detailed.html')
-          useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{scenario}_assumptions_dashboard_presentation.html')
-          output_file_paths.append(output_folder_path + '/' + economy + f'/{scenario}_assumptions_dashboard_presentation.html')
+            useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_detailed.html')
+            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_detailed.html')
+            useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_presentation.html')
+            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_presentation.html')
+            useful_file_paths.append(f'output_data/for_other_modellers/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
+            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
     
     # chargers: output_data\for_other_modellers\estimated_number_of_chargers.csv
     #this one si already put there automatically so ignore it

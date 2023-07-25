@@ -3,14 +3,14 @@
 
 #name folder with the config.FILE_DATE_ID
 
-
-#set working directory as one folder back so that config works
+###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
-import shutil
 os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_model_9th_edition')
-from runpy import run_path
-exec(open("config/config.py").read())#usae this to load libraries and set variables. Feel free to edit that file as you need
+import sys
+sys.path.append("./config")
+import config
+###
 # pio.renderers.default = "browser"#allow plotting of graphs in the interactive 
 # notebook in vscode #or set to notebook
 
@@ -57,7 +57,7 @@ def archive_lots_of_files(archive_folder_name):
     recursively_save_file('./workflow', archive_folder_name, 'file_extension=.py', exclude_archive_folder=True)
     #save all csvs in \input_data\user_input_spreadsheets
     recursively_save_file('input_data/user_input_spreadsheets', archive_folder_name, file_extension='.csv', exclude_archive_folder=True)
-    recursively_save_file('intermediate_data/model_inputs', archive_folder_name, file_extension='.csv', exclude_archive_folder=True)
+    recursively_save_file(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}', archive_folder_name, file_extension='.csv', exclude_archive_folder=True)
     recursively_save_file('output_data/for_other_modellers', archive_folder_name, exclude_archive_folder=True)
     
     #and save individual files
@@ -91,6 +91,7 @@ def recursively_save_file(source_dir, dest_dir, file_extension='*', exclude_arch
     print('Done.')
 
 #zip up the folder and save to C drive:
+#for sdome reason this taskse ages.
 def zip_up_folder(archive_folder_name):
     # if os.path.exists('C:/Users/finbar.maunsell/Documents'):
         

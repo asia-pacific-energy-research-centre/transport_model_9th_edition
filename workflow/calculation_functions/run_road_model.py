@@ -9,15 +9,30 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import road_model_functions
 import logistic_fitting_functions
 #%%
-def run_road_model(USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
+def run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     
     #laod all data
-    road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
-    growth_forecasts = pd.read_csv('intermediate_data/model_inputs/growth_forecasts.csv')
+    road_model_input = pd.read_csv('intermediate_data/model_inputs/{}/{}_road_model_input_wide.csv'.format(config.FILE_DATE_ID, ECONOMY_ID))
+    growth_forecasts = pd.read_csv('intermediate_data/model_inputs/{}/{}_growth_forecasts_wide.csv'.format(config.FILE_DATE_ID, ECONOMY_ID))
         
     #grab from the paramters.yml file:
     vehicle_gompertz_factors = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['vehicle_gompertz_factors']
@@ -36,7 +51,7 @@ def run_road_model(USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     for year in range(road_model_input.Date.min()+1, road_model_input.Date.max()+1):
         main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block,turnover_rate_parameters_dict)
 
-    main_dataframe = road_model_functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
+    main_dataframe = road_model_functions.join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
 
     #######################################################################
     #CLEAN DATA FOR NEXT RUN
@@ -47,7 +62,8 @@ def run_road_model(USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     activity_growth_estimates, parameters_estimates = logistic_fitting_functions.logistic_fitting_function_handler(main_dataframe,show_plots=False,matplotlib_bool=False, plotly_bool=True, ONLY_PASSENGER_VEHICLES=USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES,vehicle_gompertz_factors = vehicle_gompertz_factors)
     
     growth_forecasts = incorporate_logisitc_fitting_functions_new_growth_rates(growth_forecasts, activity_growth_estimates)
-
+    growth_forecasts.to_pickle(f'./intermediate_data/road_model/{ECONOMY_ID}_final_road_growth_forecasts.pkl')#save them sincewe will use them for non road
+    
     #######################################################################
     main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
     #######################################################################
@@ -64,7 +80,7 @@ def run_road_model(USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     #######################################################################
 
     #save as csv for next step
-    main_dataframe = road_model_functions.join_and_save_road_model_outputs(main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
+    main_dataframe = road_model_functions.join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
 
 def incorporate_logisitc_fitting_functions_new_growth_rates(growth_forecasts, activity_growth_estimates):
     

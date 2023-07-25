@@ -9,12 +9,26 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config/utilities")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
 ###
 
 #%%
-def create_output_for_outlook_data_system():
+def create_output_for_outlook_data_system(ECONOMY_ID):
 
-    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name))
+    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}_NON_ROAD_DETAILED_{}'.format(ECONOMY_ID, config.model_output_file_name))
 
     #drop dates after 2070
     model_output_all_with_fuels = model_output_all_with_fuels.loc[model_output_all_with_fuels['Date']<=2070].copy()
@@ -206,11 +220,11 @@ def create_output_for_outlook_data_system():
         medium = row[1]['Medium']
         
         new_medium = config.medium_mapping[medium]
-        new_transport_type = transport_type_mapping[transport_type]
+        new_transport_type = config.transport_type_mapping[transport_type]
         if transport_type == 'passenger':
-            new_vehicle_type = vehicle_type_mapping_passenger[vehicle_type]
+            new_vehicle_type = config.vehicle_type_mapping_passenger[vehicle_type]
         elif transport_type == 'freight':
-            new_vehicle_type = vehicle_type_mapping_freight[vehicle_type]
+            new_vehicle_type = config.vehicle_type_mapping_freight[vehicle_type]
         else:
             raise ValueError('transport type not found')
         
@@ -218,7 +232,7 @@ def create_output_for_outlook_data_system():
             new_drive_type = 'x'
         else:
             #find drives this could be by finding all keys where the value is the same as the drive
-            drive_keys = [key for key, value in drive_mapping_inversed.items() if value == drive]
+            drive_keys = [key for key, value in config.drive_mapping_inversed.items() if value == drive]
             if len(drive_keys) == 0:
                 raise ValueError('drive not found, the drive was {} for the row {}'.format(drive, row))
             else:
@@ -351,8 +365,8 @@ def create_output_for_outlook_data_system():
     # 21_modern_renewables
 
     #now map the df to these:
-    fuels_df['subfuels'] = fuels_df['Fuel'].map(subfuels_mapping)
-    fuels_df['fuels'] = fuels_df['Fuel'].map(fuels_mapping)
+    fuels_df['subfuels'] = fuels_df['Fuel'].map(config.subfuels_mapping)
+    fuels_df['fuels'] = fuels_df['Fuel'].map(config.fuels_mapping)
 
     #check for Fuels that are not mapped:
     if fuels_df.isna().sum().sum() > 0:
@@ -418,5 +432,20 @@ def create_output_for_outlook_data_system():
 
 
     #save this file to output_data\for_other_modellers
-    new_final_df.to_csv(f'output_data/for_other_modellers/transport_energy_use{config.FILE_DATE_ID}{config.ECONOMY_ID}.csv', index=False)
+    new_final_df.to_csv(f'output_data/for_other_modellers/{ECONOMY_ID}_{config.FILE_DATE_ID}_transport_energy_use.csv', index=False)
     
+    
+def concatenate_outlook_data_system_outputs():
+    #take in all outlook data system outputs for teh same FILE DATE ID and concatenate them into one file. if an economy is missing throw an error
+    #load in all files:
+    final_df = pd.DataFrame()
+    for file in os.listdir('output_data/for_other_modellers'):
+        if file.endswith('_{}_transport_energy_use.csv'.format(config.FILE_DATE_ID)):
+            df = pd.read_csv(f'output_data/for_other_modellers/{file}')
+            final_df = pd.concat([final_df, df])
+    #check that all economies are there:
+    if len(final_df['economy'].unique()) != len(config.ECONOMY_LIST):
+        missing_economies = [e for e in config.ECONOMY_LIST if e not in final_df['economy'].unique()]
+        raise ValueError(f'The following economies are missing from the outlook data system outputs: {missing_economies}')
+    #save the final df:
+    final_df.to_csv(f'output_data/for_other_modellers/{config.FILE_DATE_ID}_transport_energy_use.csv', index=False)

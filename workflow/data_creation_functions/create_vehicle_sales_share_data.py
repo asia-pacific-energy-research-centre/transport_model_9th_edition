@@ -9,10 +9,28 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 import user_input_creation_functions
 sys.path.append("./workflow/plotting_functions")
 import plot_user_input_data
+
+sys.path.append("./workflow/utility_functions")
+import archiving_scripts
 
 X_ORDER = 'linear'#set me to linear or the order for the spline
 #%%
@@ -54,7 +72,7 @@ def estimate_transport_data_system_sales_share(new_transport_data_system_df, YEA
     #drop Total Stocks column and Value column
     sales = sales.drop(columns=['Total Stocks', 'Value'])
 
-    #now replicate the sales shares for each scenario and for each year between the config.BASE_YEAR and the config.END_YEAR of the scenario.
+    #now replicate the sales shares for each scenario and for each year between the config.DEFAULT_BASE_YEAR and the config.END_YEAR of the scenario.
 
     #filter for a unique scenario in the sales df
     sales = sales[sales.Scenario==sales.Scenario.unique()[0]]
@@ -64,15 +82,15 @@ def estimate_transport_data_system_sales_share(new_transport_data_system_df, YEA
         sales_dummy['Scenario'] = scenario
         new_sales = pd.concat([new_sales, sales_dummy])
     
-    #now we want to replicate the df (BUT NOT THE SALES SHARE) for each year between the config.BASE_YEAR and the config.END_YEAR of the scenario
+    #now we want to replicate the df (BUT NOT THE SALES SHARE) for each year between the config.DEFAULT_BASE_YEAR and the config.END_YEAR of the scenario
     sales_dummy = new_sales.copy()
     new_sales_years = pd.DataFrame()
-    for year in range(config.BASE_YEAR, config.END_YEAR+1):
+    for year in range(config.DEFAULT_BASE_YEAR, config.END_YEAR+1):
         sales_dummy['Date'] = year
         new_sales_years = pd.concat([new_sales_years, sales_dummy])
     
-    #set sales share for all values after config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR to np.nan (add three so that we still have a few values for the interpoaltion to go off)
-    new_sales_years.loc[new_sales_years['Date']>config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Sales Share'] = np.nan
+    #set sales share for all values after config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR to np.nan (add three so that we still have a few values for the interpoaltion to go off)
+    new_sales_years.loc[new_sales_years['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Sales Share'] = np.nan
 
     #set unit to %
     new_sales_years['Unit'] = '%'
@@ -90,8 +108,8 @@ def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_
     #model_concordances_user_input_and_growth_rates (which contaions the set of drives, vehicle types and transport types we need to set the drive shares for)
     #passenger_drive_shares and freight_drive_shares (which only contain the manually inputted data > we will sue this to extract the data we want from new_sales_shares_pre_interp)
     #so first we need to split new_sales_shares_pre_interp into the base year data and the manually inputted data
-    sales_share_BASE_YEAR = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==config.BASE_YEAR]
-    sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
+    sales_share_BASE_YEAR = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==config.DEFAULT_BASE_YEAR]
+    sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
     #extract unique drives, vehicle types and transport types from model_concordances_user_input_and_growth_rates
     # combinations = model_concordances_user_input_and_growth_rates[['Medium','Transport Type','road', 'Vehicle Type', 'Drive']].drop_duplicates()
     #find unique combiantions in passenger_drive_shares and freight_drive_shares
@@ -213,9 +231,9 @@ def create_vehicle_sales_share_input():
     model_concordances_user_input_and_growth_rates.drop_duplicates(inplace=True)
     new_INDEX_COLS = [col for col in config.INDEX_COLS if col in model_concordances_user_input_and_growth_rates.columns]
 
-    #add BASE YEAR to the concordances which canb be a copy of the config.BASE_YEAR +1
-    model_concordances_user_input_and_growth_rates_base = model_concordances_user_input_and_growth_rates.loc[model_concordances_user_input_and_growth_rates['Date']==config.BASE_YEAR+1].copy()
-    model_concordances_user_input_and_growth_rates_base['Date'] = config.BASE_YEAR
+    #add BASE YEAR to the concordances which canb be a copy of the config.DEFAULT_BASE_YEAR +1
+    model_concordances_user_input_and_growth_rates_base = model_concordances_user_input_and_growth_rates.loc[model_concordances_user_input_and_growth_rates['Date']==config.DEFAULT_BASE_YEAR+1].copy()
+    model_concordances_user_input_and_growth_rates_base['Date'] = config.DEFAULT_BASE_YEAR
     model_concordances_user_input_and_growth_rates = pd.concat([model_concordances_user_input_and_growth_rates,model_concordances_user_input_and_growth_rates_base])
 
     #set index for both dfs
@@ -283,12 +301,12 @@ def create_vehicle_sales_share_input():
 
     new_sales_shares_sum_0 = new_sales_shares_sum_clean.copy()
 
-    new_sales_shares_sum_0.loc[new_sales_shares_sum_0['Date']>config.BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Drive_share'] = np.nan
+    new_sales_shares_sum_0.loc[new_sales_shares_sum_0['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Drive_share'] = np.nan
 
     #sort
     new_sales_shares_sum_0 = new_sales_shares_sum_0.sort_values(by=['Economy', 'Scenario', 'Date', 'Vehicle Type','Medium','road', 'Transport Type', 'Drive'])
 
-    #were getting no values fro Drive_share for <=config.BASE_YEAR
+    #were getting no values fro Drive_share for <=config.DEFAULT_BASE_YEAR
     ########################################################################################################################################################
     #BEGIN INCORPORATING USER INPUTTED SALES SHARES
     ########################################################################################################################################################
@@ -391,10 +409,10 @@ def create_vehicle_sales_share_input():
 
         common_indices = new_sales_shares_test.index.intersection(new_sales_shares_pre_interp.index)
 
-        new_sales_shares_pre_interp.loc[(new_sales_shares_pre_interp.index.isin(common_indices))&(new_sales_shares_pre_interp['Date']<=config.BASE_YEAR + YEARS_TO_KEEP_AFTER_BASE_YEAR), 'Drive_share'] = 0
+        new_sales_shares_pre_interp.loc[(new_sales_shares_pre_interp.index.isin(common_indices))&(new_sales_shares_pre_interp['Date']<=config.DEFAULT_BASE_YEAR + YEARS_TO_KEEP_AFTER_BASE_YEAR), 'Drive_share'] = 0
 
         
-        # new_sales_shares_pre_interp.loc[(new_sales_shares_test.index)&(new_sales_shares_pre_interp['Date']<=config.config.BASE_YEAR + YEARS_TO_KEEP_AFTER_config.config.BASE_YEAR), 'Drive_share'] = 0
+        # new_sales_shares_pre_interp.loc[(new_sales_shares_test.index)&(new_sales_shares_pre_interp['Date']<=config.config.DEFAULT_BASE_YEAR + YEARS_TO_KEEP_AFTER_config.config.DEFAULT_BASE_YEAR), 'Drive_share'] = 0
         #reset index
         new_sales_shares_pre_interp = new_sales_shares_pre_interp.reset_index()
     
@@ -504,7 +522,7 @@ def create_vehicle_sales_share_input():
     ###########################################################################
     
     #archive previous results:
-    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID(config.FILE_DATE_ID)
+    archiving_folder = archiving_scripts.create_archiving_folder_for_FILE_DATE_ID()
     #save previous sales shares
     shutil.copy('input_data/user_input_spreadsheets/Vehicle_sales_share.csv', archiving_folder + '/Vehicle_sales_share.csv')
     #save the variables we used to calculate the data by savinbg the 'input_data/vehicle_sales_share_inputs.xlsx' file

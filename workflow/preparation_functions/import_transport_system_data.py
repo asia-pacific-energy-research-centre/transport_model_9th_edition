@@ -8,16 +8,32 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
+
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 sys.path.append("./workflow/calculation_functions")
 import adjust_data_to_match_esto
+
 #%%
 def import_transport_system_data():
     
     #import data from the transport data system and extract what we need from it.
     # We can use the model_concordances_measures concordance file to determine what we need to extract from the transport data system. This way we dont rely on things like dataset names.
 
-    model_concordances_measures = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_BASE_YEAR_measures_file_name))
+    model_concordances_measures = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_base_year_measures_file_name))
 
 
     #load transport data  from the transport data system which is out of this repo but is in the same folder as this repo #file name is like DATE20221214_interpolated_combined_data_concordance
@@ -27,7 +43,7 @@ def import_transport_system_data():
     
     # combined_data_DATE20230531
     transport_data_system_folder = '../transport_data_system'
-    transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,transport_data_system_FILE_DATE_ID))
+    transport_data_system_df = pd.read_csv('{}/output_data/combined_data_{}.csv'.format(transport_data_system_folder,config.transport_data_system_FILE_DATE_ID))
 
     
     #if they are there, remove cols called index, level_0
@@ -78,15 +94,15 @@ def import_transport_system_data():
 
     
 
-    config.INDEX_COLS_NO_SCENARIO = config.INDEX_COLS.copy()
-    config.INDEX_COLS_NO_SCENARIO.remove('Scenario')
+    INDEX_COLS_NO_SCENARIO = config.INDEX_COLS.copy()
+    INDEX_COLS_NO_SCENARIO.remove('Scenario')
 
-    config.INDEX_COLS_NO_SCENARIO_no_date = config.INDEX_COLS_NO_SCENARIO.copy()
-    config.INDEX_COLS_NO_SCENARIO_no_date.remove('Date')
+    INDEX_COLS_NO_SCENARIO_no_date = INDEX_COLS_NO_SCENARIO.copy()
+    INDEX_COLS_NO_SCENARIO_no_date.remove('Date')
 
     #set index
-    transport_data_system_df.set_index(config.INDEX_COLS_NO_SCENARIO, inplace=True)
-    model_concordances_measures.set_index(config.INDEX_COLS_NO_SCENARIO, inplace=True)
+    transport_data_system_df.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
+    model_concordances_measures.set_index(INDEX_COLS_NO_SCENARIO, inplace=True)
 
     #create empty df which is a copy of the transport_data_system_df to store the data we extract from the transport data system using an iterative loop
     new_transport_dataset = []
@@ -235,7 +251,7 @@ def import_transport_system_data():
         
     
     #TEMP DROP ANY DATA THAT IS FOR DATES AFTER THE BASE DATE. WE WILL FIGURE OUT HOW TO INCLUDE THEM IN THE FUTURE BUT FOR NOW IT WILL PROBS BE TOO COMPLICATED
-    new_transport_data_system_df = new_transport_data_system_df[new_transport_data_system_df.Date <= config.BASE_YEAR]
+    new_transport_data_system_df = new_transport_data_system_df[new_transport_data_system_df.Date <= config.DEFAULT_BASE_YEAR]
     
     #save the new transport dataset
     new_transport_data_system_df.to_csv('intermediate_data/model_inputs/transport_data_system_extract.csv', index=False)
@@ -285,8 +301,8 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     # esto_non_road['Date'] = esto_non_road['Date'].apply(lambda x: x[:4])
     # esto_non_road['Date'] = esto_non_road['Date'].astype(int)
 
-    # #filter for data in years great or = to config.BASE_YEAR
-    # esto_non_road = esto_non_road[esto_non_road['Date'] >= config.BASE_YEAR]
+    # #filter for data in years great or = to config.DEFAULT_BASE_YEAR
+    # esto_non_road = esto_non_road[esto_non_road['Date'] >= config.DEFAULT_BASE_YEAR]
 
     #drop economy in APEC '22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE'
     # esto_non_road = esto_non_road.loc[~esto_non_road['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM', '24b_OOAM', '25_OCE', 'APEC'])].copy()
@@ -340,14 +356,14 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #calc the ratio between passenger and freight
     transport_data_system_transport_type_splits['freight_ratio'] = transport_data_system_transport_type_splits['freight'] / (transport_data_system_transport_type_splits['passenger']+transport_data_system_transport_type_splits['freight'])
 
-    #if the Date is not only for config.BASE_YEAR then throw an erorr, because resty of code is predicated on this:
-    if not transport_data_system_transport_type_splits.Date.unique().tolist() == [config.BASE_YEAR]:
+    #if the Date is not only for config.DEFAULT_BASE_YEAR then throw an erorr, because resty of code is predicated on this:
+    if not transport_data_system_transport_type_splits.Date.unique().tolist() == [config.DEFAULT_BASE_YEAR]:
         breakpoint()#why is this important actually? i think maybe its already done by the previoous fuinction?
-        raise ValueError(f'The transport data system data for non road is not only for {config.BASE_YEAR}. Please make sure it is only for {config.BASE_YEAR}')
+        raise ValueError(f'The transport data system data for non road is not only for {config.DEFAULT_BASE_YEAR}. Please make sure it is only for {config.DEFAULT_BASE_YEAR}')
     
     transport_data_system_transport_type_splits = transport_data_system_transport_type_splits.drop(columns=['Date'])
     #filter for 2017 plus in the esto data (we need all dates for esto data since we need this energy use to be in the output data)
-    esto_non_road_drives = esto_non_road_drives[esto_non_road_drives.Date >= config.BASE_YEAR]
+    esto_non_road_drives = esto_non_road_drives[esto_non_road_drives.Date >= config.DEFAULT_BASE_YEAR]
     #use freight ratio to pslit the esto data before we join it on:
     esto_non_road_drives_ttype_split = pd.merge(esto_non_road_drives, transport_data_system_transport_type_splits[['Economy', 'Medium', 'freight_ratio']], how='left', on=['Economy', 'Medium'])#'Date', #dropped date from here
     #############
@@ -400,10 +416,10 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #drop where Drive is nan. this is where we didnt have any data in the esto data and so we dont wqant to cosider it in the model:
     #ACTUALLY JUST CHECK IF THERE ARE ANY NANS IN THE DRIVE COL. IF THERE ARE THEN THROW AN ERROR. IM PRETTY SURE WE REQUIRE THAT THE ESTO DATA NEEDS TO HAVE ALL THE DATA?
     if final_df.Drive.isna().any():
-        #drop allowed_rows and filter for Date >= config.BASE_YEAR and then check if there are any nans in the drive col still:
+        #drop allowed_rows and filter for Date >= config.DEFAULT_BASE_YEAR and then check if there are any nans in the drive col still:
         nas = final_df[final_df.Drive.isna()]
         nas= nas.merge(allowed_rows, on=['Economy', 'Medium'], how='left', indicator=True)
-        nas = nas.loc[(nas['_merge'] == 'left_only') & (nas['Date'] >= config.BASE_YEAR) & (nas['Date'] <= config.OUTLOOK_BASE_YEAR)]
+        nas = nas.loc[(nas['_merge'] == 'left_only') & (nas['Date'] >= config.DEFAULT_BASE_YEAR) & (nas['Date'] <= config.OUTLOOK_BASE_YEAR)]
         if not nas.empty:
             breakpoint()
             raise ValueError('There are some missing drive types in the transport data system dataset. Please make sure they are all present for each economy and medium {}'.format(nas))
@@ -436,11 +452,11 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #conat to transport_data_system_df_road then finis
     transport_data_system_df_new = pd.concat([transport_data_system_df_road, final_df], sort=False)
     #in final_df search for any duplciates in teh columns INDEX_COLS
-    INDEX_COLS_NO_MEASURE = INDEX_COLS.copy()
-    INDEX_COLS_NO_MEASURE.remove('Measure')
-    INDEX_COLS_NO_MEASURE.remove('Scenario')
-    dupes = final_df[final_df.duplicated(subset=INDEX_COLS_NO_MEASURE, keep=False)]
+    INDEX_COLS_no_scenario = config.INDEX_COLS.copy()
+    INDEX_COLS_no_scenario.remove('Scenario')
+    dupes = final_df[final_df.duplicated(subset=INDEX_COLS_no_scenario, keep=False)]
     if len(dupes) > 0:
+        breakpoint()
         raise ValueError('There are some duplicated rows in the final_df. Please check the code')
     # transport_data_system_non_road[transport_data_system_non_road.duplicated(subset=['Date', 'Economy', 'Vehicle Type', 'Medium', 'Transport Type', 'Drive'], keep=False)]
     return transport_data_system_df_new

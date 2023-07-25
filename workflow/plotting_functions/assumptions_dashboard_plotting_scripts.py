@@ -6,12 +6,26 @@ os.chdir(re.split('transport_model_9th_edition', os.getcwd())[0]+'\\transport_mo
 import sys
 sys.path.append("./config")
 import config
-####Use this to load libraries and set variables. Feel free to edit that file as you need.
-#%%
-from plotly.subplots import make_subplots
-import plotly.io as pio
 
-def remap_vehicle_types(df, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']):
+import pandas as pd 
+import numpy as np
+import yaml
+import datetime
+import shutil
+import sys
+import os 
+import re
+import plotly.express as px
+import plotly.io as pio
+import plotly.graph_objects as go
+import matplotlib
+import matplotlib.pyplot as plt
+from plotly.subplots import make_subplots
+####Use this to load libraries and set variables. Feel free to edit that file as you need.
+
+#%%
+
+def remap_vehicle_types(df, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive']):
 
     #also group and sum by the following vehicle type cmbinations:
     vehicle_type_combinations = {'lt':'lpv', 'suv':'lpv', 'car':'lpv', 'ht':'trucks', 'mt':'trucks', 'bus':'bus', '2w':'2w', 'lcv':'lcv', 'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
@@ -21,10 +35,10 @@ def remap_vehicle_types(df, value_col='Value', config.INDEX_COLS = ['Scenario', 
     df['Vehicle Type'] = df['Vehicle Type new']
     #dxrop the new column
     df.drop(columns=['Vehicle Type new'], inplace=True)
-    df = df.groupby(config.INDEX_COLS).sum().reset_index()
+    df = df.groupby(new_index_cols).sum().reset_index()
     return df
     
-def remap_drive_types(df, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum',), include_non_road=True):
+def remap_drive_types(df, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum',), include_non_road=True):
     if mapping_type == 'original':
         if include_non_road:
             drive_type_combinations = {'ice_g':'ice_g', 'ice_d':'ice_d', 'phev_d':'phev_d', 'phev_g':'phev_g', 'bev':'bev', 'fcev':'fcev', 'cng':'cng', 'lpg':'lpg',  'all':'all', 'air':'air', 'rail':'rail', 'ship':'ship'}
@@ -42,15 +56,15 @@ def remap_drive_types(df, value_col='Value', config.INDEX_COLS = ['Scenario', 'E
         df['Drive'] = df['Drive new']
         df.drop(columns=['Drive new'], inplace=True)
     # if aggregation_type[0] == 'weighted_average':
-    #     df_grouped = df.groupby(config.INDEX_COLS)
+    #     df_grouped = df.groupby(new_index_cols)
     #     df_weights_sum = df_grouped['Stocks'].transform('sum')
     #     df_weights_sum[df_weights_sum == 0] = 1  # Assign a default value of 1 for zero weights sum
     if aggregation_type[0] == 'weighted_average':
         df['Weighted Value'] = df[value_col] * df[aggregation_type[1]]
         #sum weighted values
-        df['Weighted Value sum'] = df.groupby(config.INDEX_COLS)['Weighted Value'].transform('sum')
+        df['Weighted Value sum'] = df.groupby(new_index_cols)['Weighted Value'].transform('sum')
         #sum wieght
-        df['Weight sum'] = df.groupby(config.INDEX_COLS)[aggregation_type[1]].transform('sum')
+        df['Weight sum'] = df.groupby(new_index_cols)[aggregation_type[1]].transform('sum')
         #fill 0 with 1
         df['Weight sum'] = df['Weight sum'].replace(0,1)
         #calculate weighted average
@@ -60,22 +74,20 @@ def remap_drive_types(df, value_col='Value', config.INDEX_COLS = ['Scenario', 'E
         
 
     elif aggregation_type[0]=='sum':
-        df = df.groupby(config.INDEX_COLS).sum().reset_index()
+        df = df.groupby(new_index_cols).sum().reset_index()
     return df
 
     
 ###################################################
-def plot_share_of_transport_type(new_sales_shares_all_plot_drive_shares,stocks,fig_dict, color_preparation_list, colors_dict,share_of_transport_type_type):
-    
-    stocks = remap_vehicle_types(stocks, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
-    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
-    
+def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df,stocks_df,fig_dict, color_preparation_list, colors_dict,share_of_transport_type_type):
+    stocks = stocks_df.copy()
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
+    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
     # #sum up all the sales shares for each drive type
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
-    #rename to Value
-    stocks = stocks.rename(columns={'Stocks':'Value'})
     #now calucalte share of total stocks as a proportion like the sales share
-    stocks['Stocks'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Stocks'].apply(lambda x: x/x.sum())
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
     #create line_dash column and call it stocks
     stocks['line_dash'] = 'stocks'
     
@@ -90,7 +102,7 @@ def plot_share_of_transport_type(new_sales_shares_all_plot_drive_shares,stocks,f
         #times shares by 100
         new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
                 
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             plot_data =  new_sales_shares_all_plot_drive_shares_scenario.loc[(new_sales_shares_all_plot_drive_shares_scenario['Economy']==economy)].copy()
 
             # #also plot the data like the iea does. So plot the data for 2022 and previous, then plot for the follwoign eyars: [2025, 2030, 2035, 2040, 2050, 2060]. This helps to keep the plot clean too
@@ -137,17 +149,19 @@ def plot_share_of_transport_type(new_sales_shares_all_plot_drive_shares,stocks,f
     return fig_dict, color_preparation_list
 
 
-def plot_share_of_vehicle_type_by_transport_type(new_sales_shares_all_plot_drive_shares,stocks,fig_dict, color_preparation_list, colors_dict, share_of_transport_type_type):
+def plot_share_of_vehicle_type_by_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df,stocks_df,fig_dict, color_preparation_list, colors_dict, share_of_transport_type_type):
     #This data is in terms of transport type, so will need to normalise it to vehicle type by summing up the shares for each vehicle type and dividing individual shares by their sum
-    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
+    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
     
     new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Value'].transform(lambda x: x/x.sum())
     
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
-    stocks = remap_vehicle_types(stocks, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    stocks = stocks_df.copy()
+    
+    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
     stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
-    stocks = stocks.rename(columns={'Stocks':'Value'})
     stocks['line_dash'] = 'stocks'
     
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
@@ -161,7 +175,7 @@ def plot_share_of_vehicle_type_by_transport_type(new_sales_shares_all_plot_drive
         #times shares by 100
         new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
                 
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             plot_data =  new_sales_shares_all_plot_drive_shares_scenario.loc[(new_sales_shares_all_plot_drive_shares_scenario['Economy']==economy)].copy()
 
             # #also plot the data like the iea does. So plot the data for 2022 and previous, then plot for the follwoign eyars: [2025, 2030, 2035, 2040, 2050, 2060]. This helps to keep the plot clean too
@@ -209,17 +223,19 @@ def plot_share_of_vehicle_type_by_transport_type(new_sales_shares_all_plot_drive
     return fig_dict,color_preparation_list
             
 
-def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(new_sales_shares_all_plot_drive_shares, stocks, fig_dict, color_preparation_list, colors_dict):
+def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df, stocks_df, fig_dict, color_preparation_list, colors_dict):
     #This data is in terms of transport type, so will need to normalise it to vehicle type by summing up the shares for each vehicle type and dividing individual shares by their sum
 
-    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
+    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
     new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Value'].transform(lambda x: x/x.sum())
     
-    stocks = remap_vehicle_types(stocks, value_col='Value', config.INDEX_COLS = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    stocks = stocks_df.copy()
+    
+    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
     stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
     stocks['line_dash'] = 'stocks'
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
-    stocks = stocks.rename(columns={'Stocks':'Value'})
             
     
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
@@ -232,7 +248,7 @@ def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(new_sales_sha
         #times shares by 100
         new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
                 
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             plot_data =  new_sales_shares_all_plot_drive_shares_scenario.loc[(new_sales_shares_all_plot_drive_shares_scenario['Economy']==economy)].copy()
 
             # #also plot the data like the iea does. So plot the data for 2022 and previous, then plot for the follwoign eyars: [2025, 2030, 2035, 2040, 2050, 2060]. This helps to keep the plot clean too
@@ -261,15 +277,18 @@ def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(new_sales_sha
     
     return fig_dict,color_preparation_list
 
-def share_of_sum_of_vehicle_types_by_transport_type(new_sales_shares_all_plot_drive_shares,stocks,fig_dict, color_preparation_list, colors_dict, share_of_transport_type_type):
+def share_of_sum_of_vehicle_types_by_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df,stocks_df,fig_dict, color_preparation_list, colors_dict, share_of_transport_type_type):
+    #i think that maybe stocks % can be higher than sales % here because of turnvoer rates. hard to get it correct right now
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive', 'Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
         
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
+    stocks = stocks_df.copy()
+    
     stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
     stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'])['Value'].apply(lambda x: x/x.sum())
-    stocks['line_dash'] = 'stocks'
-    stocks = stocks.rename(columns={'Stocks':'Value'}) 
+    stocks['line_dash'] = 'stocks' 
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
         stocks = stocks.loc[(stocks['Scenario']==scenario)].copy()
@@ -279,7 +298,7 @@ def share_of_sum_of_vehicle_types_by_transport_type(new_sales_shares_all_plot_dr
         new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks])
         
                 
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             plot_data =  new_sales_shares_all_plot_drive_shares_scenario.loc[(new_sales_shares_all_plot_drive_shares_scenario['Economy']==economy)].copy()
 
             # #also plot the data like the iea does. So plot the data for 2022 and previous, then plot for the follwoign eyars: [2025, 2030, 2035, 2040, 2050, 2060]. This helps to keep the plot clean too
@@ -326,16 +345,16 @@ def share_of_sum_of_vehicle_types_by_transport_type(new_sales_shares_all_plot_dr
 
 
 ###################################################
-def energy_use_by_fuel_type(model_output_with_fuels,fig_dict, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+def energy_use_by_fuel_type(ECONOMY_IDs,model_output_with_fuels,fig_dict,  color_preparation_list, colors_dict,transport_type):
     #load in data and recreate plot, as created in all_economy_graphs
     #loop through scenarios and grab the data for each scenario:
     model_output_with_fuels_sum= model_output_with_fuels[['Economy', 'Scenario','Date', 'Fuel', 'Transport Type','Energy']].groupby(['Economy', 'Scenario','Date','Transport Type', 'Fuel']).sum().reset_index().copy()
     model_output_with_fuels_sum['Measure'] = 'Energy'
-    model_output_with_fuels_sum['Unit'] = model_output_with_fuels_sum['Measure'].map(measure_to_unit_concordance_dict)
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    model_output_with_fuels_sum['Unit'] = model_output_with_fuels_sum['Measure'].map(config.measure_to_unit_concordance_dict)
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         energy_use_by_fuel_type_scen = model_output_with_fuels_sum.loc[(model_output_with_fuels_sum['Scenario']==scenario)].copy()
         
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             energy_use_by_fuel_type_economy = energy_use_by_fuel_type_scen.loc[(energy_use_by_fuel_type_scen['Economy']==economy)].copy()
             
@@ -390,23 +409,21 @@ def energy_use_by_fuel_type(model_output_with_fuels,fig_dict, measure_to_unit_co
     return fig_dict, color_preparation_list
 
 
-def create_vehicle_type_stocks_plot(stocks,fig_dict, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def create_vehicle_type_stocks_plot(ECONOMY_IDs,stocks_df,fig_dict,  color_preparation_list, colors_dict):
     #loop through scenarios and grab the data for each scenario:
     
     #create a new df with only the data we need:
-    stocks = stocks.copy()
+    stocks = stocks_df.copy()
     stocks = stocks[['Economy', 'Date', 'Vehicle Type','Scenario', 'Value']].groupby(['Economy', 'Date','Scenario', 'Vehicle Type']).sum().reset_index()
-    
-    stocks = stocks.rename(columns={'Stocks':'Value'})
     stocks['Measure'] = 'Stocks'
-    stocks['Unit'] = stocks['Measure'].map(measure_to_unit_concordance_dict)
+    stocks['Unit'] = stocks['Measure'].map(config.measure_to_unit_concordance_dict)
     
-    stocks = remap_vehicle_types(stocks, value_col='Value', config.INDEX_COLS = ['Date', 'Vehicle Type','Unit','Scenario', 'Economy'])
+    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Date', 'Vehicle Type','Unit','Scenario', 'Economy'])
     
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         stocks_scenario = stocks.loc[(stocks['Scenario']==scenario)].copy()
         
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             stocks_economy = stocks_scenario.loc[stocks_scenario['Economy']==economy].copy()
             
@@ -429,28 +446,29 @@ def create_vehicle_type_stocks_plot(stocks,fig_dict, measure_to_unit_concordance
     return fig_dict, color_preparation_list
 
 
-def freight_tonne_km_by_drive(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
-    fkm = model_output_detailed.loc[model_output_detailed['Measure']=='freight_tonne_km'].copy()
+def freight_tonne_km_by_drive(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT,  color_preparation_list, colors_dict):
+    
+    fkm = model_output_detailed.loc[model_output_detailed['Transport Type']=='freight'].rename(columns={'Activity':'freight_tonne_km'}).copy()
     
     if DROP_NON_ROAD_TRANSPORT:
         fkm = fkm.loc[fkm['Medium']=='road'].copy()
     
-    fkm = fkm[['Economy', 'Date', 'Drive','Scenario', 'freight_tonne_km']].groupby(['Economy', 'Date', 'Drive']).sum().reset_index()
+    fkm = fkm[['Economy', 'Date', 'Drive','Scenario', 'freight_tonne_km']].groupby(['Economy', 'Date', 'Scenario','Drive']).sum().reset_index()
 
     #simplfiy drive type using remap_drive_types
-    fkm = remap_drive_types(fkm, value_col='freight_tonne_km', config.INDEX_COLS = ['Economy', 'Date', 'Scenario','Drive'], include_non_road=True)
+    fkm = remap_drive_types(fkm, value_col='freight_tonne_km', new_index_cols = ['Economy', 'Date', 'Scenario','Drive'], include_non_road=True)
     
     #add units (by setting measure to Freight_tonne_km haha)
     fkm['Measure'] = 'Freight_tonne_km'
     #add units
-    fkm['Unit'] = fkm['Measure'].map(measure_to_unit_concordance_dict)
+    fkm['Unit'] = fkm['Measure'].map(config.measure_to_unit_concordance_dict)
     
     #loop through scenarios and grab the data for each scenario:
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         
         freight_tonne_km_by_drive = fkm.loc[(fkm['Scenario']==scenario)].copy()
 
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive.loc[freight_tonne_km_by_drive['Economy']==economy].copy()
             
@@ -482,27 +500,27 @@ def freight_tonne_km_by_drive(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANS
     color_preparation_list.append(freight_tonne_km_by_drive_economy['Drive'].unique().tolist())
     return fig_dict, color_preparation_list
 
-def passenger_km_by_drive(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict, include_non_road=True):
+def passenger_km_by_drive(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT,  color_preparation_list, colors_dict, include_non_road=True):
     
-    pkm = model_output_detailed.loc[model_output_detailed['Measure']=='passenger_km'].copy()
+    pkm = model_output_detailed.loc[model_output_detailed['Transport Type']=='passenger'].rename(columns={'Activity':'passenger_km'}).copy()
     
     if DROP_NON_ROAD_TRANSPORT:
         pkm = pkm.loc[pkm['Medium']=='road'].copy()
     
-    pkm = pkm[['Economy', 'Date', 'Drive','Scenario', 'passenger_km']].groupby(['Economy', 'Date', 'Drive']).sum().reset_index()
+    pkm = pkm[['Economy', 'Date', 'Drive','Scenario', 'passenger_km']].groupby(['Economy', 'Date','Scenario', 'Drive']).sum().reset_index()
 
     #simplfiy drive type using remap_drive_types
-    pkm = remap_drive_types(pkm, value_col='passenger_km', config.INDEX_COLS = ['Economy', 'Date', 'Scenario','Drive'], include_non_road=True)
+    pkm = remap_drive_types(pkm, value_col='passenger_km', new_index_cols = ['Economy', 'Date', 'Scenario','Drive'], include_non_road=True)
     
     #add units
     pkm['Measure'] = 'Passenger_km'
-    pkm['Unit'] = pkm['Measure'].map(measure_to_unit_concordance_dict)
+    pkm['Unit'] = pkm['Measure'].map(config.measure_to_unit_concordance_dict)
     
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         passenger_km_by_drive = pkm.loc[(pkm['Scenario']==scenario)].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             passenger_km_by_drive_economy = passenger_km_by_drive.loc[passenger_km_by_drive['Economy']==economy].copy()
             
@@ -534,12 +552,13 @@ def passenger_km_by_drive(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT
     return fig_dict, color_preparation_list
 
 
-def activity_growth(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def activity_growth(ECONOMY_IDs,model_output_detailed_df,fig_dict,DROP_NON_ROAD_TRANSPORT,  color_preparation_list, colors_dict):
     
     #calcualte population growth and gdp growth as a percentage:
     # #first grasb only the data we need for this:
     # model_output_detailed_growth = model_output_detailed[['Economy', 'Date', 'Population', 'Gdp']].copy().drop_duplicates()
     #srot by date
+    model_output_detailed = model_output_detailed_df.copy()
     model_output_detailed = model_output_detailed.sort_values(by='Date')
     model_output_detailed['Population_growth'] = model_output_detailed.groupby(['Economy','Scenario', 'Transport Type'])['Population'].pct_change()
     model_output_detailed['GDP_growth'] = model_output_detailed.groupby(['Economy','Scenario', 'Transport Type'])['Gdp'].pct_change()
@@ -560,9 +579,9 @@ def activity_growth(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, meas
     # activity_growth['Measure'] = 'Macro_growth'
     #add units
     activity_growth['Unit'] = '%'
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         activity_growth_scen = activity_growth.loc[(activity_growth['Scenario']==scenario)].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             activity_growth_economy = activity_growth_scen.loc[activity_growth_scen['Economy']==economy].copy()
 
@@ -580,14 +599,15 @@ def activity_growth(model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, meas
 
     return fig_dict, color_preparation_list
 
-def activity_and_macro_lines(original_model_output_8th,model_output_detailed, fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict, indexed=False):
+def activity_and_macro_lines(ECONOMY_IDs,original_model_output_8th_df,model_output_detailed, fig_dict, color_preparation_list, colors_dict, indexed=False):
+    original_model_output_8th = original_model_output_8th_df.copy()
     #grab only the Activity then sum it by economy, scenario and date
-    original_model_output_8th = original_model_output_8th[['Economy', 'Scenario', 'Year', 'Activity']].copy().drop_duplicates()
-    original_model_output_8th = original_model_output_8th.groupby(['Economy', 'Scenario', 'Year']).sum().reset_index()
+    original_model_output_8th = original_model_output_8th[['Economy', 'Scenario', 'Date', 'Activity']].copy().drop_duplicates()
+    original_model_output_8th = original_model_output_8th.groupby(['Economy', 'Scenario', 'Date']).sum().reset_index()
     #rename actovity to Activity_8th
-    original_model_output_8th = original_model_output_8th.rename(columns={'Activity':'Activity_8th', 'Year':'Date'})
+    original_model_output_8th = original_model_output_8th.rename(columns={'Activity':'Activity_8th'})
     
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         model_output_detailed_scen = model_output_detailed.loc[(model_output_detailed['Scenario']==scenario)].copy()
         #if scenario is Target then look for 'Carbon Neutral' in scenario name
         if scenario == 'Target':
@@ -598,6 +618,9 @@ def activity_and_macro_lines(original_model_output_8th,model_output_detailed, fi
         #drop scenario col
         original_model_output_8th_scenario = original_model_output_8th_scenario.drop(columns=['Scenario'])
         
+        
+        freight_km = model_output_detailed_scen.loc[model_output_detailed_scen['Transport Type']=='freight'].rename(columns={'Activity':'freight_tonne_km'}).copy()
+        passenger_km = model_output_detailed_scen.loc[model_output_detailed_scen['Transport Type']=='passenger'].rename(columns={'Activity':'passenger_km'}).copy()
         #calcualte population, gdp, freight tonne km and passenger km as an index:
         # #first grasb only the data we need for this:
         # model_output_detailed_growth = model_output_detailed[['Economy', 'Scenario', 'Date', 'Population', 'Gdp']].copy().drop_duplicates()
@@ -649,16 +672,16 @@ def activity_and_macro_lines(original_model_output_8th,model_output_detailed, fi
         if indexed:
             population = calc_index(model_output_detailed_scen[['Population','Date','Economy']].drop_duplicates(),'Population')
             gdp = calc_index(model_output_detailed_scen[['Gdp','Date','Economy']].drop_duplicates(),'Gdp')
-            freight_km = calc_index(model_output_detailed_scen[['freight_tonne_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'freight_tonne_km')
-            passenger_km = calc_index(model_output_detailed_scen[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
+            freight_km = calc_index(freight_km[['freight_tonne_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'freight_tonne_km')
+            passenger_km = calc_index(passenger_km[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
             original_model_output_8th_scenario = calc_index(original_model_output_8th_scenario,'Activity_8th')
 
         else:#calc growth
                 
             population = calc_growth(model_output_detailed_scen[['Population','Date','Economy']].drop_duplicates(),'Population')
             gdp = calc_growth(model_output_detailed_scen[['Gdp','Date','Economy']].drop_duplicates(),'Gdp')
-            freight_km = calc_growth(model_output_detailed_scen[['freight_tonne_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'freight_tonne_km')
-            passenger_km = calc_growth(model_output_detailed_scen[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
+            freight_km = calc_growth(freight_km[['freight_tonne_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'freight_tonne_km')
+            passenger_km = calc_growth(passenger_km[['passenger_km','Date','Economy']].drop_duplicates().dropna().groupby(['Economy','Date']).sum().reset_index(),'passenger_km')
             original_model_output_8th_scenario = calc_growth(original_model_output_8th_scenario,'Activity_8th')
 
             
@@ -685,7 +708,7 @@ def activity_and_macro_lines(original_model_output_8th,model_output_detailed, fi
         # #melt so all measures in one col
         # index_data = index_data.melt(id_vars=['Economy', 'Date'], value_vars=['Population_index', 'Gdp_index', 'freight_tonne_km_index', 'passenger_km_index', 'Activity_8th'], var_name='Measure', value_name='Index')
         
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             index_data_economy = index_data.loc[index_data['Economy']==economy].copy()
 
@@ -703,9 +726,9 @@ def activity_and_macro_lines(original_model_output_8th,model_output_detailed, fi
     
     return fig_dict, color_preparation_list
 
-def plot_supply_side_fuel_mixing(supply_side_fuel_mixing,fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def plot_supply_side_fuel_mixing(ECONOMY_IDs,supply_side_fuel_mixing_df,fig_dict, color_preparation_list, colors_dict):
     #plot supply side fuel mixing
-    
+    supply_side_fuel_mixing = supply_side_fuel_mixing_df.copy()
     #round the Supply_side_fuel_share column to 2dp
     supply_side_fuel_mixing['Supply_side_fuel_share'] = supply_side_fuel_mixing['Supply_side_fuel_share'].round(2)
     supply_side_fuel_mixing= supply_side_fuel_mixing[['Date', 'Economy','Scenario', 'Fuel','New_fuel' ,'Supply_side_fuel_share']].drop_duplicates()
@@ -720,10 +743,10 @@ def plot_supply_side_fuel_mixing(supply_side_fuel_mixing,fig_dict,economy_scenar
     
     #sort by date
     supply_side_fuel_mixing = supply_side_fuel_mixing.sort_values(by='Date')
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         
         supply_side_fuel_mixing_plot_scenario = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Scenario']==scenario].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             supply_side_fuel_mixing_plot_economy = supply_side_fuel_mixing_plot_scenario.loc[supply_side_fuel_mixing_plot_scenario['Economy']==economy].copy()
 
@@ -741,14 +764,15 @@ def plot_supply_side_fuel_mixing(supply_side_fuel_mixing,fig_dict,economy_scenar
     color_preparation_list.append(supply_side_fuel_mixing_plot_economy['New_fuel'].unique().tolist())
     return fig_dict, color_preparation_list
 
-def create_charging_plot(chargers,fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def create_charging_plot(ECONOMY_IDs,chargers_df,fig_dict, color_preparation_list, colors_dict):
+    chargers = chargers_df.copy()
     chargers = chargers[['Economy', 'Scenario', 'Date', 'sum_of_fast_chargers_needed','sum_of_slow_chargers_needed']].drop_duplicates()
     #divide chargers by a million
     chargers['sum_of_fast_chargers_needed'] = chargers['sum_of_fast_chargers_needed']/1000000
     chargers['sum_of_slow_chargers_needed'] = chargers['sum_of_slow_chargers_needed']/1000000
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         chargers_scenario = chargers.loc[chargers['Scenario']==scenario].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             chargers_economy = chargers_scenario.loc[chargers_scenario['Economy']==economy].copy()
             
@@ -766,13 +790,13 @@ def create_charging_plot(chargers,fig_dict,economy_scenario_concordance, color_p
     color_preparation_list.append(['sum_of_fast_chargers_needed','sum_of_slow_chargers_needed'])
     return fig_dict, color_preparation_list
 
-def prodcue_LMDI_mutliplicative_plot(fig_dict,economy_scenario_concordance,  colors_dict, transport_type):
-    for scenario in economy_scenario_concordance.Scenario.unique():
+def prodcue_LMDI_mutliplicative_plot(ECONOMY_IDs,fig_dict,  colors_dict, transport_type):
+    for scenario in config.economy_scenario_concordance.Scenario.unique():
         if scenario == 'Reference':
             scenario_str = 'REF'
         elif scenario == 'Target':
             scenario_str = 'TGT'
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             file_identifier = f'{economy}_{scenario_str}_{transport_type}__2_Energy use_Hierarchical_hierarchical_multiplicative_output'
             lmdi_data = pd.read_csv(f'./intermediate_data/LMDI/{economy}/{file_identifier}.csv')
             #melt data so we have the different components of the LMDI as rows. eg. for freight the cols are: Date	Change in Energy	Energy intensity effect	freight_tonne_km effect	Engine type effect	Total Energy	Total_freight_tonne_km
@@ -794,7 +818,8 @@ def prodcue_LMDI_mutliplicative_plot(fig_dict,economy_scenario_concordance,  col
     return fig_dict
     
 
-def plot_average_age_by_simplified_drive_type(model_output_detailed,fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict, medium, title):
+def plot_average_age_by_simplified_drive_type(ECONOMY_IDs,model_output_detailed_df,fig_dict, color_preparation_list, colors_dict, medium, title):
+    model_output_detailed = model_output_detailed_df.copy()
     if medium=='road':
         model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']==medium].copy()
     elif medium=='all':
@@ -809,7 +834,7 @@ def plot_average_age_by_simplified_drive_type(model_output_detailed,fig_dict,eco
     # avg_age = avg_age[['Economy', 'Date', 'Drive','Stocks', 'Average_age']].groupby(['Economy', 'Date', 'Drive']).sum(numeric_only=True).reset_index()
     
     #simplfiy drive type using remap_drive_types
-    avg_age = remap_drive_types(avg_age, value_col='Average_age', config.INDEX_COLS = ['Economy', 'Date','Scenario', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='simplified', aggregation_type=('weighted_average', 'Stocks'))
+    avg_age = remap_drive_types(avg_age, value_col='Average_age', new_index_cols = ['Economy', 'Date','Scenario', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='simplified', aggregation_type=('weighted_average', 'Stocks'))
     #drop stocks col
     avg_age.drop(columns=['Stocks'], inplace=True)
     
@@ -822,9 +847,9 @@ def plot_average_age_by_simplified_drive_type(model_output_detailed,fig_dict,eco
     # model_output_detailed.pkl
     # #
     #loop through scenarios and grab the data for each scenario:
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         avg_age_s = avg_age.loc[(avg_age['Scenario']==scenario)].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             avg_age_economy = avg_age_s.loc[avg_age_s['Economy']==economy].copy()
             
@@ -844,7 +869,7 @@ def plot_average_age_by_simplified_drive_type(model_output_detailed,fig_dict,eco
 
 
 
-def plot_stocks_per_capita(model_output_detailed,fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict):
+def plot_stocks_per_capita(ECONOMY_IDs,road_model_input, model_output_detailed,fig_dict, color_preparation_list, colors_dict):
     #Plot stocks per capita for each transport type. Also plot the gompertz line for the economy, which is a horizontal line. 
 
     stocks_per_capita = model_output_detailed.copy()
@@ -862,9 +887,7 @@ def plot_stocks_per_capita(model_output_detailed,fig_dict,economy_scenario_conco
     stocks_per_capita['Thousand_stocks_per_capita'] = stocks_per_capita['Stocks']/stocks_per_capita['Population']
     #convert to more readable units. We will convert back later if we need to #todo do we need to?
     stocks_per_capita['Stocks_per_thousand_capita'] = stocks_per_capita['Thousand_stocks_per_capita'] * 1000000
-
-    #NOW load in the gomeprtz variable. this can be found in the road model input, which we will load in here since its only used here
-    road_model_input = pd.read_csv('intermediate_data/model_inputs/road_model_input_wide.csv')
+    
     gompertz_parameters = road_model_input[['Economy','Date', 'Gompertz_gamma']].drop_duplicates().dropna().copy()
     #and filter so data is less than config.GRAPHING_END_YEAR
     gompertz_parameters = gompertz_parameters.loc[(gompertz_parameters['Date']<=config.GRAPHING_END_YEAR)&(gompertz_parameters['Date']>=config.OUTLOOK_BASE_YEAR)].copy()
@@ -874,7 +897,7 @@ def plot_stocks_per_capita(model_output_detailed,fig_dict,economy_scenario_conco
     gompertz_parameters.rename(columns={'Gompertz_gamma':'Stocks_per_thousand_capita'}, inplace=True)
     
     #loop through scenarios and grab the data for each scenario:
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         stocks_per_capita_s = stocks_per_capita.loc[(stocks_per_capita['Scenario']==scenario)].copy()
         #concat
         stocks_per_capita_s = pd.concat([stocks_per_capita_s, gompertz_parameters], axis=0)
@@ -882,7 +905,7 @@ def plot_stocks_per_capita(model_output_detailed,fig_dict,economy_scenario_conco
         stocks_per_capita_s['Measure'] = 'Stocks_per_thousand_capita'
         #add units
         stocks_per_capita_s['Unit'] = 'Stocks_per_thousand_capita'
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             stocks_per_capita_economy = stocks_per_capita_s.loc[stocks_per_capita_s['Economy']==economy].copy()
 
@@ -897,9 +920,9 @@ def plot_stocks_per_capita(model_output_detailed,fig_dict,economy_scenario_conco
     return fig_dict, color_preparation_list
 
 
-def plot_non_road_energy_use(model_output_with_fuels,fig_dict, measure_to_unit_concordance_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+def plot_non_road_energy_use(ECONOMY_IDs,model_output_with_fuels_df,fig_dict,  color_preparation_list, colors_dict,transport_type):
     #we will plot the energy use by fuel type for non road as an area chart.
-
+    model_output_with_fuels = model_output_with_fuels_df.copy()
     model_output_with_fuels = model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road'].copy()
     
     #create a new df with only the data we need: 
@@ -909,13 +932,13 @@ def plot_non_road_energy_use(model_output_with_fuels,fig_dict, measure_to_unit_c
     #add units (by setting measure to Energy haha)
     energy_use_by_fuel_type['Measure'] = 'Energy'
     #add units
-    energy_use_by_fuel_type['Unit'] = energy_use_by_fuel_type['Measure'].map(measure_to_unit_concordance_dict)
+    energy_use_by_fuel_type['Unit'] = energy_use_by_fuel_type['Measure'].map(config.measure_to_unit_concordance_dict)
     
     #load in data and recreate plot, as created in all_economy_graphs
     #loop through scenarios and grab the data for each scenario:
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         energy_use_by_fuel_type_s = energy_use_by_fuel_type.loc[(energy_use_by_fuel_type['Scenario']==scenario)].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             energy_use_by_fuel_type_economy = energy_use_by_fuel_type_s.loc[energy_use_by_fuel_type_s['Economy']==economy].copy()
             
@@ -969,13 +992,14 @@ def plot_non_road_energy_use(model_output_with_fuels,fig_dict, measure_to_unit_c
     color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
     return fig_dict, color_preparation_list
 
-def non_road_activity_by_drive_type(model_output_detailed,fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+def non_road_activity_by_drive_type(ECONOMY_IDs,model_output_detailed_df,fig_dict, color_preparation_list, colors_dict,transport_type):
+    #why arent we getting different drive types.
     #break activity into its ddrive types and plot as an area chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
     #since we need detail on non road drive types, we have to pull the data fromm here:
     # 'output_data/model_output/NON_ROAD_DETAILED_{}'.format(config.model_output_file_name)
-     
+    model_output_detailed=model_output_detailed_df.copy()
     model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']!='road'].copy()
     
     #create a new df with only the data we need:
@@ -984,18 +1008,18 @@ def non_road_activity_by_drive_type(model_output_detailed,fig_dict,economy_scena
     
     
     # #simplfiy drive type using remap_drive_types
-    # activity_by_drive = remap_drive_types(activity_by_drive, value_col='Activity', config.INDEX_COLS = ['Economy', 'Date', 'Transport Type','Drive'])
+    # activity_by_drive = remap_drive_types(activity_by_drive, value_col='Activity', new_index_cols = ['Economy', 'Date', 'Transport Type','Drive'])
     
     #add units (by setting measure to Freight_tonne_km haha)
     activity_by_drive['Measure'] = 'Activity'
     #add units
     activity_by_drive['Unit'] = 'Activity'
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         
         #filter for the scenario:
         activity_by_drive_s = activity_by_drive.loc[activity_by_drive['Scenario']==scenario].copy()
 
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             activity_by_drive_economy = activity_by_drive_s.loc[activity_by_drive_s['Economy']==economy].copy()
             
@@ -1052,12 +1076,14 @@ def non_road_activity_by_drive_type(model_output_detailed,fig_dict,economy_scena
 
 
 
-def non_road_stocks_by_drive_type(model_output_detailed, fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+def non_road_stocks_by_drive_type(ECONOMY_IDs,model_output_detailed_df, fig_dict, color_preparation_list, colors_dict,transport_type):
     #break activity into its ddrive types and plot as an area chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
     #since we need detail on non road drive types, we have to pull the data fromm here:
 
+    model_output_detailed=model_output_detailed_df.copy()
+    
     model_output_detailed = model_output_detailed.loc[model_output_detailed['Medium']!='road'].copy()
     
     #create a new df with only the data we need:
@@ -1069,10 +1095,10 @@ def non_road_stocks_by_drive_type(model_output_detailed, fig_dict,economy_scenar
     #add units
     stocks_by_drive['Unit'] = 'Stocks'
 
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         #filter for the scenario:
         stocks_by_drive_s = stocks_by_drive.loc[stocks_by_drive['Scenario']==scenario].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             stocks_by_drive_economy = stocks_by_drive_s.loc[stocks_by_drive_s['Economy']==economy].copy()
             
@@ -1129,7 +1155,7 @@ def non_road_stocks_by_drive_type(model_output_detailed, fig_dict,economy_scenar
 
 
 
-def turnover_rate_by_drive_type(model_output_detailed,fig_dict,economy_scenario_concordance, color_preparation_list, colors_dict,transport_type):
+def turnover_rate_by_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type):
     #break activity into its ddrive types and plot the variation by medium and treansport type on a box chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
@@ -1143,10 +1169,10 @@ def turnover_rate_by_drive_type(model_output_detailed,fig_dict,economy_scenario_
     #add units
     turnover_rate_by_drive['Unit'] = '%'
 
-    for scenario in economy_scenario_concordance['Scenario'].unique():
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
         #filter for the scenario:
         turnover_rate_by_drive_s = turnover_rate_by_drive.loc[turnover_rate_by_drive['Scenario']==scenario].copy()
-        for economy in config.ECONOMIES_TO_PLOT_FOR:
+        for economy in ECONOMY_IDs:
             #filter to economy
             turnover_rate_by_drive_economy = turnover_rate_by_drive_s.loc[turnover_rate_by_drive_s['Economy']==economy].copy()
             
