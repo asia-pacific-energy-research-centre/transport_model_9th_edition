@@ -123,7 +123,8 @@ def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new
         new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot[['Economy', 'Scenario', 'Date','Transport Type','road', 'Vehicle Type', 'Drive',  'Transport_type_share', 'Transport_type_share_new']].copy()
 
         #make them long
-        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot_transport_type_shares.melt(id_vars=['Economy', 'Scenario', 'Date', 'Transport Type','road','Vehicle Type', 'Drive'], value_vars=['Transport_type_share', 'Transport_type_share_new'], var_name='Measure', value_name='Transport_type_share')
+        #rename Transport_type_share to Transport_type_share_o
+        new_sales_shares_all_plot_transport_type_shares = new_sales_shares_all_plot_transport_type_shares.melt(id_vars=['Economy', 'Scenario', 'Date', 'Transport Type','road','Vehicle Type', 'Drive'], value_vars=['Transport_type_share', 'Transport_type_share_new'], var_name='Measure', value_name='Value')
 
         #join drive and vehicle type
         new_sales_shares_all_plot_transport_type_shares['Vehicle_drive'] = new_sales_shares_all_plot_transport_type_shares['Vehicle Type'] + '_' + new_sales_shares_all_plot_transport_type_shares['Drive']
@@ -133,7 +134,7 @@ def plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new
                         
                     plot_data = new_sales_shares_all_plot_transport_type_shares.loc[(new_sales_shares_all_plot_transport_type_shares['Economy']==economy) & (new_sales_shares_all_plot_transport_type_shares['Scenario']==scenario) & (new_sales_shares_all_plot_transport_type_shares['road']==medium)].copy()
 
-                    fig = px.line(plot_data, x='Date', y='Transport_type_share', color='Vehicle_drive', line_dash = 'Measure', facet_col='Transport Type',facet_col_wrap=1, title=f'Transport_type_share {medium}', markers=True)
+                    fig = px.line(plot_data, x='Date', y='Value', color='Vehicle_drive', line_dash = 'Measure', facet_col='Transport Type',facet_col_wrap=1, title=f'Transport_type_share {medium}', markers=True)
                     #write to html in plotting_output\input_exploration\vehicle_sales_shares
                     fig.write_html(f'plotting_output/input_exploration/vehicle_sales_shares/by_economy/{economy}_{scenario}_{medium}_Transport_type_share.html', auto_open=False)
     print('Plots of new sales shares saved to plotting_output/input_exploration/vehicle_sales_shares/')
@@ -197,7 +198,7 @@ def plot_demand_side_fuel_mixing(demand_side_fuel_mixing):
     demand_side_fuel_mixing_plot = demand_side_fuel_mixing_plot[['Date', 'Economy','Scenario', 'Fuel','Drive', 'Demand_side_fuel_share']].drop_duplicates()
     
     for scenario in demand_side_fuel_mixing_plot.Scenario.unique():
-        scenario_data = demand_side_fuel_mixing_plot[demand_side_fuel_mixing_plot['Scenario'] == scenario]
+        scenario_data = demand_side_fuel_mixing_plot[demand_side_fuel_mixing_plot['Scenario'] == scenario].copy()
         title = 'Demand side fuel mixing for ' + scenario + ' scenario'
         #concat drive aND FUEL 
         scenario_data['Drive'] = scenario_data['Drive'] + ' ' + scenario_data['Fuel'] 

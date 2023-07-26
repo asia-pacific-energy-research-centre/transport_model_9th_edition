@@ -29,6 +29,8 @@ import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
+import road_model_functions
+
 def calculate_turnover_rate(df, k):
     df['Turnover_rate'] = 1 / (1 + np.exp(-k * (df['Average_age'] - df['Turnover_rate_midpoint'])))
     df['Turnover_rate'].fillna(0, inplace=True)
@@ -48,15 +50,14 @@ def load_non_road_model_data(ECONOMY_ID):
     #load the parameters from the config file
     turnover_rate_parameters_dict = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['turnover_rate_parameters_dict']
     turnover_rate_steepness = turnover_rate_parameters_dict['turnover_rate_steepness']
-    std_deviation_share = turnover_rate_parameters_dict['std_deviation_share']
         
-    return non_road_model_input, turnover_rate_steepness, std_deviation_share
+    return non_road_model_input, turnover_rate_steepness
     
 
 def run_non_road_model(ECONOMY_ID):
     output_file_name = 'intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
     
-    non_road_model_input, turnover_rate_steepness, std_deviation_share = load_non_road_model_data(ECONOMY_ID)
+    non_road_model_input, turnover_rate_steepness = load_non_road_model_data(ECONOMY_ID)
     
     non_road_model_input.sort_values(by=['Economy', 'Scenario','Transport Type','Date', 'Medium', 'Vehicle Type', 'Drive'])
 
@@ -94,7 +95,8 @@ def run_non_road_model(ECONOMY_ID):
             # if abs(new_activity.sum() - current_year['Activity'].sum()) > 0.0000001:
             #     raise ValueError("Sum of new activity doesn't match the calculated value.")
             #soemthing doesnt add up in the above
-            current_year['Average_age'] = current_year['Average_age'] - (std_deviation_share * current_year['Average_age'] * current_year['Turnover_rate'])  
+            current_year = road_model_functions.calculate_new_average_age_of_stocks(current_year)
+            # current_year['Average_age'] = current_year['Average_age'] - (std_deviation_share * current_year['Average_age'] * current_year['Turnover_rate'])  
 
             age_denominator = current_year['Stocks']
             #reaplce 0's in age denominator with 1's to avoid division by zero

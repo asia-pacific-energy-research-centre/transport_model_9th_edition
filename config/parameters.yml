@@ -11,8 +11,7 @@ vehicle_gompertz_factors:
   ht: 90
 #can edit these to adjust the amount of vehicles in the fleet. it is important to watch stocks per capita, by transport type to udnerstand the impact of these changes.
 turnover_rate_parameters_dict:
-  turnover_rate_steepness: 0.3
-  std_deviation_share: 0.2
+  turnover_rate_steepness: 0.7
 
 
 

@@ -143,10 +143,12 @@ model_concordances_supply_side_fuel_mixing_file_name = 'model_concordances_suppl
 model_concordances_demand_side_fuel_mixing_file_name = 'model_concordances_demand_side_fuel_mixing_{}.csv'.format(model_concordances_version)
 
 
-# Load in model concordances
-model_concordances = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(model_concordances_file_name))
-# Extract economy and scenario from df then drop dupes
-economy_scenario_concordance = model_concordances[['Economy', 'Scenario']].drop_duplicates().reset_index(drop=True)
+#using scenarios list and economy list, create a dataframe with all possible combinations of economy and scenario
+economy_scenario_concordance = pd.DataFrame(columns=['Economy', 'Scenario'])
+for economy in ECONOMY_LIST:
+    for scenario in SCENARIOS_LIST:
+        economy_scenario_concordance = pd.concat([economy_scenario_concordance, pd.DataFrame({'Economy': [economy], 'Scenario': [scenario]})], ignore_index=True)
+
 
 #AND A model_concordances_all_file_name
 # model_concordances_all_file_name = 'model_concordances_all{}.csv'.format(model_concordances_version)

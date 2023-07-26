@@ -55,7 +55,7 @@ def import_macro_data():
     #soret by date
     activity_growth_8th = activity_growth_8th.sort_values(by=['economy', 'date'])
     #calcualte the growth rates compounded over time for use in diagnostics:
-    activity_growth_8th['activity_growth_8th_index'] = activity_growth_8th.groupby('economy')['activity_growth_8th'].apply(lambda x: (1 + x).cumprod())
+    activity_growth_8th['activity_growth_8th_index'] = activity_growth_8th.groupby('economy', group_keys=False)['activity_growth_8th'].apply(lambda x: (1 + x).cumprod())
 
     #cahnge real_Gdp to Gdp for brevity (we dont use the actual values anyway(just growth rates)) and some other stuff:
     macro = macro.drop(columns=['economy'])

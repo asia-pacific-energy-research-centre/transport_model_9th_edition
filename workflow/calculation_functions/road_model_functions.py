@@ -40,7 +40,6 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     
     #extracts vars from turnover_rate_parameters_dict:
     turnover_rate_steepness = turnover_rate_parameters_dict['turnover_rate_steepness']
-    std_deviation_share = turnover_rate_parameters_dict['std_deviation_share']
 
     #create change dataframe. This is like a messy notepad where we will adjust the last years values values and perform most calcualtions. 
     change_dataframe = previous_year_main_dataframe.copy()
@@ -176,10 +175,14 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #CALCUALTE NEW STOCKS NEEDED AS STOCKS NEEDED TO SATISFY NEW SALES WORTH OF ACTIVITY
     change_dataframe['New_stocks_needed'] = change_dataframe['Travel_km_of_new_stocks'] / change_dataframe['Mileage']
-    # Calculate new mean age after turnover by assuming that the cars being removed are x * standard deviation above the mean. The new average age after turnover can be calculated as follows:
-    change_dataframe['Average_age'] = change_dataframe['Average_age'] - (std_deviation_share * change_dataframe['Average_age'] * change_dataframe['Turnover_rate'])
     
-    change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed'])#note that you times 0*change_dataframe['New_stocks_needed'] by the average age of the new stocks, as they have an average age of 0. it is there for understanding.
+    # Calculate new mean age after turnover
+    change_dataframe = calculate_new_average_age_of_stocks(change_dataframe)
+    
+    change_dataframe['Age_denominator'] = (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate'] + change_dataframe['New_stocks_needed']).replace(0,1)
+    #now calcualte verage age after adding new vehicles too:
+    change_dataframe['Average_age'] = (change_dataframe['Average_age'] * (change_dataframe['Original_stocks'] - change_dataframe['Original_stocks'] * change_dataframe['Turnover_rate']) + 0 * change_dataframe['New_stocks_needed']) / change_dataframe['Age_denominator']
+    #note that you times 0*change_dataframe['New_stocks_needed'] by the average age of the new stocks, as they have an average age of 0. it is there for understanding.
     #increase age by 1 year to simulate the fact that the cars are 1 year older
     change_dataframe['Average_age'] = change_dataframe['Average_age'] + 1
     
@@ -266,15 +269,51 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
             
     return main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,  previous_10_year_block
     
+def calculate_new_average_age_of_stocks(change_dataframe):
+    # Parameters
+    z_score = 1.645  # for the oldest 5%
+
+    # Calculate the standard deviation of ages
+    change_dataframe['std_dev_age'] = (1/3) * change_dataframe['Average_age']
+
+    # Calculate age threshold for the oldest cars
+    change_dataframe['age_threshold'] = change_dataframe['Average_age'] + z_score * change_dataframe['std_dev_age']
+
+    # Estimate the average age of the oldest cars
+    change_dataframe['average_age_of_oldest_cars'] = change_dataframe['age_threshold']
+
+    # Calculate the total age of all cars
+    change_dataframe['total_age'] = change_dataframe['Average_age'] * change_dataframe['Stocks']
+
+    # Calculate the number of cars to be replaced
+    change_dataframe['cars_to_replace'] = change_dataframe['Stocks'] * change_dataframe['Turnover_rate']
+
+    # Calculate the total age of cars to be replaced
+    change_dataframe['age_to_replace'] = change_dataframe['average_age_of_oldest_cars'] * change_dataframe['cars_to_replace']
+
+    # Subtract the age of the cars being replaced from the total age
+    change_dataframe['new_total_age'] = change_dataframe['total_age'] - change_dataframe['age_to_replace']
+
+    # Calculate the new average age
+    change_dataframe['Average_age'] = change_dataframe['new_total_age'] / (change_dataframe['Stocks'] - change_dataframe['cars_to_replace'])
+
+    #Replace any negative agees with 0
+    change_dataframe['Average_age'] = np.where(change_dataframe['Average_age'] < 0, 0, change_dataframe['Average_age'])
+    
+    #drop cols
+    change_dataframe = change_dataframe.drop(['std_dev_age', 'age_threshold', 'average_age_of_oldest_cars', 'total_age', 'cars_to_replace', 'age_to_replace', 'new_total_age'], axis=1)
+    # Return the updated dataframe
+    return change_dataframe
 
 def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
-        
     #separate user inputs into different dataframes
+    #gompertz paramaters are unqiuely set as being for vehicle type == 'all'. Extract them. We also need to set them to be non nan for the base year, as the base year has its values for inputs set to nan.
     gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna().copy()
+    base_year = road_model_input.Date.min()
     #replace values for BASE YEAR with values from the first calculated year of the model
-    BASE_YEAR_gompertz_parameters = gompertz_parameters[gompertz_parameters['Date']==gompertz_parameters['Date'].min()+1].copy()
-    BASE_YEAR_gompertz_parameters['Date'] = gompertz_parameters['Date'].min()
-    gompertz_parameters = pd.concat([gompertz_parameters[gompertz_parameters['Date']!=gompertz_parameters['Date'].min()], BASE_YEAR_gompertz_parameters], ignore_index=True)
+    BASE_YEAR_gompertz_parameters = gompertz_parameters[gompertz_parameters['Date']==gompertz_parameters['Date'].min()].copy()
+    BASE_YEAR_gompertz_parameters['Date'] = base_year
+    gompertz_parameters = pd.concat([gompertz_parameters[gompertz_parameters['Date']!=base_year], BASE_YEAR_gompertz_parameters], ignore_index=True)
     
     Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates().copy()
     Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates().copy()

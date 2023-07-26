@@ -77,13 +77,38 @@ def remap_drive_types(df, value_col='Value', new_index_cols = ['Scenario', 'Econ
         df = df.groupby(new_index_cols).sum().reset_index()
     return df
 
+def identify_high_2w_economies(stocks_df):
+    #remap vehicle types only for econmoys where the 2w vehicle type makes up more than 30% of stocks. This way, tehre wont be too many lines on the plot that arent near 0.#we will spit the data into two dataframes, one with high 2w and one without, then remap the vehicle types for the one with high 2w, then concat them back together
+    stocks_sum = stocks_df.groupby(['Economy', 'Vehicle Type'])['Value'].sum().reset_index().copy()
+    stocks_sum['Value'] = stocks_sum['Value']/stocks_sum.groupby(['Economy'])['Value'].transform('sum')
+    #keep only 2w where Value is greater than 0.3
+    stocks_sum = stocks_sum.loc[(stocks_sum['Vehicle Type']=='2w') & (stocks_sum['Value']>=0.3)].copy()
+    stocks_sum_economies = stocks_sum['Economy'].unique()
+    return stocks_sum_economies
+
+def remap_stocks_and_sales_for_high_2w_economies(stocks, new_sales_shares_all_plot_drive_shares):
+    
+    stocks_sum_economies = identify_high_2w_economies(stocks)
+    #keep those economies in the stocks df
+    high_2w_economies_stocks = stocks[stocks['Economy'].isin(stocks_sum_economies)].copy()
+    other_economies_stocks = stocks[~stocks['Economy'].isin(stocks_sum_economies)].copy()
+    high_2w_economies_sales = new_sales_shares_all_plot_drive_shares[new_sales_shares_all_plot_drive_shares['Economy'].isin(stocks_sum_economies)].copy()
+    other_economies_sales = new_sales_shares_all_plot_drive_shares[~new_sales_shares_all_plot_drive_shares['Economy'].isin(stocks_sum_economies)].copy()
+    high_2w_economies_stocks = remap_vehicle_types(high_2w_economies_stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    high_2w_economies_sales = remap_vehicle_types(high_2w_economies_sales, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    
+    #concat the two dataframes
+    stocks = pd.concat([high_2w_economies_stocks, other_economies_stocks])
+    new_sales_shares_all_plot_drive_shares = pd.concat([high_2w_economies_sales, other_economies_sales])
+    
+    return stocks, new_sales_shares_all_plot_drive_shares
     
 ###################################################
 def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df,stocks_df,fig_dict, color_preparation_list, colors_dict,share_of_transport_type_type):
     stocks = stocks_df.copy()
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
-    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
-    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    
+    stocks, new_sales_shares_all_plot_drive_shares = remap_stocks_and_sales_for_high_2w_economies(stocks, new_sales_shares_all_plot_drive_shares)
     # #sum up all the sales shares for each drive type
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     #now calucalte share of total stocks as a proportion like the sales share
@@ -93,11 +118,11 @@ def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_sha
     
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
-        stocks = stocks.loc[(stocks['Scenario']==scenario)].copy()
+        stocks_scen = stocks.loc[(stocks['Scenario']==scenario)].copy()
         ###        
         
         #then concat the two dataframes
-        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks])
+        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks_scen])
         
         #times shares by 100
         new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
@@ -152,25 +177,24 @@ def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_sha
 def plot_share_of_vehicle_type_by_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df,stocks_df,fig_dict, color_preparation_list, colors_dict, share_of_transport_type_type):
     #This data is in terms of transport type, so will need to normalise it to vehicle type by summing up the shares for each vehicle type and dividing individual shares by their sum
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
-    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    stocks = stocks_df.copy()
+    
+    stocks, new_sales_shares_all_plot_drive_shares = remap_stocks_and_sales_for_high_2w_economies(stocks, new_sales_shares_all_plot_drive_shares)
     
     new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Value'].transform(lambda x: x/x.sum())
     
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
-    stocks = stocks_df.copy()
-    
-    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
     stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
     stocks['line_dash'] = 'stocks'
     
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
-        stocks = stocks.loc[(stocks['Scenario']==scenario)].copy()
+        stocks_scen = stocks.loc[(stocks['Scenario']==scenario)].copy()
         ###
         
         #then concat the two dataframes
-        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks])
+        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks_scen])
         
         #times shares by 100
         new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
@@ -227,23 +251,22 @@ def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(ECONOMY_IDs,n
     #This data is in terms of transport type, so will need to normalise it to vehicle type by summing up the shares for each vehicle type and dividing individual shares by their sum
 
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
-    new_sales_shares_all_plot_drive_shares = remap_vehicle_types(new_sales_shares_all_plot_drive_shares, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
-    new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Value'].transform(lambda x: x/x.sum())
-    
     stocks = stocks_df.copy()
     
-    stocks = remap_vehicle_types(stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'])
+    stocks, new_sales_shares_all_plot_drive_shares = remap_stocks_and_sales_for_high_2w_economies(stocks, new_sales_shares_all_plot_drive_shares)
+    
+    new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Value'].transform(lambda x: x/x.sum())
+    
     stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
     stocks['line_dash'] = 'stocks'
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
             
-    
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
-        stocks = stocks.loc[(stocks['Scenario']==scenario)].copy()
+        stocks_scen = stocks.loc[(stocks['Scenario']==scenario)].copy()
         ###
         #then concat the two dataframes
-        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks])
+        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks_scen])
         
         #times shares by 100
         new_sales_shares_all_plot_drive_shares_scenario['Value'] = new_sales_shares_all_plot_drive_shares_scenario['Value']*100
@@ -280,22 +303,22 @@ def plot_share_of_vehicle_type_by_transport_type_both_on_one_graph(ECONOMY_IDs,n
 def share_of_sum_of_vehicle_types_by_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares_df,stocks_df,fig_dict, color_preparation_list, colors_dict, share_of_transport_type_type):
     #i think that maybe stocks % can be higher than sales % here because of turnvoer rates. hard to get it correct right now
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
+    stocks = stocks_df.copy()
+    
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive', 'Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
         
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
-    
-    stocks = stocks_df.copy()
     
     stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
     stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'])['Value'].apply(lambda x: x/x.sum())
     stocks['line_dash'] = 'stocks' 
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
-        stocks = stocks.loc[(stocks['Scenario']==scenario)].copy()
+        stocks_scen = stocks.loc[(stocks['Scenario']==scenario)].copy()
         ###
         
         #then concat the two dataframes
-        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks])
+        new_sales_shares_all_plot_drive_shares_scenario = pd.concat([new_sales_shares_all_plot_drive_shares_scenario, stocks_scen])
         
                 
         for economy in ECONOMY_IDs:
@@ -1155,7 +1178,7 @@ def non_road_stocks_by_drive_type(ECONOMY_IDs,model_output_detailed_df, fig_dict
 
 
 
-def turnover_rate_by_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type):
+def turnover_rate_by_drive_type_box(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type):
     #break activity into its ddrive types and plot the variation by medium and treansport type on a box chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
@@ -1199,7 +1222,7 @@ def turnover_rate_by_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, colo
                 title_text = 'Passenger turnover rate box (based on median)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
                 
                 #add fig to dictionary for scenario and economy:
-                fig_dict[economy][scenario]['turnover_rate_by_drive_passenger'] = [fig, title_text]
+                fig_dict[economy][scenario]['box_turnover_rate_by_drive_passenger'] = [fig, title_text]
                 
             elif transport_type == 'freight':
                 #now plot
@@ -1209,7 +1232,7 @@ def turnover_rate_by_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, colo
                 title_text = 'Freight turnover rate box (based on median)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
                 
                 #add fig to dictionary for scenario and economy:
-                fig_dict[economy][scenario]['turnover_rate_by_drive_freight'] = [fig, title_text]
+                fig_dict[economy][scenario]['box_turnover_rate_by_drive_freight'] = [fig, title_text]
                 
             elif transport_type == 'all':
                 #sum across transport types
@@ -1219,7 +1242,84 @@ def turnover_rate_by_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, colo
                 title_text = 'turnover_rate box (Freight/Passenger km) (based on median)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
                 
                 #add fig to dictionary for scenario and economy:
-                fig_dict[economy][scenario]['turnover_rate_by_drive_all'] = [fig, title_text]
+                fig_dict[economy][scenario]['box_turnover_rate_by_drive_all'] = [fig, title_text]
+                
+            else:
+                raise ValueError('transport_type must be passenger, all or freight')
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(turnover_rate_by_drive_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list
+
+
+def turnover_rate_by_drive_type_line(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type):
+    #break activity into its ddrive types and plot the variation by medium and treansport type on a box chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
+    # model_output_detailed.pkl
+    #loop through scenarios and grab the data for each scenario:
+    #since we need detail on non road drive types, we have to pull the data fromm here:
+    #create a new df with only the data we need:
+    turnover_rate_by_drive = model_output_detailed.copy()
+    turnover_rate_by_drive = turnover_rate_by_drive[['Economy', 'Date', 'Medium','Drive','Transport Type','Scenario','Vehicle Type', 'Turnover_rate', 'Stocks']].groupby(['Economy', 'Date', 'Medium','Transport Type','Scenario','Vehicle Type','Drive']).agg({'Turnover_rate':'mean', 'Stocks':'sum'}).reset_index()
+    
+    #simplify the drive types:
+    turnover_rate_by_drive = remap_drive_types(turnover_rate_by_drive, value_col='Turnover_rate', new_index_cols = ['Economy', 'Date', 'Medium','Transport Type','Vehicle Type','Scenario','Drive'],mapping_type='simplified', aggregation_type=('weighted_average', 'Stocks'))
+        
+    #add units (by setting measure to Freight_tonne_km haha)
+    turnover_rate_by_drive['Measure'] = 'Turnover_rate'
+    #add units
+    turnover_rate_by_drive['Unit'] = '%'
+
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
+        #filter for the scenario:
+        turnover_rate_by_drive_s = turnover_rate_by_drive.loc[turnover_rate_by_drive['Scenario']==scenario].copy()
+        for economy in ECONOMY_IDs:
+            #filter to economy
+            turnover_rate_by_drive_economy = turnover_rate_by_drive_s.loc[turnover_rate_by_drive_s['Economy']==economy].copy()
+            
+            # calculate total 'passenger_km' for each 'Drive' 
+            total_turnover_rate = turnover_rate_by_drive_economy.groupby('Drive')['Turnover_rate'].mean()
+
+            # Create an ordered category of 'Drive' labels sorted by total 'passenger_km'
+            turnover_rate_by_drive_economy['Drive'] = pd.Categorical(
+            turnover_rate_by_drive_economy['Drive'],
+            categories = total_turnover_rate.sort_values(ascending=False).index,
+            ordered=True
+            )
+
+            # Now sort the DataFrame by the 'Drive' column:
+            turnover_rate_by_drive_economy.sort_values(by='Drive', inplace=True)
+            #sort by date
+
+            if transport_type=='passenger':
+                #now plot
+                # fig = px.line(turnover_rate_by_drive_economy.loc[turnover_rate_by_drive_economy['Transport Type']=='passenger'], x='Date', y='Turnover_rate', color='Drive', title='Passenger turnover_rate by drive', color_discrete_map=colors_dict)
+                fig = px.line(turnover_rate_by_drive_economy.loc[turnover_rate_by_drive_economy['Transport Type']=='passenger'],x='Date', y='Turnover_rate', line_dash = 'Drive', color='Vehicle Type', title='Passenger turnover_rate by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Passenger turnover rate (based on mean)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['line_turnover_rate_by_drive_passenger'] = [fig, title_text]
+                
+            elif transport_type == 'freight':
+                #now plot
+                fig = px.line(turnover_rate_by_drive_economy.loc[turnover_rate_by_drive_economy['Transport Type']=='freight'],x='Date', y='Turnover_rate', line_dash = 'Drive', color='Vehicle Type', title='Freight turnover_rate by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'Freight turnover rate (based on mean)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['line_turnover_rate_by_drive_freight'] = [fig, title_text]
+                
+            elif transport_type == 'all':
+                #sum across transport types
+                fig = px.line(turnover_rate_by_drive_economy,x='Date', y='Turnover_rate', line_dash = 'Drive', color='Vehicle Type', title='Passenger turnover_rate by drive', color_discrete_map=colors_dict)
+                
+                #add units to y col
+                title_text = 'turnover_rate (Freight/Passenger km) (based on mean)'#.format(turnover_rate_by_drive_economy['Unit'].unique()[0])
+                
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['line_turnover_rate_by_drive_all'] = [fig, title_text]
                 
             else:
                 raise ValueError('transport_type must be passenger, all or freight')

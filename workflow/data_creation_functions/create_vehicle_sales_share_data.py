@@ -431,7 +431,7 @@ def create_vehicle_sales_share_input():
     if X_ORDER == 'linear':
         #do interpolation using spline and order = X
         
-        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive'])['Drive_share'].apply(lambda group: group.interpolate(method='linear'))
+        new_sales_shares_concat_interp['Drive_share'] = new_sales_shares_concat_interp.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Drive'], group_keys=False)['Drive_share'].apply(lambda group: group.interpolate(method='linear'))
     else:
         #do interpolation using spline and order = X
         
@@ -461,7 +461,7 @@ def create_vehicle_sales_share_input():
     # original_new_sales_shares_by_vehicle = original_new_sales_shares_by_vehicle
     #now sort by date then ffill
     original_new_sales_shares_by_vehicle = original_new_sales_shares_by_vehicle.sort_values(by=['Economy', 'Scenario', 'Date','road', 'Transport Type','Medium', 'Vehicle Type', 'Drive'])
-    original_new_sales_shares_by_vehicle['Vehicle_type_share_sum'] = original_new_sales_shares_by_vehicle.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type'])['Vehicle_type_share_sum'].apply(lambda group: group.ffill())
+    original_new_sales_shares_by_vehicle['Vehicle_type_share_sum'] = original_new_sales_shares_by_vehicle.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type'], group_keys=False)['Vehicle_type_share_sum'].apply(lambda group: group.ffill())
 
     #now merge the values onto the oroginal df and times by the vehicle type shares
     new_sales_shares_all = new_sales_shares_interp_by_drive.merge(original_new_sales_shares_by_vehicle, on=['Economy', 'Scenario', 'Date', 'Transport Type', 'Vehicle Type', 'Medium','road','Drive'], how='left')

@@ -297,8 +297,12 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
     # turnover_rate_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT,  color_preparation_list, colors_dict,transport_type)
     turnover_rate_types = [p.split('_')[-1] for p in plots if 'turnover_rate_by_drive' in p]
     for transport_type in turnover_rate_types:
-        if f'turnover_rate_by_drive_{transport_type}' in plots:
-            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.turnover_rate_by_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type)       
+        if f'box_turnover_rate_by_drive_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.turnover_rate_by_drive_type_box(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type) 
+                  
+    for transport_type in turnover_rate_types:
+        if f'line_turnover_rate_by_drive_{transport_type}' in plots:
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.turnover_rate_by_drive_type_line(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type)       
         
     avg_age_types = [p for p in plots if 'avg_age' in p]
     for title in avg_age_types:
@@ -379,8 +383,11 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None):
     # non_road_activity_by_drive_{transport_type}
     # non_road_energy_use_by_fuel_type_{transport_type}
     # non_road_stocks_by_drive_{transport_type}
-    # turnover_rate_by_drive_{transport_type}
+    # box_turnover_rate_by_drive_{transport_type}
     # avg_age_nonroad, avg_age_road, avg_age_all
+    # line_turnover_rate_by_drive_all
+    # line_turnover_rate_by_drive_freight
+    # line_turnover_rate_by_drive_passenger
     #####################################'
     hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
     
@@ -403,13 +410,13 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None):
 
     #create a development dashboard:
 
-    plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','share_of_transport_type_all',  'lmdi_freight', 'lmdi_passenger','stocks_per_capita', 'turnover_rate_by_drive_all']#, 'charging']#activity_growth# 'charging',
+    plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','share_of_transport_type_all',  'lmdi_freight', 'lmdi_passenger','stocks_per_capita', 'box_turnover_rate_by_drive_all','line_turnover_rate_by_drive_all']#, 'charging']#activity_growth# 'charging',
 
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
 
 
     #checkout turnover rate and average age related data:
-    plots = ['avg_age_road','avg_age_non_road','turnover_rate_by_drive_all','energy_use_by_fuel_type_all']#, 'charging']#activity_growth# 'charging',
+    plots = ['avg_age_road','avg_age_non_road','box_turnover_rate_by_drive_all','line_turnover_rate_by_drive_all']#, 'charging']#activity_growth# 'charging',
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'turnover_rate',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
 
 #%%

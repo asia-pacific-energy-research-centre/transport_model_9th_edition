@@ -54,16 +54,13 @@ import plot_charging_graphs
 import create_assumptions_dashboards
 import calculate_and_plot_oil_displacement
 import compare_esto_energy_to_data
-PLOT_INPUT_DATA = False
-CREATE_MODEL_CONCORDANCES = True
 
 #%%
 def main():
     #Things to do once a day:
     do_these_once_a_day = False
     if do_these_once_a_day:
-        if CREATE_MODEL_CONCORDANCES:
-            concordance_scripts.create_all_concordances()
+        concordance_scripts.create_all_concordances()
     
     PREPARE_DATA = False
     if PREPARE_DATA:
@@ -82,6 +79,10 @@ def main():
             ECONOMY_BASE_YEARS_DICT[e] = config.DEFAULT_BASE_YEAR
     #######################################################################
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
+        if economy == '15_RP':
+            breakpoint()#the error is with 15_RP. KeyError: '16_06_biodiesel'
+            
+            
         print('\nRunning model for {}\n'.format(economy))
         ECONOMY_ID = economy
         BASE_YEAR = ECONOMY_BASE_YEARS_DICT[economy]

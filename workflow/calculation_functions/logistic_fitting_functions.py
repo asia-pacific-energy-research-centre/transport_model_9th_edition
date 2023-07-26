@@ -41,7 +41,7 @@ def convert_stocks_to_gompertz_adjusted_stocks(model_data,vehicle_gompertz_facto
     
     for ttype in vehicle_gompertz_factors.keys():
         new_stocks = model_data.copy()
-        new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] = new_stocks['Stocks'] * vehicle_gompertz_factors[ttype]
+        new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] = new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] * vehicle_gompertz_factors[ttype]
     #sum up new stocks and other values specific to each vehicle type
     new_stocks = new_stocks[cols_to_sum_by+['Stocks','Activity', 'Travel_km']].groupby(cols_to_sum_by).sum().reset_index()
     
@@ -78,12 +78,13 @@ def logistic_fitting_function_handler(model_data,vehicle_gompertz_factors,show_p
     This will be done for each scenario too because movement between Transport Types might change the growth rate?"""
     #grab only passenger data if`ONLY_PASSENGER_VEHICLES` is True
     if ONLY_PASSENGER_VEHICLES:
-        model_data = model_data.loc[(model_data['Transport Type'] == 'passenger')] 
+        model_data_to_edit = model_data.loc[(model_data['Transport Type'] == 'passenger')] 
     else:
-        model_data = model_data.copy()
+        model_data_to_edit = model_data.copy()
         
-    new_model_data = convert_stocks_to_gompertz_adjusted_stocks(model_data,vehicle_gompertz_factors)
+    new_model_data = convert_stocks_to_gompertz_adjusted_stocks(model_data_to_edit,vehicle_gompertz_factors)
     #EXTRACT PARAMETERS FOR LOGISTIC FUNCTION:
+    
     parameters_estimates = find_parameters_for_logistic_function(new_model_data, show_plots, matplotlib_bool, plotly_bool)
     #some parameters will be np.nan because we dont need to fit the curve for all economies. We will drop these and not recalculate the growth rate for these economies
     parameters_estimates = parameters_estimates.dropna(subset=['Gompertz_gamma'])
@@ -123,7 +124,7 @@ def logistic_fitting_function_handler(model_data,vehicle_gompertz_factors,show_p
     activity_growth_estimates.drop(columns=['Activity'], inplace=True)
     
     #fill missing activity growth estimates (because there was no need for an adjustment) with their original growth rate:
-    old_activity_growth = model_data.copy()
+    old_activity_growth = model_data_to_edit.copy()
     if ONLY_PASSENGER_VEHICLES:
         old_activity_growth = old_activity_growth[old_activity_growth['Transport Type']=='passenger']
     old_activity_growth = old_activity_growth[['Date', 'Economy', 'Scenario', 'Activity_growth', 'Transport Type']].drop_duplicates()
