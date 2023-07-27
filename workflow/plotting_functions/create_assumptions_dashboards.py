@@ -108,6 +108,17 @@ colors_dict = {
 }
 
 def prepare_fig_dict_and_subfolders(ECONOMY_IDs, plots, ADVANCE_BASE_YEAR):
+    """
+    Prepares a dictionary of figures and creates subfolders for each economy.
+
+    Args:
+        ECONOMY_IDs (list): A list of economy IDs for which the figures are being created.
+        plots (list): A list of plot names to include in the figures.
+        ADVANCE_BASE_YEAR (int): The base year for the data being displayed in the figures.
+
+    Returns:
+        fig_dict (dict): A dictionary of figures, with keys corresponding to the economy IDs.
+    """
 
     #fig dict will have the following structure:
     #economy > scenario > plots
@@ -130,7 +141,23 @@ def prepare_fig_dict_and_subfolders(ECONOMY_IDs, plots, ADVANCE_BASE_YEAR):
                     fig_dict[economy][scenario][plot] = None
     return fig_dict
 
-def create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict,dashboard_name_id,hidden_legend_names,ADVANCE_BASE_YEAR):
+def create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id, hidden_legend_names, ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS):
+    """
+    Creates an assumptions dashboard for the specified economies and plots.
+
+    Args:
+        ECONOMY_IDs (list): A list of economy IDs for which the dashboard is being created.
+        plots (list): A list of plot names to include in the dashboard.
+        DROP_NON_ROAD_TRANSPORT (bool): Whether to drop non-road transport data from the dashboard.
+        colors_dict (dict): A dictionary of colors to use for the dashboard.
+        dashboard_name_id (str): The name or ID of the dashboard being created.
+        hidden_legend_names (list): A list of legend names to hide in the dashboard.
+        ADVANCE_BASE_YEAR (int): The base year for the data being displayed in the dashboard.
+        ARCHIVE_PREVIOUS_DASHBOARDS (bool): Whether to archive previous dashboards before saving a new one.
+
+    Returns:
+        None
+    """
     
     color_preparation_list = []
     fig_dict = prepare_fig_dict_and_subfolders(ECONOMY_IDs, plots,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
@@ -181,13 +208,59 @@ def create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict,da
 
                 fig.update_layout(title_text=f"Dashboard for {economy} {scenario}")
                 if ADVANCE_BASE_YEAR:
+                    if ARCHIVE_PREVIOUS_DASHBOARDS:
+                        archive_previous_dashboards_before_saving(economy, scenario, dashboard_name_id,config.GRAPHING_END_YEAR)
                     pio.write_html(fig, 'plotting_output/dashboards/{}/{}_assumptions_dashboard_{}.html'.format(economy, scenario,dashboard_name_id))
                 else:
+                    if ARCHIVE_PREVIOUS_DASHBOARDS:
+                        archive_previous_dashboards_before_saving(economy, scenario,dashboard_name_id, config.OUTLOOK_BASE_YEAR)
                     pio.write_html(fig, 'plotting_output/dashboards/{}/{}/{}_assumptions_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id))
     
     return fig_dict
 
+
+def archive_previous_dashboards_before_saving(economy, scenario, dashboard_name_id, end_year):
+    """
+    Archives the previous dashboards before saving a new one.
+
+    Args:
+        economy (str): The economy for which the dashboard is being created.
+        scenario (str): The scenario for which the dashboard is being created.
+        dashboard_name_id (str): The name or ID of the dashboard being created.
+        end_year (int): The end year of the data being displayed in the dashboard.
+
+    Returns:
+        None
+    """
+    if end_year == config.GRAPHING_END_YEAR:
+        #archive previous dashboards:
+        if os.path.exists('plotting_output/dashboards/{}/{}_assumptions_dashboard_{}.html'.format(economy, scenario,dashboard_name_id)):
+            #create dir:
+            if not os.path.exists('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy)):
+                os.makedirs('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy))
+            shutil.move('plotting_output/dashboards/{}/{}_assumptions_dashboard_{}.html'.format(economy, scenario,dashboard_name_id), 'plotting_output/dashboards/archive/{}/{}/{}_{}_assumptions_dashboard_{}.html'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy,config.GRAPHING_END_YEAR, scenario,dashboard_name_id))    
+                
+    elif end_year == config.OUTLOOK_BASE_YEAR:
+        if os.path.exists('plotting_output/dashboards/{}/{}/{}_assumptions_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id)):
+            #create dir:
+            if not os.path.exists('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy)):
+                os.makedirs('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy))
+            shutil.move('plotting_output/dashboards/{}/{}/{}_assumptions_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id), 'plotting_output/dashboards/archive/{}/{}/{}_{}_assumptions_dashboard_{}.html'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id))
+            
+            
 def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
+    """
+    Loads and formats the input data for the specified economies.
+
+    Args:
+        ADVANCE_BASE_YEAR (int): The base year for the data being displayed in the dashboard.
+        ECONOMY_IDs (list): A list of economy IDs for which the input data is being loaded.
+
+    Returns:
+        model_output_detailed (pandas.DataFrame): A dataframe containing the detailed model output data for the specified economies.
+        measure_to_unit_concordance_dict (dict): A dictionary mapping measure names to unit names.
+        economy_scenario_concordance (pandas.DataFrame): A dataframe containing the concordance between economy IDs and scenario names.
+    """
     #LAOD IN REQURIED DATA FOR PLOTTING EVERYTHING:
     model_output_detailed = pd.DataFrame()
     model_output_with_fuels = pd.DataFrame()
@@ -249,7 +322,22 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     
     return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input
 
-def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, colors_dict, DROP_NON_ROAD_TRANSPORT,ADVANCE_BASE_YEAR):
+def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, colors_dict, DROP_NON_ROAD_TRANSPORT, ADVANCE_BASE_YEAR):
+    """
+    Handles the creation of plots for the specified economies and plots.
+
+    Args:
+        ECONOMY_IDs (list): A list of economy IDs for which the plots are being created.
+        plots (list): A list of plot names to include in the figures.
+        fig_dict (dict): A dictionary of figures, with keys corresponding to the economy IDs.
+        color_preparation_list (list): A list of colors to use for the plots.
+        colors_dict (dict): A dictionary of colors to use for the dashboard.
+        DROP_NON_ROAD_TRANSPORT (bool): Whether to drop non-road transport data from the plots.
+        ADVANCE_BASE_YEAR (int): The base year for the data being displayed in the plots.
+
+    Returns:
+        None
+    """
     
     new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
     # Share of Transport Type
@@ -341,6 +429,19 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
     return fig_dict, color_preparation_list
 
 def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
+    """
+    Checks that all colors in the color preparation list are present in the colors dictionary.
+
+    Args:
+        color_preparation_list (list): A list of colors to use for the plots.
+        colors_dict (dict): A dictionary of colors to use for the dashboard.
+
+    Raises:
+        ValueError: If any color in the color preparation list is not present in the colors dictionary.
+
+    Returns:
+        None
+    """
     #filter out duplicates and then check what values are not in the colors_dict (which is what we set the colors in the charts with). If colors are missing then just add them manually.
     flattened_list = [item for sublist in color_preparation_list for item in sublist]
     color_preparation_list = list(set(flattened_list))
@@ -354,7 +455,19 @@ def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
     pd.DataFrame(missing_colors).to_csv('plotting_output/dashboards/missing_colors.csv')
     
 
-def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None):
+def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVIOUS_DASHBOARDS=True):
+    """
+    Handles the creation of assumptions dashboards for the specified economies.
+
+    Args:
+        ADVANCE_BASE_YEAR (int): The base year for the data being displayed in the dashboards.
+        ECONOMY_ID (str or None): The ID of the economy for which the dashboard is being created. If None, dashboards are created for all economies.
+        ARCHIVE_PREVIOUS_DASHBOARDS (bool): Whether to archive previous dashboards before saving a new one.
+
+    Returns:
+        None
+    """
+    
     if ECONOMY_ID == None:
         #fill with all economys
         ECONOMY_IDs = config.economy_scenario_concordance['Economy'].unique().tolist()
@@ -394,31 +507,31 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None):
     plots = ['stocks_per_capita', 'avg_age_all']
 
 
-    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
+    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
     #THAILAND DASHBOARD:
     plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'non_road_activity_by_drive_freight', 'non_road_activity_by_drive_passenger']#, 'charging']#activity_growth# 'charging',
-    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
+    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
 
     #create a presentation dashboard:
 
     plots = ['energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive', 'share_of_transport_type_passenger']#activity_growth
 
-    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'presentation',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
+    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'presentation',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
 
 
     #create a development dashboard:
 
     plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','share_of_transport_type_all',  'lmdi_freight', 'lmdi_passenger','stocks_per_capita', 'box_turnover_rate_by_drive_all','line_turnover_rate_by_drive_all']#, 'charging']#activity_growth# 'charging',
 
-    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
+    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
 
 
     #checkout turnover rate and average age related data:
     plots = ['avg_age_road','avg_age_non_road','box_turnover_rate_by_drive_all','line_turnover_rate_by_drive_all']#, 'charging']#activity_growth# 'charging',
-    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'turnover_rate',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
+    create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'turnover_rate',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
 
 #%%
-# dashboard_creation_handler(True,'19_THA')
+# dashboard_creation_handler(True,'19_THA', ARCHIVE_PREVIOUS_DASHBOARDS=True)
 #%%

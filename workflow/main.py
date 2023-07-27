@@ -71,17 +71,16 @@ def main():
         
     #######################################################################
     #since we're going to find that some economies have better base years than 2017 to start with, lets start changing the Base year vlaue and run the model economy by economy:
-    ECONOMY_BASE_YEARS_DICT = {}
-    ECONOMY_BASE_YEARS_DICT['19_THA'] = 2017
-    #FILL MISSING ECONOMIES WITH 2017
-    for e in config.ECONOMY_LIST:
-        if e not in ECONOMY_BASE_YEARS_DICT.keys():
-            ECONOMY_BASE_YEARS_DICT[e] = config.DEFAULT_BASE_YEAR
+    ECONOMY_BASE_YEARS_DICT = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['ECONOMY_BASE_YEARS_DICT']
+    ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD_dict = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD']
+    
     #######################################################################
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
-        if economy == '15_RP':
-            breakpoint()#the error is with 15_RP. KeyError: '16_06_biodiesel'
+        if (economy == '15_RP') or (economy == '18_CT'):
             
+            pass
+        else:
+            continue
             
         print('\nRunning model for {}\n'.format(economy))
         ECONOMY_ID = economy
@@ -100,7 +99,7 @@ def main():
                 concatenate_model_output.fill_missing_output_cols_with_nans(ECONOMY_ID, road_model_input_wide, non_road_model_input_wide)
             else:
                 run_road_model.run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False)
-                run_non_road_model.run_non_road_model(ECONOMY_ID)
+                run_non_road_model.run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD_dict[ECONOMY_ID])
                 
             concatenate_model_output.concatenate_model_output(ECONOMY_ID)
 
@@ -108,14 +107,15 @@ def main():
             apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(ECONOMY_ID)
             clean_model_output.clean_model_output(ECONOMY_ID)
             
-            PLOT_FIRST_MODEL_RUN = False
+            PLOT_FIRST_MODEL_RUN = True
+            ARCHIVE_PREVIOUS_DASHBOARDS = True
             if PLOT_FIRST_MODEL_RUN:       
                 #its easier to run all these rather than skipping some out for now
                 estimate_charging_requirements.estimate_kw_of_required_chargers(ECONOMY_ID)
                 plot_charging_graphs.plot_required_chargers(ECONOMY_ID)
                 calculate_and_plot_oil_displacement.calculate_and_plot_oil_displacement(ECONOMY_ID)     
                 produce_LMDI_graphs.produce_lots_of_LMDI_charts(ECONOMY_ID, USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
-                create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR,ECONOMY_ID)
+                create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR,ECONOMY_ID,ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT
         MODEL_RUN_2  = True
@@ -130,7 +130,7 @@ def main():
             
             run_road_model.run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False)
             
-            run_non_road_model.run_non_road_model(ECONOMY_ID)
+            run_non_road_model.run_non_road_model(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD=ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD_dict[ECONOMY_ID])
             concatenate_model_output.concatenate_model_output(ECONOMY_ID)
 
             apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(ECONOMY_ID)
@@ -146,12 +146,13 @@ def main():
             # create_osemosys_output.create_osemosys_output()
             
             ANALYSE_OUTPUT = True
+            ARCHIVE_PREVIOUS_DASHBOARDS = True
             if ANALYSE_OUTPUT: 
                 estimate_charging_requirements.estimate_kw_of_required_chargers(ECONOMY_ID)
                 plot_charging_graphs.plot_required_chargers(ECONOMY_ID)
                 calculate_and_plot_oil_displacement.calculate_and_plot_oil_displacement(ECONOMY_ID)       
                 produce_LMDI_graphs.produce_lots_of_LMDI_charts(ECONOMY_ID, USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
-                create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID)
+                create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT   
             
 

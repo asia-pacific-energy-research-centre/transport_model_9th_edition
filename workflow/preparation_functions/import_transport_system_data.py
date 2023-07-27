@@ -259,7 +259,17 @@ def import_transport_system_data():
 
 #TODO need to update thids
 
-def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
+def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures):
+    """
+    Adjusts the non-road transport data in the transport data system dataframe.
+
+    Args:
+        transport_data_system_df (pandas.DataFrame): A dataframe containing the transport data system data.
+        model_concordances_measures (pandas.DataFrame): A dataframe containing the concordance between model output measures and transport data system measures.
+
+    Returns:
+        pandas.DataFrame: A dataframe containing the adjusted transport data system data.
+    """
     #we added drive types to non road. now we need to make sure that the input from datasyustem contains them. 
     #essentailly, the input datasystem data will contain a row for each non road medium (air, rail, ship) and the drive and vehicle types will be 'all'. 
     #now we have created drive types and they are in the concordance.
@@ -350,9 +360,13 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     #drop Unit and then pivot the MEasure
     transport_data_system_non_road = transport_data_system_non_road.drop(columns=['Frequency','Unit'])
     transport_data_system_non_road = transport_data_system_non_road.pivot(index=['Economy', 'Date', 'Medium', 'Drive', 'Vehicle Type', 'Transport Type'], columns='Measure', values='Value').reset_index()
-    transport_data_system_non_road = transport_data_system_non_road.drop(columns=['Activity'])
+    transport_data_system_non_road_energy_only = transport_data_system_non_road.drop(columns=['Activity', 'Stocks', 'Intensity'])
+    #check that the only cols we have arer the ones we expect (ignore order)
+    if not set(transport_data_system_non_road_energy_only.columns) == set(['Economy', 'Date', 'Medium', 'Drive', 'Vehicle Type', 'Transport Type', 'Energy']):
+        breakpoint()
+        raise ValueError('The columns in the transport data system non road dataset are not as expected. Please check the code.')
     #get the previous splits between passenger and freight transport in energy, by economy and date (also drop na rows)
-    transport_data_system_transport_type_splits = transport_data_system_non_road.dropna().pivot(index=['Economy', 'Date', 'Medium','Drive', 'Vehicle Type'], columns='Transport Type', values='Energy').reset_index()
+    transport_data_system_transport_type_splits = transport_data_system_non_road_energy_only.dropna().pivot(index=['Economy', 'Date', 'Medium','Drive', 'Vehicle Type'], columns='Transport Type', values='Energy').reset_index()
     #calc the ratio between passenger and freight
     transport_data_system_transport_type_splits['freight_ratio'] = transport_data_system_transport_type_splits['freight'] / (transport_data_system_transport_type_splits['passenger']+transport_data_system_transport_type_splits['freight'])
 
@@ -411,7 +425,7 @@ def adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures):
     esto_non_road_drives_ttype_split = esto_non_road_drives_ttype_split.melt(id_vars=['Economy', 'Date', 'Medium', 'Fuel', 'Drive'], var_name='Transport Type', value_name='Energy')
     
     #now this can be joined to the transport_data_system_non_road and times by intensity to get the acitvity
-    final_df = pd.merge(transport_data_system_non_road[['Economy', 'Date', 'Medium', 'Transport Type', 'Intensity']], esto_non_road_drives_ttype_split, how='left', on=['Economy', 'Date', 'Medium', 'Transport Type'])
+    final_df = pd.merge(transport_data_system_non_road[['Economy', 'Date', 'Medium', 'Transport Type', 'Intensity']].drop_duplicates(), esto_non_road_drives_ttype_split, how='left', on=['Economy', 'Date', 'Medium', 'Transport Type'])
 
     #drop where Drive is nan. this is where we didnt have any data in the esto data and so we dont wqant to cosider it in the model:
     #ACTUALLY JUST CHECK IF THERE ARE ANY NANS IN THE DRIVE COL. IF THERE ARE THEN THROW AN ERROR. IM PRETTY SURE WE REQUIRE THAT THE ESTO DATA NEEDS TO HAVE ALL THE DATA?

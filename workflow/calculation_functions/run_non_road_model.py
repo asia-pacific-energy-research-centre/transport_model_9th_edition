@@ -36,10 +36,30 @@ def calculate_turnover_rate(df, k):
     df['Turnover_rate'].fillna(0, inplace=True)
     return df
 
-def load_non_road_model_data(ECONOMY_ID):
-    
+def load_non_road_model_data(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD):
+    """
+    Loads the non-road model data for the specified economy.
+
+    Args:
+        ECONOMY_ID (str): The ID of the economy for which the data is being loaded.
+        USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD (bool): Whether to use road activity growth rates to estimate non-road activity.
+
+    Returns:
+        pandas.DataFrame: A dataframe containing the non-road model data for the specified economy.
+    """
+    #want to check if growth rates are similar strucutre.
     #load all data except activity data (which is calcualteed separately to other calcualted inputs)
-    growth_forecasts = pd.read_pickle(f'./intermediate_data/road_model/{ECONOMY_ID}_final_road_growth_forecasts.pkl')
+    if USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD:
+        growth_forecasts = pd.read_pickle(f'./intermediate_data/road_model/{ECONOMY_ID}_final_road_growth_forecasts.pkl')
+        a = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{ECONOMY_ID}_growth_forecasts_wide.csv')
+        #test if its the same to pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{ECONOMY_ID}_growth_forecasts_wide.csv')
+        if not growth_forecasts.equals(a):
+            breakpoint()
+    else:
+        growth_forecasts = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{ECONOMY_ID}_growth_forecasts_wide.csv')
+        a = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{ECONOMY_ID}_growth_forecasts_wide.csv')
+        if not growth_forecasts.equals(a):
+            breakpoint()
     #load all other data
     non_road_model_input = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{ECONOMY_ID}_non_road_model_input_wide.csv')
 
@@ -54,10 +74,10 @@ def load_non_road_model_data(ECONOMY_ID):
     return non_road_model_input, turnover_rate_steepness
     
 
-def run_non_road_model(ECONOMY_ID):
+def run_non_road_model(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = False):
     output_file_name = 'intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
     
-    non_road_model_input, turnover_rate_steepness = load_non_road_model_data(ECONOMY_ID)
+    non_road_model_input, turnover_rate_steepness = load_non_road_model_data(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD)
     
     non_road_model_input.sort_values(by=['Economy', 'Scenario','Transport Type','Date', 'Medium', 'Vehicle Type', 'Drive'])
 

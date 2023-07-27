@@ -13,8 +13,53 @@ vehicle_gompertz_factors:
 turnover_rate_parameters_dict:
   turnover_rate_steepness: 0.7
 
+# ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD:
+ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD:
+  '19_THA': True
+  '01_AUS': True
+  '02_BD': True
+  '03_CDA': True
+  '04_CHL': True
+  '05_PRC': True
+  '06_HKC': True
+  '07_INA': True
+  '08_JPN': True
+  '09_ROK': True
+  '10_MAS': True
+  '11_MEX': True
+  '12_NZ': True
+  '13_PNG': True
+  '14_PE': True
+  '15_RP': True
+  '16_RUS': True
+  '17_SIN': True
+  '18_CT': True
+  '20_USA': True
+  '21_VN': True
+  
 
-
+ECONOMY_BASE_YEARS_DICT:
+  '19_THA': 2020
+  '20_USA': 2017
+  '01_AUS': 2017
+  '02_BD': 2017
+  '03_CDA': 2017
+  '04_CHL': 2017
+  '05_PRC': 2017
+  '06_HKC': 2017
+  '07_INA': 2017
+  '08_JPN': 2017
+  '09_ROK': 2017
+  '10_MAS': 2017
+  '11_MEX': 2017
+  '12_NZ': 2017
+  '13_PNG': 2017
+  '14_PE': 2017
+  '15_RP': 2017
+  '16_RUS': 2017
+  '17_SIN': 2017
+  '18_CT': 2017
+  '21_VN': 2017
 #   vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 30, 'ht': 30}
 # turnover_rate_parameters_dict = {'turnover_rate_steepness':0.5,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':25}
 # #tried std_deviation_share = 0.25, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #old vehicles never left the fleet once we reached 80% ev stock share

@@ -7,7 +7,7 @@ NEW_SALES_SHARES = True
 
 NEW_FUEL_MIXING_DATA = True
 
-transport_data_system_FILE_DATE_ID ='DATE20230717' # 'DATE20230216'))
+transport_data_system_FILE_DATE_ID ='DATE20230727_19_THA' # 'DATE20230216'))
 
 # FILE_DATE_ID ='_20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run
 

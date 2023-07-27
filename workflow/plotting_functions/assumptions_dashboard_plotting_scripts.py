@@ -41,7 +41,7 @@ def remap_vehicle_types(df, value_col='Value', new_index_cols = ['Scenario', 'Ec
 def remap_drive_types(df, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'], mapping_type='original', aggregation_type=('sum',), include_non_road=True):
     if mapping_type == 'original':
         if include_non_road:
-            drive_type_combinations = {'ice_g':'ice_g', 'ice_d':'ice_d', 'phev_d':'phev_d', 'phev_g':'phev_g', 'bev':'bev', 'fcev':'fcev', 'cng':'cng', 'lpg':'lpg',  'all':'all', 'air':'air', 'rail':'rail', 'ship':'ship'}
+            drive_type_combinations = {'ice_g':'ice_g', 'ice_d':'ice_d', 'phev_d':'phev_d', 'phev_g':'phev_g', 'bev':'bev', 'fcev':'fcev', 'cng':'cng', 'lpg':'lpg',  'all':'non-road', 'air':'air', 'rail':'rail', 'ship':'ship'}
         else:
             drive_type_combinations = {'ice_g':'ice', 'ice_d':'ice', 'phev_d':'phev', 'phev_g':'phev', 'bev':'bev', 'fcev':'fcev', 'cng':'gas', 'lpg':'gas',  'all':'non-road', 'air':'non-road', 'rail':'non-road', 'ship':'non-road'}
         df["Drive new"] = df['Drive'].map(drive_type_combinations)

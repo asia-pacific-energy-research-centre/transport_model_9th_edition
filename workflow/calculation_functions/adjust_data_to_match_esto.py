@@ -96,6 +96,11 @@ def adjust_supply_side_fuel_share(energy_use_esto,supply_side_fuel_mixing):
     #find portion of '16_06_biodiesel', '16_05_biogasoline', '16_07_bio_jet_kerosene' out of the toal '07_07_gas_diesel_oil', '07_01_motor_gasoline', '07_x_jet_fuel' in the esto data so we can change the supply side fuel mixing to match:
     energy_use_esto_wide = energy_use_esto.groupby(['Economy', 'Date', 'Fuel']).sum(numeric_only=True).reset_index()
     energy_use_esto_wide = energy_use_esto_wide.pivot(index=['Economy', 'Date'], columns='Fuel', values='Energy').reset_index()
+    #some economies wont use all the fuels, so we need to catch the error, and just set the value to 0 before doing this:
+    for fuel in ['07_07_gas_diesel_oil', '07_01_motor_gasoline', '07_x_jet_fuel', '07_09_lpg', '08_01_natural_gas', '07_02_aviation_gasoline', '07_06_kerosene','16_06_biodiesel', '16_05_biogasoline', '16_07_bio_jet_kerosene', '16_01_biogas']:
+        if fuel not in energy_use_esto_wide.columns:
+            energy_use_esto_wide[fuel] = 0
+             
     energy_use_esto_wide['share_of_biodiesel'] = energy_use_esto_wide['16_06_biodiesel']/(energy_use_esto_wide['07_07_gas_diesel_oil']+energy_use_esto_wide['16_06_biodiesel'])
     energy_use_esto_wide['share_of_biogasoline'] = energy_use_esto_wide['16_05_biogasoline']/(energy_use_esto_wide['07_01_motor_gasoline']+energy_use_esto_wide['16_05_biogasoline'])
     
