@@ -38,7 +38,7 @@ def run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     vehicle_gompertz_factors = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['vehicle_gompertz_factors']
     turnover_rate_parameters_dict = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['turnover_rate_parameters_dict']
     
-    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
+    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation, previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,ECONOMY_ID,low_ram_computer=False)
     
     #if you want to analyse what is hapening in th model then set this to true and the model will output a dataframe wioth all the variables that are being calculated.
     ANALYSE_CHANGE_DATAFRAME = True
@@ -66,7 +66,7 @@ def run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     growth_forecasts.to_pickle(f'./intermediate_data/road_model/{ECONOMY_ID}_final_road_growth_forecasts.pkl')#save them sincewe will use them for non road
     
     #######################################################################
-    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,low_ram_computer=False)
+    main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block, user_inputs_df_dict,low_ram_computer = road_model_functions.prepare_road_model_inputs(road_model_input,ECONOMY_ID,low_ram_computer=False)
     #######################################################################
     #RUN MODEL AGAIN
     ####################################################################### 

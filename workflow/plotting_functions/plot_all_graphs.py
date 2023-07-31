@@ -25,7 +25,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
-
+import plotly
 import time
 import itertools
 AUTO_OPEN_PLOTLY_GRAPHS = False
@@ -53,7 +53,7 @@ non_summable_value_cols = ['Occupancy', 'Load', 'Turnover_rate', 'New_vehicle_ef
 categorical_cols = ['Vehicle Type', 'Medium', 'Transport Type', 'Drive']
 macro_cols = ['Gdp_per_capita','Gdp', 'Population', 'Activity_growth']
 
-def all_economy_graphs_massive_unwieldy_function(PLOT=True):
+def plot_all_graphs(PLOT=True):
 
     #create units dict for each value col so that wehn we plot them we can label them correctly
     #import measure to unit concordance
@@ -64,15 +64,13 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
     ##############FORMATTING#############
     #load data in
-    original_model_output_all = pd.read_csv('output_data/model_output/{}'.format(config.model_output_file_name))
-    original_model_output_detailed = pd.read_csv('output_data/model_output_detailed/{}'.format(config.model_output_file_name))
-    original_change_dataframe_aggregation = pd.read_csv('intermediate_data/road_model/change_dataframe_aggregation.csv')
-    original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/{}'.format(config.model_output_file_name))
     original_model_output_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv')
     #rename Year col into Date
     original_model_output_8th = original_model_output_8th.rename(columns={'Year':'Date'})
     original_activity_growth = pd.read_csv('input_data/from_8th/reformatted/activity_growth_8th.csv')
-
+    original_model_output_detailed = pd.read_csv('output_data/model_output_detailed/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name))
+    original_model_output_all = pd.read_csv('output_data/model_output/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name))
+    original_model_output_with_fuels = pd.read_csv('output_data/model_output_with_fuels/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name))
     #loop thorugh scenarios:
 
     for scenario in original_model_output_all['Scenario'].unique():
@@ -88,7 +86,6 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
         model_output_all = original_model_output_all[original_model_output_all['Scenario']==config.SCENARIO_OF_INTEREST].copy()
         model_output_detailed = original_model_output_detailed[original_model_output_detailed['Scenario']==config.SCENARIO_OF_INTEREST].copy()
-        change_dataframe_aggregation = original_change_dataframe_aggregation[original_change_dataframe_aggregation['Scenario']==config.SCENARIO_OF_INTEREST].copy()
         model_output_with_fuels = original_model_output_with_fuels[original_model_output_with_fuels['Scenario']==config.SCENARIO_OF_INTEREST].copy()
         activity_growth = original_activity_growth[original_activity_growth['Scenario']==config.SCENARIO_OF_INTEREST].copy()
         if config.SCENARIO_OF_INTEREST == 'Target':
@@ -124,12 +121,12 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
         model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road', 'Drive'] = model_output_with_fuels['Medium']
         model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road', 'Vehicle Type'] = model_output_with_fuels['Medium']
 
-        #filter for economies on all dfs
-        model_output_all = model_output_all[model_output_all['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
-        model_output_detailed = model_output_detailed[model_output_detailed['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
-        model_output_8th = model_output_8th[model_output_8th['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
-        model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
-        activity_growth = activity_growth[activity_growth['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        # #filter for economies on all dfs
+        # model_output_all = model_output_all[model_output_all['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        # model_output_detailed = model_output_detailed[model_output_detailed['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        # model_output_8th = model_output_8th[model_output_8th['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        # model_output_with_fuels = model_output_with_fuels[model_output_with_fuels['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
+        # activity_growth = activity_growth[activity_growth['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
 
         #filter for certain years:
         if beginning_year != None:
@@ -203,13 +200,13 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
             except FileNotFoundError:
                 times_df = pd.DataFrame(columns=['section', 'time'])
 
-            times_df = times_df.append({'section': section, 'time': elapsed_time, 'num_economies': len(config.ECONOMIES_TO_PLOT_FOR)}, ignore_index=True)
+            times_df = times_df.append({'section': section, 'time': elapsed_time, 'num_economies': 21}, ignore_index=True)
             times_df.to_csv('plotting_output/all_economy_graphs_plotting_times.csv', index=False)
         def print_expected_time_to_run(section):
             try:
                 times_df = pd.read_csv('plotting_output/all_economy_graphs_plotting_times.csv')
                 times_df = times_df[times_df['section']==section]
-                times_df = times_df[times_df['num_economies']==len(config.ECONOMIES_TO_PLOT_FOR)]
+                times_df = times_df[times_df['num_economies']==21]
                 times_df = times_df['time']
                 times_df = times_df.mean()
                 print(f'Expected time to run {section} is {times_df} seconds')
@@ -877,323 +874,9 @@ def all_economy_graphs_massive_unwieldy_function(PLOT=True):
 
 #%%
 
-# all_economy_graphs_massive_unwieldy_function(PLOT=False)
+# plot_all_graphs(PLOT=False)
 
 #%%
 
 
 
-
-
-
-
-
-
-
-
-# AUTO_OPEN_PLOTLY_GRAPHS = True
-# #plot energy use by medium and economy
-# title = 'Energy use by medium and economy'
-# model_output_all_medium = model_output_all.groupby(['Date', 'Medium', 'Economy']).sum().reset_index()
-
-# fig = px.line(model_output_all_medium, x="Date", y="Energy", color='Medium', facet_col='Economy', title='Energy use by medium and economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-
-# # %%
-# #plot passenger km by medium and economy
-# title = 'Passenger km by medium and economy'
-# #filter for transport type = passenger
-# model_output_all_medium = model_output_all_medium[model_output_all_medium['Transport Type']=='passenger']
-# model_output_all_medium = model_output_all_medium.groupby(['Date', 'Medium', 'Economy']).sum().reset_index()
-
-# fig = px.line(model_output_all_medium, x="Date", y="Activity", color='Medium', facet_col='Economy', title='Passenger km by medium and economy', facet_col_wrap=7)
-# #make y axis independent
-# fig.update_yaxes(matches=None)
-# #show y axis on both plots
-# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-# 
-# #plot freight tonne km by medium and economy
-# title = 'Freight tonne km by medium and economy'
-# #filter for transport type = freight
-# model_output_all_medium = model_output_all_medium[model_output_all_medium['Transport Type']=='freight']
-# model_output_all_medium = model_output_all_medium.groupby(['Date', 'Medium', 'Economy']).sum().reset_index()
-# fig = px.line(model_output_all_medium, x="Date", y="freight_tonne_km", color='Medium', facet_col='Economy', title='freight km by medium and economy', facet_col_wrap=7)
-# #make y axis independent
-# fig.update_yaxes(matches=None)
-# #show y axis on both plots
-# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-# #plot energy use by fuel type
-# model_output_with_fuels_plot = model_output_with_fuels.groupby(['Fuel','Date', 'Economy']).sum().reset_index()
-
-# title='Energy use by fuel type'
-# #plot using plotly
-# fig = px.line(model_output_with_fuels_plot, x="Date", y="Energy", color="Fuel", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-
-# #plot the total energy use by vehicle type / drive type combination sep by transport type
-# #first need to create a new column that combines the vehicle type and drive type
-# model_output_detailed['vehicle_type_drive_type'] = model_output_detailed['Vehicle Type'] + ' ' + model_output_detailed['Drive']
-# #grab passenger data only
-# model_output_detailed_pass = model_output_detailed[model_output_detailed['Transport Type']=='passenger']
-# title='Energy use by vehicle type drive type combination, passenger'
-# #plot using plotly
-# fig = px.line(model_output_detailed_pass, x="Date", y="Energy", color="vehicle_type_drive_type", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# #plot the total energy use by vehicle type / drive type combination sep by transport type
-# #first need to create a new column that combines the vehicle type and drive type
-# model_output_detailed['vehicle_type_drive_type'] = model_output_detailed['Vehicle Type'] + ' ' + model_output_detailed['Drive']
-# #grab passenger data only
-# model_output_detailed_freight = model_output_detailed[model_output_detailed['Transport Type']=='freight']
-# title='Energy use by vehicle type drive type combination, freight'
-# #plot using plotly
-# fig = px.line(model_output_detailed_freight, x="Date", y="Energy", color="vehicle_type_drive_type", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-# 
-# #plot travel km by vehicle type / drive type combination
-# title = 'Travel km by vehicle type drive type combination, passenger'
-# #grab passenger data only
-# model_output_detailed_passenger = model_output_detailed[model_output_detailed['Transport Type']=='passenger']
-# #plot using plotly
-# fig = px.line(model_output_detailed_passenger, x="Date", y="Travel_km", color="vehicle_type_drive_type", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# title = 'Travel km by vehicle type drive type combination, freight'
-# #grab passenger data only
-# model_output_detailed_passenger = model_output_detailed[model_output_detailed['Transport Type']=='freight']
-# #plot using plotly
-# fig = px.line(model_output_detailed_passenger, x="Date", y="Travel_km", color="vehicle_type_drive_type", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-
-# 
-# #plot activity by vehicle type / drive type combination
-# title = 'Activity by vehicle type drive type combination, passenger'
-# #grab passenger data only
-# model_output_detailed_passenger = model_output_detailed[model_output_detailed['Transport Type']=='passenger']
-
-# #plot using plotly
-# fig = px.line(model_output_detailed_passenger, x="Date", y="Activity",  color="vehicle_type_drive_type", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# title = 'Activity by vehicle type drive type combination, freight'
-# #grab passenger data only
-# model_output_detailed_passenger = model_output_detailed[model_output_detailed['Transport Type']=='freight']
-
-# #plot using plotly
-# fig = px.line(model_output_detailed_passenger, x="Date", y="Activity",  color="vehicle_type_drive_type", title=title, facet_col='Economy', facet_col_wrap=7)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-# 
-# #plot efficiency over time by vehicle type / drive type combination
-# title = 'Efficiency by vehicle type drive type combination, passenger'
-# #grab passenger data only
-# model_output_detailed_passenger = model_output_detailed[model_output_detailed['Transport Type']=='passenger']
-# #plot using plotly
-# fig = px.line(model_output_detailed, x="Date", y="Efficiency", facet_col='Economy', facet_col_wrap=7, color="vehicle_type_drive_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# #plot efficiency over time by vehicle type / drive type combination
-# title = 'Efficiency by vehicle type drive type combination, freight'
-# #grab passenger data only
-# model_output_detailed_passenger = model_output_detailed[model_output_detailed['Transport Type']=='freight']
-# #plot using plotly
-# fig = px.line(model_output_detailed, x="Date", y="Efficiency", facet_col='Economy', facet_col_wrap=7, color="vehicle_type_drive_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-# 
-# #plot stocks over time by vehicle type / drive type combination
-# title = 'Stocks by vehicle type drive type combination, passenger'
-# #plot using plotly
-# fig = px.line(model_output_detailed, x="Date", y="Stocks",facet_col='Economy', facet_col_wrap=7, color="vehicle_type_drive_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-# #plot sales share over time by vehicle type / drive type combination
-# title = 'Sales share by vehicle type drive type combination, sep by transport type'
-# #plot using plotly
-# fig = px.line(model_output_detailed, x="Date", y="Vehicle_sales_share", facet_col="Transport Type", facet_col_wrap=2, color="vehicle_type_drive_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-# #energy use by vehicle type fuel type combination
-# title = 'Energy use by vehicle type fuel type combination, sep by transport type'
-
-# #remove drive type from model_output_with_fuels
-# model_output_with_fuels_no_drive = model_output_with_fuels.drop(columns=['Drive'])
-# #sum
-# model_output_with_fuels_no_drive = model_output_with_fuels_no_drive.groupby(['Economy','Vehicle Type','Transport Type','Fuel','Date']).sum().reset_index()
-
-# #create col for vehicle type and fuel type combination
-# model_output_with_fuels_no_drive['vehicle_type_fuel_type'] = model_output_with_fuels_no_drive['Vehicle Type'] + ' ' + model_output_with_fuels_no_drive['Fuel']
-# #plot using plotly
-# fig = px.line(model_output_with_fuels_no_drive, x="Date", y="Energy", facet_col="Transport Type", facet_col_wrap=2, color="vehicle_type_fuel_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-# #energy use by vehicle type fuel type combination
-# title = 'Energy use by Drive fuel type combination, sep by transport type'
-
-# #remove drive type from model_output_with_fuels
-# model_output_with_fuels_no_v = model_output_with_fuels.drop(columns=['Vehicle Type'])
-# #sum
-# model_output_with_fuels_no_v = model_output_with_fuels_no_v.groupby(['Economy','Drive','Transport Type','Fuel','Date']).sum().reset_index()
-
-# #create col for vehicle type and fuel type combination
-# model_output_with_fuels_no_v['drive_fuel_type'] = model_output_with_fuels_no_v['Drive'] + ' ' + model_output_with_fuels_no_v['Fuel']
-# #plot using plotly
-# fig = px.line(model_output_with_fuels_no_v, x="Date", y="Energy", facet_col="Transport Type", facet_col_wrap=2, color="drive_fuel_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-# #energy use by medium, transport type combination
-# title = 'Energy use by medium, transport type combination'
-
-# #remove drive type from model_output_with_fuels
-# model_output_with_fuels_no_v = model_output_with_fuels.drop(columns=['Vehicle Type', 'Drive'])
-# #sum
-# model_output_with_fuels_no_v = model_output_with_fuels_no_v.groupby(['Economy','Transport Type','Fuel','Medium','Date']).sum().reset_index()
-
-# #create col for medium and fuel type combination
-# model_output_with_fuels_no_v['medium_fuel_type'] = model_output_with_fuels_no_v['Medium'] + ' ' + model_output_with_fuels_no_v['Fuel']
-# #plot using plotly
-# fig = px.line(model_output_with_fuels_no_v, x="Date", y="Energy", facet_col="Transport Type", facet_col_wrap=2, color="medium_fuel_type", title=title)
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-# 
-# #passenger km by medium, transport type combination
-# title = 'Activity by medium, transport type combination'
-
-# model_output_detailed_medium_activity = model_output_detailed.groupby(['Economy','Transport Type','Medium','Date']).sum().reset_index()
-
-# #create col for medium and fuel type combination
-# model_output_detailed_medium_activity['medium_activity'] = model_output_detailed_medium_activity['Medium'] + ' ' + 'activity'
-# #plot using plotly
-# fig = px.line(model_output_detailed_medium_activity, x="Date", y="Activity", facet_col="Transport Type", facet_col_wrap=2, color="medium_activity", title=title)
-# #make y axis independent
-# fig.update_yaxes(matches=None)
-# #show y axis on both plots
-# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
-
-# plotly.offline.plot(fig, filename='./plotting_output/' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-# fig.write_image("./plotting_output/static/" + title + '.png', scale=1, width=2000, height=800)
-
-
-# 
-
-
-
-
-
-
-
-
-
-
-
-# df = model_output_all.copy()
-# color_categories = ['Drive']
-# line_dash_categories =None
-# y_column = 'Energy'
-# title = 'Energy use by drive type'
-# x_column='Date'
-# save_folder='all_economy_graphs'
-# facet_col_wrap=7
-# facet_col ='Economy'
-# hover_name = None
-# hover_data = None
-# log_y = False
-# log_x = False
-# y_axis_title = None
-# x_axis_title = None
-# width = 2000
-# height = 800
-# AUTO_OPEN_PLOTLY_GRAPHS=True
-
-# #set color and line dash categories to list even if they are just one category
-# if type(color_categories) != list:
-#     color_categories = [color_categories]
-# if type(line_dash_categories) != list and line_dash_categories != None:
-#     line_dash_categories = [line_dash_categories]
-# # convert color and likne dash categorties to one col each seperated by a hyphen
-# color = '-'.join(color_categories)
-# if line_dash_categories != None:
-#     line_dash = '-'.join(line_dash_categories)
-#     #add a column for the line dash
-#     df[line_dash] = df[line_dash_categories].apply(lambda x: '-'.join(x), axis=1)
-# #add a column for the color
-# df[color] = df[color_categories].apply(lambda x: '-'.join(x), axis=1)
-
-# #if hover name is none then set it to the color+line_dash
-# if hover_name == None:
-#     if line_dash_categories == None:
-#         hover_name = color
-#     else:
-#         hover_name = color + '-' + line_dash
-#         #insert hovername into the dataframe as a column
-#         df[hover_name] = df[color].astype(str) + '-' + df[line_dash].astype(str)
-
-# #if hover data is none then set it to the y column
-# if hover_data == None:
-#     hover_data = [y_column]
-# #if y axis title is none then set it to the y column
-# if y_axis_title == None:
-#     y_axis_title = y_column
-# #if x axis title is none then set it to the x column
-# if x_axis_title == None:
-#     x_axis_title = x_column
-# #plot energy use by drive type
-# #title = 'Energy use by drive type'
-# #model_output_all_drive = model_output_all.groupby(['Date', 'Drive', 'Economy']).sum().reset_index()
-# if line_dash_categories != None:
-#     df = df.groupby([x_column, facet_col,color, line_dash]).sum().reset_index()
-#     fig = px.line(df, x="Date", y=y_column, color=color, facet_col_wrap=facet_col_wrap, facet_col =facet_col, hover_name = hover_name, hover_data = hover_data, log_y = log_y, log_x = log_x, title=title)
-#     #do y_axis_title and x_axis_title
-#     fig.update_layout(yaxis_title=y_axis_title, xaxis_title=x_axis_title)
-
-#     plotly.offline.plot(fig, filename=f'./plotting_output/{save_folder}' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-#     fig.write_image(f"./plotting_output/{save_folder}/static/" + title + '.png', scale=1, width=width, height=height)
-# else:
-#     df = df.groupby([x_column, facet_col,color]).sum().reset_index()
-#     fig = px.line(df, x="Date", y=y_column, color=color, facet_col_wrap=facet_col_wrap, facet_col =facet_col, hover_name = hover_name, hover_data = hover_data, log_y = log_y, log_x = log_x, title=title)
-#     #do y_axis_title and x_axis_title
-#     fig.update_layout(yaxis_title=y_axis_title, xaxis_title=x_axis_title)
-#     plotly.offline.plot(fig, filename=f'./plotting_output/{save_folder}' + title + '.html', auto_open=AUTO_OPEN_PLOTLY_GRAPHS)
-#     fig.write_image(f"./plotting_output/{save_folder}/static/" + title + '.png', scale=1, width=width, height=height)

@@ -28,8 +28,17 @@ sys.path.append("./workflow/calculation_functions")
 import adjust_data_to_match_esto
 
 #%%
-def import_transport_system_data():
-    
+def import_transport_system_data(TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS=2017):
+    """
+    Imports data from the transport data system and returns a dictionary of data frames.
+
+    Args:
+        TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS (int): The year to use for non-road transport type splits. this should be the year for which we have the most trust in the non road transport data accuracy. Defaults to 2017.
+
+    Returns:
+        dict: A dictionary of data frames containing the imported data.
+    """
+    # function code here
     #import data from the transport data system and extract what we need from it.
     # We can use the model_concordances_measures concordance file to determine what we need to extract from the transport data system. This way we dont rely on things like dataset names.
 
@@ -87,7 +96,7 @@ def import_transport_system_data():
     #filter for the same measures as are in the model concordances in the transport data system
     transport_data_system_df = transport_data_system_df[transport_data_system_df.Measure.isin(model_concordances_measures.Measure.unique())]
     
-    transport_data_system_df = adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures)    
+    transport_data_system_df = adjust_non_road_TEMP(transport_data_system_df,model_concordances_measures,TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS)    
     
     
     #now we have filtered out the majority of rows we dont need from the transport data system, we can use pandas difference() function to find out what rows we are missing from the transport data system. This will be useful for debugging and for the user to know what data is missing from the transport data system (as its expected that no data will be missing for the model to actually run))
@@ -251,7 +260,7 @@ def import_transport_system_data():
         
     
     #TEMP DROP ANY DATA THAT IS FOR DATES AFTER THE BASE DATE. WE WILL FIGURE OUT HOW TO INCLUDE THEM IN THE FUTURE BUT FOR NOW IT WILL PROBS BE TOO COMPLICATED
-    new_transport_data_system_df = new_transport_data_system_df[new_transport_data_system_df.Date <= config.DEFAULT_BASE_YEAR]
+    # new_transport_data_system_df = new_transport_data_system_df[new_transport_data_system_df.Date <= config.DEFAULT_BASE_YEAR]
     
     #save the new transport dataset
     new_transport_data_system_df.to_csv('intermediate_data/model_inputs/transport_data_system_extract.csv', index=False)
@@ -259,7 +268,7 @@ def import_transport_system_data():
 
 #TODO need to update thids
 
-def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures):
+def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures,TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS):
     """
     Adjusts the non-road transport data in the transport data system dataframe.
 
@@ -327,15 +336,15 @@ def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures):
     
     esto_non_road_drives = pd.merge(esto_non_road, model_concordances_fuels_non_road, how='outer', on=['Medium', 'Fuel'])
 
-    #also drop any fuels that are mixed in on the supply side only (i.e. biofuels):
-    supply_side_fuel_mixing_fuels = pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID)).New_fuel.unique().tolist()
-    #TEMP
-    #IF 16_01_biogas ISNT IN THERE, ADD IT
-    if '16_01_biogas' not in supply_side_fuel_mixing_fuels:
-        print('######################\n 16_01_biogas not in supply_side_fuel_mixing_fuels. Adding it \n ################')
-        supply_side_fuel_mixing_fuels.append('16_01_biogas')
-    else:
-        print('REMOVE THIS LINE!')
+    #also drop any fuels that are mixed in on the supply side only (i.e. biofuels):    
+    supply_side_fuel_mixing_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_supply_side_fuel_mixing_file_name)).New_fuel.unique().tolist()
+    # #TEMP
+    # #IF 16_01_biogas ISNT IN THERE, ADD IT
+    # if '16_01_biogas' not in supply_side_fuel_mixing_fuels:
+    #     print('######################\n 16_01_biogas not in supply_side_fuel_mixing_fuels. Adding it \n ################')
+    #     supply_side_fuel_mixing_fuels.append('16_01_biogas')
+    # else:
+    #     print('REMOVE THIS LINE!')
     esto_non_road_drives = esto_non_road_drives[~esto_non_road_drives.Fuel.isin(supply_side_fuel_mixing_fuels)]
     
     #if there are any nans in the following list then throw error:
@@ -360,20 +369,23 @@ def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures):
     #drop Unit and then pivot the MEasure
     transport_data_system_non_road = transport_data_system_non_road.drop(columns=['Frequency','Unit'])
     transport_data_system_non_road = transport_data_system_non_road.pivot(index=['Economy', 'Date', 'Medium', 'Drive', 'Vehicle Type', 'Transport Type'], columns='Measure', values='Value').reset_index()
-    transport_data_system_non_road_energy_only = transport_data_system_non_road.drop(columns=['Activity', 'Stocks', 'Intensity'])
-    #check that the only cols we have arer the ones we expect (ignore order)
-    if not set(transport_data_system_non_road_energy_only.columns) == set(['Economy', 'Date', 'Medium', 'Drive', 'Vehicle Type', 'Transport Type', 'Energy']):
-        breakpoint()
-        raise ValueError('The columns in the transport data system non road dataset are not as expected. Please check the code.')
+    
+    #keep energy measures only so that dropping na rows doesnt drop any rows we need
+    transport_data_system_non_road_energy_only = transport_data_system_non_road.drop([col for col in transport_data_system_non_road.columns if col not in ['Economy', 'Date', 'Medium', 'Drive', 'Vehicle Type', 'Transport Type', 'Energy']], axis=1).copy()
+
     #get the previous splits between passenger and freight transport in energy, by economy and date (also drop na rows)
-    transport_data_system_transport_type_splits = transport_data_system_non_road_energy_only.dropna().pivot(index=['Economy', 'Date', 'Medium','Drive', 'Vehicle Type'], columns='Transport Type', values='Energy').reset_index()
+    transport_data_system_transport_type_splits = transport_data_system_non_road_energy_only.dropna().pivot(index=['Economy', 'Date', 'Medium','Drive', 'Vehicle Type'], columns='Transport Type', values='Energy').reset_index().copy()
     #calc the ratio between passenger and freight
     transport_data_system_transport_type_splits['freight_ratio'] = transport_data_system_transport_type_splits['freight'] / (transport_data_system_transport_type_splits['passenger']+transport_data_system_transport_type_splits['freight'])
 
     #if the Date is not only for config.DEFAULT_BASE_YEAR then throw an erorr, because resty of code is predicated on this:
-    if not transport_data_system_transport_type_splits.Date.unique().tolist() == [config.DEFAULT_BASE_YEAR]:
-        breakpoint()#why is this important actually? i think maybe its already done by the previoous fuinction?
-        raise ValueError(f'The transport data system data for non road is not only for {config.DEFAULT_BASE_YEAR}. Please make sure it is only for {config.DEFAULT_BASE_YEAR}')
+    # if not set(transport_data_system_transport_type_splits.Date.unique().tolist()) == set(TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS):
+    #filter fopr only TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS
+
+    # breakpoint()#why is this important actually? i think maybe its already done by the previoous fuinction?
+    #filter for only the years in TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS
+    transport_data_system_transport_type_splits = transport_data_system_transport_type_splits[transport_data_system_transport_type_splits.Date==TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_TRANSPORT_TYPE_SPLITS]
+    # raise ValueError(f'The transport data system data for non road is not only for {config.DEFAULT_BASE_YEAR}. Please make sure it is only for {config.DEFAULT_BASE_YEAR}')
     
     transport_data_system_transport_type_splits = transport_data_system_transport_type_splits.drop(columns=['Date'])
     #filter for 2017 plus in the esto data (we need all dates for esto data since we need this energy use to be in the output data)
@@ -382,7 +394,7 @@ def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures):
     esto_non_road_drives_ttype_split = pd.merge(esto_non_road_drives, transport_data_system_transport_type_splits[['Economy', 'Medium', 'freight_ratio']], how='left', on=['Economy', 'Medium'])#'Date', #dropped date from here
     #############
     #identify if there are any nas:
-    allowed_rows = [#this is where the data just isnt in esto!
+    allowed_rows = [#this is where the data just isnt in esto. we can ignore these
         ['15_RP', 'air'],
         ['02_BD', 'air'],
         ['17_SIN', 'air'],
@@ -392,7 +404,8 @@ def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures):
         ['17_SIN', 'rail'],
         ['15_RP', 'ship'],
         ['17_SIN', 'ship'],
-        ['02_BD', 'ship']
+        ['02_BD', 'ship'],
+        ['14_PE', 'ship'],
     ]
     allowed_rows = pd.DataFrame(allowed_rows, columns=['Economy', 'Medium'])
     

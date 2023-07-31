@@ -131,7 +131,7 @@ def concatenate_output_data():
         model_output_non_detailed = pd.concat([model_output_non_detailed, model_output_non_detailed_economy])
         model_output_all_with_fuels = pd.concat([model_output_all_with_fuels, model_output_all_with_fuels_economy])
     
-    #save the final df:
+    #save the final df: 
     model_output_detailed.to_csv('output_data/model_output_detailed/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
     model_output_non_detailed.to_csv('output_data/model_output/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
     model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)

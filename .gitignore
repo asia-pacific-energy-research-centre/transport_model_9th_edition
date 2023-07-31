@@ -12,7 +12,7 @@
 *.png
 *.jpg
 *.html
-
+*.txt
 #####################
 
 #anything in archive folders doesnt need to be tracked:

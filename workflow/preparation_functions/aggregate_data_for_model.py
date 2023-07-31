@@ -112,6 +112,10 @@ def aggregate_data_for_model():
     road_model_input_wide = road_model_input_wide.merge(growth_forecasts_wide[['Date', 'Economy', 'Population', 'Gdp','Gdp_per_capita', 'Activity_growth']].drop_duplicates(), on=['Date', 'Economy'], how='left')
     non_road_model_input_wide = non_road_model_input_wide.merge(growth_forecasts_wide[['Date', 'Economy', 'Population', 'Gdp','Gdp_per_capita', 'Activity_growth']].drop_duplicates(), on=['Date', 'Economy'], how='left')
     
+    #extrract gompertz data from road model input wide and put it in a separate df:
+    stocks_per_capita_threshold = road_model_input_wide[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna().copy()
+    road_model_input_wide = road_model_input_wide.drop(['Gompertz_gamma'], axis=1).drop_duplicates()
+    
     #save
     # aggregated_model_data.to_csv('intermediate_data/model_inputs/{}/aggregated_model_data.csv'.format(config.FILE_DATE_ID), index=False)
     supply_side_fuel_mixing.to_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID), index=False)
@@ -121,10 +125,11 @@ def aggregate_data_for_model():
     non_road_model_input_wide.to_csv('intermediate_data/model_inputs/{}/non_road_model_input_wide.csv'.format(config.FILE_DATE_ID), index=False)
     growth_forecasts_wide.to_csv('intermediate_data/model_inputs/{}/growth_forecasts_wide.csv'.format(config.FILE_DATE_ID), index=False)
 
+    stocks_per_capita_threshold.to_csv('intermediate_data/model_inputs/{}/stocks_per_capita_threshold.csv'.format(config.FILE_DATE_ID), index=False)
 
-# aggregate_data_for_model()
+# 
 #%%
-
+# aggregate_data_for_model()
 
 # #testing:
 # #plot freight tonne km for 2017 for 01_AUS

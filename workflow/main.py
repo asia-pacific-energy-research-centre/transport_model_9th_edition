@@ -48,7 +48,7 @@ import clean_model_output
 import create_output_for_outlook_data_system
 #PLOTTING FUNCTIONS
 sys.path.append("./workflow/plotting_functions")
-import all_economy_graphs
+import plot_all_graphs
 import produce_LMDI_graphs
 import plot_charging_graphs
 import create_assumptions_dashboards
@@ -65,8 +65,8 @@ def main():
     PREPARE_DATA = False
     if PREPARE_DATA:
         import_macro_data.import_macro_data()
-        create_and_clean_user_input.create_and_clean_user_input()
         import_transport_system_data.import_transport_system_data()
+        create_and_clean_user_input.create_and_clean_user_input()
         aggregate_data_for_model.aggregate_data_for_model()
         
     #######################################################################
@@ -76,11 +76,11 @@ def main():
     
     #######################################################################
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
-        if (economy == '15_RP') or (economy == '18_CT'):
+        # if (economy == '15_RP') or (economy == '18_CT'):
             
-            pass
-        else:
-            continue
+        #     pass
+        # else:
+        #     continue
             
         print('\nRunning model for {}\n'.format(economy))
         ECONOMY_ID = economy
@@ -91,9 +91,9 @@ def main():
             PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = True
             ADVANCE_BASE_YEAR = False
             #perform final filtering of data (eg for one economy only)
+            
             supply_side_fuel_mixing, demand_side_fuel_mixing, road_model_input_wide, non_road_model_input_wide, growth_forecasts_wide = filter_for_economy_and_modelling_years.filter_for_economy_and_modelling_years(BASE_YEAR, ECONOMY_ID, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
             calculate_inputs_for_model.calculate_inputs_for_model(road_model_input_wide,non_road_model_input_wide,growth_forecasts_wide, supply_side_fuel_mixing, demand_side_fuel_mixing, ECONOMY_ID, BASE_YEAR, ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, adjust_data_to_match_esto_TESTING=False)
-            
             if  BASE_YEAR == config.OUTLOOK_BASE_YEAR:
                 #since we wont run the model, just fill the input with requried output cols and put nans in them
                 concatenate_model_output.fill_missing_output_cols_with_nans(ECONOMY_ID, road_model_input_wide, non_road_model_input_wide)
@@ -168,11 +168,11 @@ def main():
     #     archiving_scripts.archive_lots_of_files(archiving_folder)
 
     # #do this last because it takes so long, so make sure thaht everything else is working first
-    # plot_all_economy_graphs = False
-    # if plot_all_economy_graphs:
-    #     #plot:
-    #     all_economy_graphs.all_economy_graphs_massive_unwieldy_function(PLOT=True)
-    #     produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
+    run_plot_all_graphs = True
+    if run_plot_all_graphs:
+        #plot:
+        plot_all_graphs.plot_all_graphs(PLOT=True)
+        # produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
         # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
 #%%
 main()

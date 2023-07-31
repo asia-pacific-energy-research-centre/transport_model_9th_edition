@@ -27,7 +27,7 @@ def import_macro_data():
     #grab the file D:\APERC\transport_model_9th_edition\input_data\macro\APEC_Gdp_population.csv
     #from 
     # Modelling/Data/Gdp/Gdp projections 9th/Gdp_estimates/Gdp_estimates_12May2023/data
-    macro = pd.read_csv('./input_data/macro/APEC_GDP_data.csv')
+    macro = pd.read_csv('./input_data/macro/APEC_GDP_data_2023_07_31.csv')
     #filter so  variable is in ['real_Gdp', 'population','Gdp_per_capita']
     macro = macro[macro['variable'].isin(['real_GDP', 'population','GDP_per_capita'])]
     #drop units col

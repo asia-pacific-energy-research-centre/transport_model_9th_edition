@@ -268,6 +268,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     supply_side_fuel_mixing = pd.DataFrame()
     road_model_input = pd.DataFrame()
     model_output_detailed_detailed_non_road_drives = pd.DataFrame()
+    growth_forecasts = pd.DataFrame() 
     for economy in ECONOMY_IDs:
         model_output_detailed_ = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(economy, config.model_output_file_name))
         model_output_with_fuels_ = pd.read_csv('output_data/model_output_with_fuels/{}_{}'.format(economy, config.model_output_file_name))
@@ -275,15 +276,20 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         supply_side_fuel_mixing_ = pd.read_csv('intermediate_data/model_inputs/{}/{}_supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID, economy))
         road_model_input_ = pd.read_csv('intermediate_data/model_inputs/{}/{}_road_model_input_wide.csv'.format(config.FILE_DATE_ID, economy))
         model_output_detailed_detailed_non_road_drives_ = pd.read_csv('output_data/model_output_detailed/{}_NON_ROAD_DETAILED_{}'.format(economy, config.model_output_file_name))
+        growth_forecasts_ = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{economy}_growth_forecasts_wide.csv')
+        
         model_output_detailed = pd.concat([model_output_detailed, model_output_detailed_])
         model_output_with_fuels = pd.concat([model_output_with_fuels, model_output_with_fuels_])
         chargers = pd.concat([chargers, chargers_])
         supply_side_fuel_mixing = pd.concat([supply_side_fuel_mixing, supply_side_fuel_mixing_])    
         road_model_input = pd.concat([road_model_input, road_model_input_])
         model_output_detailed_detailed_non_road_drives = pd.concat([model_output_detailed_detailed_non_road_drives, model_output_detailed_detailed_non_road_drives_])
+        growth_forecasts = pd.concat([growth_forecasts, growth_forecasts_])
+        
     
     original_model_output_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv').rename(columns={'Year':'Date'})
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
+    gompertz_parameters_df = pd.read_csv('intermediate_data/model_inputs/{}/stocks_per_capita_threshold.csv'.format(config.FILE_DATE_ID))
     
     if ADVANCE_BASE_YEAR:
         def filter_between_outlook_BASE_YEAR_and_end_year(df):
@@ -295,6 +301,8 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         chargers = filter_between_outlook_BASE_YEAR_and_end_year(chargers)
         supply_side_fuel_mixing = filter_between_outlook_BASE_YEAR_and_end_year(supply_side_fuel_mixing)
         model_output_detailed_detailed_non_road_drives = filter_between_outlook_BASE_YEAR_and_end_year(model_output_detailed_detailed_non_road_drives)
+        gompertz_parameters_df = filter_between_outlook_BASE_YEAR_and_end_year(gompertz_parameters_df)
+        growth_forecasts = filter_between_outlook_BASE_YEAR_and_end_year(growth_forecasts)
         
     else:
         def filter_outlook_BASE_YEAR(df):
@@ -307,6 +315,8 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         chargers = filter_outlook_BASE_YEAR(chargers)
         supply_side_fuel_mixing = filter_outlook_BASE_YEAR(supply_side_fuel_mixing)
         model_output_detailed_detailed_non_road_drives = filter_outlook_BASE_YEAR(model_output_detailed_detailed_non_road_drives)
+        gompertz_parameters_df = filter_outlook_BASE_YEAR(gompertz_parameters_df)
+        growth_forecasts = filter_outlook_BASE_YEAR(growth_forecasts)
     
     
     #Format stocks data specifically, since we use it a lot:    
@@ -320,7 +330,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     # supply_side_fuel_mixing = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Economy'].isin(ECONOMY_IDs)]
     # stocks = stocks.loc[stocks['Economy'].isin(ECONOMY_IDs)] 
     
-    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input
+    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts
 
 def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, colors_dict, DROP_NON_ROAD_TRANSPORT, ADVANCE_BASE_YEAR):
     """
@@ -339,7 +349,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         None
     """
     
-    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
+    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df,growth_forecasts = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
     # Share of Transport Type
     share_transport_types = ['passenger', 'freight', 'all']
     for transport_type in share_transport_types:
@@ -407,7 +417,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
     if 'activity_and_macro_lines' in plots:
         #create activity growth plots
         # fig_dict, color_preparation_list = activity_growth(fig_dict)
-        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.activity_and_macro_lines(ECONOMY_IDs,original_model_output_8th,model_output_detailed, fig_dict, color_preparation_list, colors_dict, indexed=False)
+        fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.activity_and_macro_lines(ECONOMY_IDs,original_model_output_8th,model_output_detailed, growth_forecasts, fig_dict, color_preparation_list, colors_dict, indexed=False)
     if 'fuel_mixing' in plots:
         #insertt fuel mixing plots
         fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_supply_side_fuel_mixing(ECONOMY_IDs,supply_side_fuel_mixing,fig_dict, color_preparation_list, colors_dict)
@@ -424,7 +434,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         #LMDI
         fig_dict = assumptions_dashboard_plotting_scripts.prodcue_LMDI_mutliplicative_plot(ECONOMY_IDs,fig_dict,  colors_dict, transport_type = 'freight')
     if 'stocks_per_capita' in plots:
-        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_stocks_per_capita(ECONOMY_IDs,road_model_input,model_output_detailed,fig_dict, color_preparation_list, colors_dict)
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_stocks_per_capita(ECONOMY_IDs,gompertz_parameters_df,model_output_detailed,fig_dict, color_preparation_list, colors_dict)
         
     return fig_dict, color_preparation_list
 
@@ -510,7 +520,7 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
     #THAILAND DASHBOARD:
-    plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all', 'non_road_activity_by_drive_freight', 'non_road_activity_by_drive_passenger']#, 'charging']#activity_growth# 'charging',
+    plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'non_road_activity_by_drive_freight', 'non_road_activity_by_drive_passenger','vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all']#, 'charging'#activity_growth# 'charging',
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
 

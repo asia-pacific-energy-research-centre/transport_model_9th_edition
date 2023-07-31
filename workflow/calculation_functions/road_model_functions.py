@@ -305,16 +305,33 @@ def calculate_new_average_age_of_stocks(change_dataframe):
     # Return the updated dataframe
     return change_dataframe
 
-def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
+def prepare_road_model_inputs(road_model_input, ECONOMY_ID, low_ram_computer=True):
+    """
+    Prepares the road model inputs for use in the model.
+
+    Args:
+        road_model_input (pandas.DataFrame): The road model input data.
+        ECONOMY_ID (str): The ID of the economy to prepare the inputs for.
+        low_ram_computer (bool): Whether the computer has low RAM. Defaults to True.
+
+    Returns:
+        pandas.DataFrame: The prepared road model input data.
+    """
+    # function code here
     #separate user inputs into different dataframes
-    #gompertz paramaters are unqiuely set as being for vehicle type == 'all'. Extract them. We also need to set them to be non nan for the base year, as the base year has its values for inputs set to nan.
-    gompertz_parameters = road_model_input[['Economy','Scenario','Date', 'Transport Type','Vehicle Type', 'Gompertz_gamma']].drop_duplicates().dropna().copy()
+    
+    #GOMPERTZ PARAMETERS ARE USED TO SET A LIMIT ON STOCKS PER CPITA. WE NEED TO LOAD THEM IN HERE AND MERGE THEM ONTO THE MAIN DATAFRAME.      
+    # We also need to set them to be non nan for the base year, as the base year has its values for inputs set to nan.
+    gompertz_parameters = pd.read_csv('intermediate_data/model_inputs/{}/stocks_per_capita_threshold.csv'.format(config.FILE_DATE_ID))
+    #filter for economy id only:
+    gompertz_parameters = gompertz_parameters[gompertz_parameters['Economy']==ECONOMY_ID].copy()
     base_year = road_model_input.Date.min()
     #replace values for BASE YEAR with values from the first calculated year of the model
     BASE_YEAR_gompertz_parameters = gompertz_parameters[gompertz_parameters['Date']==gompertz_parameters['Date'].min()].copy()
     BASE_YEAR_gompertz_parameters['Date'] = base_year
     gompertz_parameters = pd.concat([gompertz_parameters[gompertz_parameters['Date']!=base_year], BASE_YEAR_gompertz_parameters], ignore_index=True)
     
+    #and the rest of the user inputs:
     Vehicle_sales_share = road_model_input[['Economy','Scenario', 'Drive', 'Vehicle Type', 'Transport Type', 'Date', 'Vehicle_sales_share']].drop_duplicates().copy()
     Occupancy_or_load_growth = road_model_input[['Economy','Scenario', 'Drive','Vehicle Type', 'Transport Type', 'Date', 'Occupancy_or_load_growth']].drop_duplicates().copy()
     New_vehicle_efficiency_growth = road_model_input[['Economy','Scenario', 
@@ -325,7 +342,7 @@ def prepare_road_model_inputs(road_model_input,low_ram_computer=True):
     user_inputs_df_dict = {'Vehicle_sales_share':Vehicle_sales_share, 'Occupancy_or_load_growth':Occupancy_or_load_growth, 'New_vehicle_efficiency_growth':New_vehicle_efficiency_growth, 'Mileage_growth':Mileage_growth, 'gompertz_parameters':gompertz_parameters}
 
     #drop those cols
-    road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'New_vehicle_efficiency_growth','Mileage_growth',  'Gompertz_gamma'], axis=1)#'Gompertz_alpha', 'Gompertz_beta',
+    road_model_input = road_model_input.drop(['Vehicle_sales_share', 'Occupancy_or_load_growth', 'New_vehicle_efficiency_growth','Mileage_growth'], axis=1)#'Gompertz_alpha', 'Gompertz_beta',
 
     #create main dataframe as previous Date dataframe, so that currently it only holds the base Date's data. This will have each Dates data added to it at the end of each loop.
     previous_year_main_dataframe = road_model_input.loc[road_model_input.Date == road_model_input.Date.min(),:].copy()

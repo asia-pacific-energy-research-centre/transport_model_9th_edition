@@ -7,9 +7,8 @@ NEW_SALES_SHARES = True
 
 NEW_FUEL_MIXING_DATA = True
 
-transport_data_system_FILE_DATE_ID ='DATE20230727_19_THA' # 'DATE20230216'))
-
-# FILE_DATE_ID ='_20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run
+transport_data_system_FILE_DATE_ID ='DATE20230731_19_THA' # 'DATE20230216'))
+# FILE_DATE_ID ='_20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run. if the FILE DATE ID might be lilke this DATE20230731_19_THA, inlude the eoconmoy codee!
 
 #%%
 # FILE_DATE_ID ='_20230715'
@@ -88,10 +87,11 @@ user_input_measures_list_ROAD = ['Vehicle_sales_share',
 user_input_measures_list_NON_ROAD = ['Vehicle_sales_share','Non_road_intensity_improvement','Turnover_rate_midpoint', 'Average_age']
 
 base_year_measures_list_ROAD = ['Activity','Energy', 'Stocks', 'Occupancy_or_load', 'Turnover_rate_midpoint', 'New_vehicle_efficiency', 'Efficiency','Mileage', 'Average_age']
-base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Stocks', 'Intensity']
 
-calculated_measures_ROAD = ['Travel_km','Surplus_stocks', 'Turnover_rate']#tinclude travel km as to be calcualted as it is not widely available publicly, so its best just to calculate it.its also kind of an intermediate measure as it is reliant on what mileage,efficiency and stocks are, but is not the goal like energy or activity really are
-calculated_measures_NON_ROAD = ['Turnover_rate']
+base_year_measures_list_NON_ROAD = ['Activity','Energy', 'Intensity']
+
+calculated_measures_ROAD = ['Travel_km','Surplus_stocks', 'Turnover_rate','Activity_per_Stock']#tinclude travel km as to be calcualted as it is not widely available publicly, so its best just to calculate it.its also kind of an intermediate measure as it is reliant on what mileage,efficiency and stocks are, but is not the goal like energy or activity really are
+calculated_measures_NON_ROAD = ['Stocks', 'Turnover_rate']
 
 ROAD_MODEL_OUTPUT_COLS = ['Economy', 'Scenario', 'Transport Type', 'Vehicle Type', 'Medium','Date', 'Drive', 'Activity', 'Stocks', 'Efficiency', 'Energy', 'Surplus_stocks', 'Travel_km', 'Mileage', 'Vehicle_sales_share', 'Occupancy_or_load', 'Turnover_rate', 'New_vehicle_efficiency','Stocks_per_thousand_capita', 'Activity_growth', 'Gdp_per_capita','Gdp', 'Population', 'Average_age', 'Turnover_rate_midpoint']
 

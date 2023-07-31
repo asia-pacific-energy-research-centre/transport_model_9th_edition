@@ -43,6 +43,7 @@ def apply_fuel_mix_supply_side(ECONOMY_ID):
     df_with_new_fuels_wide = df_with_new_fuels.pivot_table(index=['Scenario', 'Economy', 'Transport Type', 'Medium', 'Vehicle Type', 'Drive', 'Fuel', 'Date'], columns='New_fuel', values='Energy').reset_index()
     #get the new columns names, they will jsut be the unique values in the new fuel column
     new_fuels_cols = df_with_new_fuels.New_fuel.unique().tolist()
+    # breakpoint()
     #set any nas to 0 in new_fuels_cols
     df_with_new_fuels_wide[new_fuels_cols] = df_with_new_fuels_wide[new_fuels_cols].fillna(0)
     # breakpoint()
@@ -70,7 +71,7 @@ def apply_fuel_mix_supply_side(ECONOMY_ID):
 
     
 #%%
-# apply_fuel_mix_supply_side()
+# apply_fuel_mix_supply_side('19_THA')
 #%%
 # # a = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}'.format(config.model_output_file_name))
 # # #check for dupklicates:

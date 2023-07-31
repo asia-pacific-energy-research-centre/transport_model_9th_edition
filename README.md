@@ -14,7 +14,7 @@ Note that installing those libraries in the yml files will result in a few other
 
 ## Run the model
 Simply put, if using the command line, just use:
-python integrate.py
+python workflow/main.py > output.txt 2>&1
 
 If using Jupyter with Visual Studio Code, you can run the .py files cell by cell as separated by the #%% characters. I'm not sure how the #%% thing works outside of Visual Studio Code.
 

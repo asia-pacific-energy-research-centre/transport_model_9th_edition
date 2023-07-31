@@ -73,5 +73,5 @@ def apply_fuel_mix_demand_side(ECONOMY_ID):
 
     
 #%%
-# apply_fuel_mix_demand_side()
+# apply_fuel_mix_demand_side('19_THA')
 #%%

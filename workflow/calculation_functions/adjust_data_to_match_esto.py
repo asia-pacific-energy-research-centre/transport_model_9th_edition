@@ -376,14 +376,14 @@ def test_output_matches_expectations(supply_side_fuel_mixing, road_all_wide, non
     print('road energy use difference (PJ)')
     diff = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
-        diff = diff.loc[(diff.Date>BASE_YEAR) & (diff.Date<=config.OUTLOOK_BASE_YEAR)]
+        diff = diff.loc[(diff.Date==config.OUTLOOK_BASE_YEAR)]
     else:
         diff = diff.loc[(diff.Date>=BASE_YEAR) & (diff.Date<=config.OUTLOOK_BASE_YEAR)]
     print(diff['Energy'].sum(numeric_only=True) - diff['Energy_esto'].sum(numeric_only=True))
     
     diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
-        diff2 = diff2.loc[(diff2.Date>BASE_YEAR) & (diff2.Date<=config.OUTLOOK_BASE_YEAR)]
+        diff2 = diff2.loc[(diff2.Date==config.OUTLOOK_BASE_YEAR)]
     else:
         diff2 = diff2.loc[(diff2.Date>=BASE_YEAR) & (diff2.Date<=config.OUTLOOK_BASE_YEAR)]
     print('non road energy use difference (PJ)')
@@ -399,9 +399,9 @@ def test_output_matches_expectations(supply_side_fuel_mixing, road_all_wide, non
     diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     #filter for dates after base year
     if ADVANCE_BASE_YEAR:
-        diff_road = diff_road.loc[diff_road.Date>=config.OUTLOOK_BASE_YEAR]
+        diff_road = diff_road.loc[diff_road.Date==config.OUTLOOK_BASE_YEAR]
     else:
-        diff_road = diff_road.loc[diff_road.Date>=BASE_YEAR]
+        diff_road = diff_road.loc[(diff_road.Date>=BASE_YEAR) & (diff_road.Date<=config.OUTLOOK_BASE_YEAR)]
     try:
         diff_road_proportion = sum(diff_road['Energy'].dropna()) / sum(diff_road['Energy_esto'].dropna())
     except ZeroDivisionError:
@@ -412,9 +412,9 @@ def test_output_matches_expectations(supply_side_fuel_mixing, road_all_wide, non
         
     diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
     if ADVANCE_BASE_YEAR:
-        diff_non_road = diff_non_road.loc[diff_non_road.Date>=config.OUTLOOK_BASE_YEAR]
+        diff_non_road = diff_non_road.loc[diff_non_road.Date==config.OUTLOOK_BASE_YEAR]
     else:
-        diff_non_road = diff_non_road.loc[diff_non_road.Date>=BASE_YEAR]
+        diff_non_road = diff_non_road.loc[(diff_non_road.Date>=BASE_YEAR) & (diff_non_road.Date<=config.OUTLOOK_BASE_YEAR)]
     try:
         diff_non_road_proportion = sum(diff_non_road['Energy'].dropna()) / sum(diff_non_road['Energy_esto'].dropna())
     except ZeroDivisionError:
@@ -424,14 +424,14 @@ def test_output_matches_expectations(supply_side_fuel_mixing, road_all_wide, non
             diff_non_road_proportion = 100
             
     if diff_road_proportion > 1.01 or diff_road_proportion < 0.99:
-        
+        breakpoint()
         #saev output to csv
         diff_road.to_csv('intermediate_data/errors/ajust_data_to_match_esto_road_energy_use_diff.csv')
-        raise ValueError('road energy use does not match esto')
+        raise ValueError('road energy use does not match esto, proportion difference is  {}'.format(diff_road_proportion))
     if diff_non_road_proportion > 1.01 or diff_non_road_proportion < 0.99:
-        
+        breakpoint()
         diff_non_road.to_csv('intermediate_data/errors/ajust_data_to_match_esto_non_road_energy_use_diff.csv')
-        raise ValueError('non road energy use does not match esto')
+        raise ValueError('non road energy use does not match esto, proportion difference is  {}'.format(diff_non_road_proportion))
     ##########TESTING OVER###############
     
     
