@@ -210,11 +210,11 @@ def create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, d
                 if ADVANCE_BASE_YEAR:
                     if ARCHIVE_PREVIOUS_DASHBOARDS:
                         archive_previous_dashboards_before_saving(economy, scenario, dashboard_name_id,config.GRAPHING_END_YEAR)
-                    pio.write_html(fig, 'plotting_output/dashboards/{}/{}_assumptions_dashboard_{}.html'.format(economy, scenario,dashboard_name_id))
+                    pio.write_html(fig, 'plotting_output/dashboards/{}/{}_{}_dashboard_{}.html'.format(economy, economy, scenario,dashboard_name_id))
                 else:
                     if ARCHIVE_PREVIOUS_DASHBOARDS:
                         archive_previous_dashboards_before_saving(economy, scenario,dashboard_name_id, config.OUTLOOK_BASE_YEAR)
-                    pio.write_html(fig, 'plotting_output/dashboards/{}/{}/{}_assumptions_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id))
+                    pio.write_html(fig, 'plotting_output/dashboards/{}/{}/{}_{}_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR,economy,  scenario,dashboard_name_id))
     
     return fig_dict
 
@@ -234,18 +234,18 @@ def archive_previous_dashboards_before_saving(economy, scenario, dashboard_name_
     """
     if end_year == config.GRAPHING_END_YEAR:
         #archive previous dashboards:
-        if os.path.exists('plotting_output/dashboards/{}/{}_assumptions_dashboard_{}.html'.format(economy, scenario,dashboard_name_id)):
+        if os.path.exists('plotting_output/dashboards/{}/{}_{}_dashboard_{}.html'.format(economy,economy,  scenario,dashboard_name_id)):
             #create dir:
             if not os.path.exists('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy)):
                 os.makedirs('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy))
-            shutil.move('plotting_output/dashboards/{}/{}_assumptions_dashboard_{}.html'.format(economy, scenario,dashboard_name_id), 'plotting_output/dashboards/archive/{}/{}/{}_{}_assumptions_dashboard_{}.html'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy,config.GRAPHING_END_YEAR, scenario,dashboard_name_id))    
+            shutil.move('plotting_output/dashboards/{}/{}_{}_dashboard_{}.html'.format(economy,economy,  scenario,dashboard_name_id), 'plotting_output/dashboards/archive/{}/{}/{}_{}_{}_dashboard_{}.html'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy,config.GRAPHING_END_YEAR, economy, scenario,dashboard_name_id))    
                 
     elif end_year == config.OUTLOOK_BASE_YEAR:
-        if os.path.exists('plotting_output/dashboards/{}/{}/{}_assumptions_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id)):
+        if os.path.exists('plotting_output/dashboards/{}/{}/{}_{}_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR,economy,  scenario,dashboard_name_id)):
             #create dir:
             if not os.path.exists('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy)):
                 os.makedirs('plotting_output/dashboards/archive/{}/{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy))
-            shutil.move('plotting_output/dashboards/{}/{}/{}_assumptions_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id), 'plotting_output/dashboards/archive/{}/{}/{}_{}_assumptions_dashboard_{}.html'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy,config.OUTLOOK_BASE_YEAR, scenario,dashboard_name_id))
+            shutil.move('plotting_output/dashboards/{}/{}/{}_{}_dashboard_{}.html'.format(economy,config.OUTLOOK_BASE_YEAR, economy, scenario,dashboard_name_id), 'plotting_output/dashboards/archive/{}/{}/{}_{}_{}_dashboard_{}.html'.format(datetime.datetime.now().strftime("%Y%m%d_%H"), economy,config.OUTLOOK_BASE_YEAR, economy, scenario,dashboard_name_id))
             
             
 def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):

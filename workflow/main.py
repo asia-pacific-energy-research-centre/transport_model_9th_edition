@@ -85,7 +85,7 @@ def main():
         print('\nRunning model for {}\n'.format(economy))
         ECONOMY_ID = economy
         BASE_YEAR = ECONOMY_BASE_YEARS_DICT[economy]
-        MODEL_RUN_1  = True
+        MODEL_RUN_1  = False
         if MODEL_RUN_1:              
             #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN AND INCLUDIONG BASE YEAR AND config.OUTLOOK_BASE_YEAR))
             PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = True
@@ -118,7 +118,7 @@ def main():
                 create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR,ECONOMY_ID,ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT
-        MODEL_RUN_2  = True
+        MODEL_RUN_2  = False
         if MODEL_RUN_2:
             #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN  AND INCLUDIONG BASE YEAR AND config.OUTLOOK_BASE_YEAR)
             PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = False
@@ -159,7 +159,7 @@ def main():
     create_output_for_outlook_data_system.concatenate_outlook_data_system_outputs()
     
     clean_model_output.concatenate_output_data()
-        
+
     utility_functions.copy_required_output_files_to_one_folder(output_folder_path='output_data/for_other_modellers')
     # ARCHIVE_INPUT_DATA = False
     # if ARCHIVE_INPUT_DATA:

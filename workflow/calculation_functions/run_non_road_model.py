@@ -139,5 +139,5 @@ def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD =
     output_df.to_csv(output_file_name, index=False)
     
 #%%
-run_non_road_model('19_THA')
+# run_non_road_model('19_THA')
 #%%

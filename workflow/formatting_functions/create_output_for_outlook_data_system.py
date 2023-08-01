@@ -432,16 +432,19 @@ def create_output_for_outlook_data_system(ECONOMY_ID):
 
 
     #save this file to output_data\for_other_modellers
-    new_final_df.to_csv(f'output_data/for_other_modellers/{ECONOMY_ID}_{config.FILE_DATE_ID}_transport_energy_use.csv', index=False)
+    new_final_df.to_csv(f'output_data/for_other_modellers/output_for_outlook_data_system/{ECONOMY_ID}_{config.FILE_DATE_ID}_transport_energy_use.csv', index=False)
     
     
 def concatenate_outlook_data_system_outputs():
     #take in all outlook data system outputs for teh same FILE DATE ID and concatenate them into one file. if an economy is missing throw an error
     #load in all files:
     final_df = pd.DataFrame()
-    for file in os.listdir('output_data/for_other_modellers'):
+    for file in os.listdir('output_data/for_other_modellers/output_for_outlook_data_system'):
         if file.endswith('_{}_transport_energy_use.csv'.format(config.FILE_DATE_ID)):
-            df = pd.read_csv(f'output_data/for_other_modellers/{file}')
+            #double check its not {config.FILE_DATE_ID}_transport_energy_use.csv' since that is the file we are creating
+            if file == '{}_transport_energy_use.csv'.format(config.FILE_DATE_ID):
+                continue
+            df = pd.read_csv(f'output_data/for_other_modellers/output_for_outlook_data_system/{file}')
             final_df = pd.concat([final_df, df])
     #check that all economies are there:
     if len(final_df['economy'].unique()) != len(config.ECONOMY_LIST):
