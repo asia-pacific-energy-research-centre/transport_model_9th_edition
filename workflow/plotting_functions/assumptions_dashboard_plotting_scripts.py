@@ -116,8 +116,8 @@ def remap_stocks_and_sales_based_on_economy(stocks, new_sales_shares_all_plot_dr
     high_2w_economies_sales = remap_vehicle_types(high_2w_economies_sales, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'],vehicle_type_mapping_set='simplified')
     
     #then do remappign for the otehres:
-    other_economies_stocks = remap_vehicle_types(other_economies_stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'],vehicle_type_mapping_set='similar_trajectories_lpv_detailed')
-    other_economies_sales = remap_vehicle_types(other_economies_sales, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'],vehicle_type_mapping_set='similar_trajectories_lpv_detailed')
+    other_economies_stocks = remap_vehicle_types(other_economies_stocks, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'],vehicle_type_mapping_set='similar_trajectories')
+    other_economies_sales = remap_vehicle_types(other_economies_sales, value_col='Value', new_index_cols = ['Scenario', 'Economy', 'Date', 'Transport Type', 'Vehicle Type', 'Drive'],vehicle_type_mapping_set='similar_trajectories')
     
     
     #concat the two dataframes
@@ -1311,6 +1311,7 @@ def turnover_rate_by_drive_type_box(ECONOMY_IDs,model_output_detailed,fig_dict, 
 
 
 def turnover_rate_by_drive_type_line(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict,transport_type):
+    breakpoint()
     #break activity into its ddrive types and plot the variation by medium and treansport type on a box chart. will do a plot for each transport type or a plot where passneger km and freight km are in same plot. in this case, it will have pattern_shape="Transport Type" to distinguish between the two:
     # model_output_detailed.pkl
     #loop through scenarios and grab the data for each scenario:
@@ -1333,19 +1334,9 @@ def turnover_rate_by_drive_type_line(ECONOMY_IDs,model_output_detailed,fig_dict,
         for economy in ECONOMY_IDs:
             #filter to economy
             turnover_rate_by_drive_economy = turnover_rate_by_drive_s.loc[turnover_rate_by_drive_s['Economy']==economy].copy()
-            
-            # calculate total 'passenger_km' for each 'Drive' 
-            total_turnover_rate = turnover_rate_by_drive_economy.groupby('Drive')['Turnover_rate'].mean()
 
-            # Create an ordered category of 'Drive' labels sorted by total 'passenger_km'
-            turnover_rate_by_drive_economy['Drive'] = pd.Categorical(
-            turnover_rate_by_drive_economy['Drive'],
-            categories = total_turnover_rate.sort_values(ascending=False).index,
-            ordered=True
-            )
-
-            # Now sort the DataFrame by the 'Drive' column:
-            turnover_rate_by_drive_economy.sort_values(by='Drive', inplace=True)
+            # Now sort the DataFrame by the 'Date' column:
+            turnover_rate_by_drive_economy.sort_values(by='Date', inplace=True)
             #sort by date
 
             if transport_type=='passenger':

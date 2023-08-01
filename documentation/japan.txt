@@ -1,0 +1,12 @@
+Transport	
+REFERENCE:
+•	Fleet remains mostly ICEs and HEVs.
+•	Fuel economy follows recent trends.
+
+Target:
+•	20-30% of new passenger vehicles are EVs or FCVs by 2030(GX).
+•	20-30% of new commercial vehicles (lighter than 8 ton) are motor vehicles (EV, PHV, HV, EV and FCV) by 2030 (GX).
+•	100% of new passenger vehicles are motor vehicles by 2035(GX).
+•	5,000 new commercial vehicles (heavier than 8 ton) are EVs by 2030 (GX).
+•	100% of new commercial vehicles and light trucks are EVs or FCVs by 2050.
+•	100% of all new medium- and heavy-duty vehicles sold in 2050 are EVs or FCVs.

@@ -587,7 +587,7 @@ def plot_all_graphs(PLOT=True):
         ##################################################################
         ###########################plot 'Energy' by fuel type############
         ##################################################################
-        
+        breakpoint()
 
         #. need to define value cols that are worth plotting
         value_cols_new = ['Energy']

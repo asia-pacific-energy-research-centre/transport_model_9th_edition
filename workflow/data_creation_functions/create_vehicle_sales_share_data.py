@@ -35,129 +35,10 @@ import archiving_scripts
 X_ORDER = 'linear'#set me to linear or the order for the spline
 #%%
 
-def estimate_transport_data_system_sales_share(new_transport_data_system_df, YEARS_TO_KEEP_AFTER_BASE_YEAR):
-  
-    
-    sales = new_transport_data_system_df.copy()
-    #filter for Stocks in Measutre
-    sales = sales.loc[sales['Measure']=='Stocks']
-    cols = config.INDEX_COLS.copy()
-    cols = cols + ['road']#used for allowing swithicvn between non road mediums
-    cols.remove('Medium')
-    cols.remove('Vehicle Type')
-    cols.remove('Drive')
-    total_stocks = sales.copy()
-    total_stocks = sales.groupby(cols)['Value'].sum().reset_index()
-    total_stocks = total_stocks.rename(columns={'Value':'Total Stocks'})
-    sales = sales.merge(total_stocks, on=cols, how='left')
-    sales['Sales Share'] = sales['Value']/sales['Total Stocks']
-    #set measure to 'Vehicle_sales_share'
-    sales['Measure'] = 'Vehicle_sales_share'
-    #repalce nan with 0
-    sales = sales.fillna(0)
-
-    #now we want to find the year with the most values that arent 0. this is essentially the year with the most data and is therefor emost suitable to abse our sales shares off (data with less values may be missing values and tehrefore exaggerating sales share fr certain vehicle types)
-    #we will do this by grouping by year and counting the number of non zero values. then we will sort by this count and take the year with the most non zero values
-    # 
-    year_with_most_values = sales.loc[sales['Value']>=0.0001].groupby('Date')['Date'].count()
-    #its now a seires so get the max value and its index
-    max_year = year_with_most_values.idxmax()
-    
-    #filter for the year with the most values
-    sales = sales.loc[sales['Date']==max_year]
-    plotting = False
-    if plotting:
-        plot_user_input_data.plot_estimated_data_system_sales_share(sales, YEARS_TO_KEEP_AFTER_BASE_YEAR)
-        
-    #drop Total Stocks column and Value column
-    sales = sales.drop(columns=['Total Stocks', 'Value'])
-
-    #now replicate the sales shares for each scenario and for each year between the config.DEFAULT_BASE_YEAR and the config.END_YEAR of the scenario.
-
-    #filter for a unique scenario in the sales df
-    sales = sales[sales.Scenario==sales.Scenario.unique()[0]]
-    sales_dummy = sales.copy()
-    new_sales = pd.DataFrame()
-    for scenario in config.SCENARIOS_LIST:
-        sales_dummy['Scenario'] = scenario
-        new_sales = pd.concat([new_sales, sales_dummy])
-    
-    #now we want to replicate the df (BUT NOT THE SALES SHARE) for each year between the config.DEFAULT_BASE_YEAR and the config.END_YEAR of the scenario
-    sales_dummy = new_sales.copy()
-    new_sales_years = pd.DataFrame()
-    for year in range(config.DEFAULT_BASE_YEAR, config.END_YEAR+1):
-        sales_dummy['Date'] = year
-        new_sales_years = pd.concat([new_sales_years, sales_dummy])
-    
-    #set sales share for all values after config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR to np.nan (add three so that we still have a few values for the interpoaltion to go off)
-    new_sales_years.loc[new_sales_years['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Sales Share'] = np.nan
-
-    #set unit to %
-    new_sales_years['Unit'] = '%'
-    # 
-    #when we get to having great data it would be better to extend the years by using something like this:
-    
-    
-    return new_sales_years
-
-def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_pre_interp, model_concordances_user_input_and_growth_rates, passenger_drive_shares, freight_drive_shares,YEARS_TO_KEEP_AFTER_BASE_YEAR):
-    #we are now only taking in data from the most important drives, to reduce the amount of time we need to spend manually writing out the drive share targets. So the follwoign funciton should take in those targets and the Base year data, and calcualte the remaining drive shares for the missing drives using the base year data's shares as a reference. 
-    #the base year datas shares, for the missing drives, will be normalised to 1 so we can just times them by 1-x where x is the sum of the manully inputted shares, in each year we ahve them for. In missing years (the years we will interpoalte later), we will leave all as nan, so that we can interpolate between the values we have set and the base year values.
-    #the input files for this will be:
-    #new_sales_shares_pre_interp (which contains the base year data and the manually inputted data - whjich we will split at the beginning)
-    #model_concordances_user_input_and_growth_rates (which contaions the set of drives, vehicle types and transport types we need to set the drive shares for)
-    #passenger_drive_shares and freight_drive_shares (which only contain the manually inputted data > we will sue this to extract the data we want from new_sales_shares_pre_interp)
-    #so first we need to split new_sales_shares_pre_interp into the base year data and the manually inputted data
-    sales_share_BASE_YEAR = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==config.DEFAULT_BASE_YEAR]
-    sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
-    #extract unique drives, vehicle types and transport types from model_concordances_user_input_and_growth_rates
-    # combinations = model_concordances_user_input_and_growth_rates[['Medium','Transport Type','road', 'Vehicle Type', 'Drive']].drop_duplicates()
-    #find unique combiantions in passenger_drive_shares and freight_drive_shares
-    p = passenger_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
-    p['Transport Type'] = 'passenger'
-    f = freight_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
-    f['Transport Type'] = 'freight'
-    combinations_manual_input = pd.concat([p , f])
-    #dropo the combinations in sales_share_manual_input from sales_share_BASE_YEAR
-    sales_share_BASE_YEAR = sales_share_BASE_YEAR[~sales_share_BASE_YEAR[['Transport Type', 'Medium','Vehicle Type','road', 'Drive']].apply(tuple,1).isin(combinations_manual_input[['Transport Type', 'road','Medium','Vehicle Type', 'Drive']].apply(tuple,1))]
-
-    #set nas in drive share to 0
-    sales_share_BASE_YEAR[ 'Drive_share'] = sales_share_BASE_YEAR[ 'Drive_share'].fillna(0)
-    #find the normalised shares for the available data in the base year data
-    sales_share_BASE_YEAR['Drive_share'] = sales_share_BASE_YEAR.groupby(['Economy', 'Scenario', 'Transport Type', 'road','Medium','Vehicle Type'])['Drive_share'].transform(lambda x: x/x.sum())
-    #set nas in drive share to 0
-    sales_share_BASE_YEAR[ 'Drive_share'] = sales_share_BASE_YEAR[ 'Drive_share'].fillna(0)
-    #now get sum of manually inputted shares for each year
-    sales_share_manual_input_sum = sales_share_manual_input.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Date'])['Drive_share'].sum().reset_index()
-    #1 minus it
-    sales_share_manual_input_sum['Drive_share_remainder'] = 1 - sales_share_manual_input_sum['Drive_share']
-    #drop drive share
-    sales_share_manual_input_sum = sales_share_manual_input_sum.drop(columns=['Drive_share'])
-    #chcke for any values les than 0
-    if sales_share_manual_input_sum['Drive_share_remainder'].min() < 0:
-        #show them and raise
-        print(sales_share_manual_input_sum.loc[sales_share_manual_input_sum['Drive_share_remainder']<0])
-        raise ValueError('Drive share remainder is less than 0')
-    #join this to the base year data using right join
-    missing_sales_shares = sales_share_BASE_YEAR[['Economy', 'Scenario', 'Transport Type','Medium', 'Vehicle Type','Drive', 'road','Drive_share']].merge(sales_share_manual_input_sum, on=['Economy','road', 'Scenario', 'Medium','Transport Type', 'Vehicle Type'], how='right')
-    #times the base year data by the 1-x
-    missing_sales_shares['Drive_share'] = missing_sales_shares['Drive_share'] * missing_sales_shares['Drive_share_remainder']
-
-    #now we need to insert these rows into the  new_sales_shares_pre_interp, rmeoving their original rows (which will be nas.) so do a join and then repalce drive share with the new drive share where it is not na
-    final_df = new_sales_shares_pre_interp.merge(missing_sales_shares, on=['Economy', 'Scenario','Medium', 'Transport Type','road', 'Vehicle Type','Date', 'Drive'], how='left', suffixes=('', '_y'))
-    #want to replace the drive share with the new drive share where it is na (replacing nas with nas too.)
-    final_df['Drive_share'] = final_df['Drive_share'].fillna(final_df['Drive_share_y'])
-    #drop the y cols
-    final_df = final_df.drop(columns=['Drive_share_y', 'Drive_share_remainder'])
-
-    return final_df
-
-
 def create_vehicle_sales_share_input():
     YEARS_TO_KEEP_AFTER_BASE_YEAR= 3
     # new_sales_shares = pd.read_csv('input_data/from_8th/reformatted/vehicle_stocks_change_share_normalised.csv')
     #load groomed data from transport data system
-    
     transport_data_system_df = pd.read_csv('intermediate_data/model_inputs/transport_data_system_extract.csv')
     new_transport_data_system_df = transport_data_system_df.copy() 
     
@@ -490,7 +371,7 @@ def create_vehicle_sales_share_input():
     # times that by each Transport_type_share to adjust them for the growth rate
     #then normalise all to 1 by transport type
     vehicle_type_growth_regions = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx', sheet_name='vehicle_type_growth_regions')
-    vehicle_type_growth = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx', sheet_name='vehicle_type_growth')
+    vehicle_type_growth = pd.read_excel('input_data/vehicle_sales_share_inputs.xlsx', sheet_name='vehicle_type_growth').drop_duplicates()
     vehicle_type_growth['road'] = vehicle_type_growth['Medium']=='road'
     new_sales_shares_all_new= new_sales_shares_all.copy()
     #use vehicle_type_growth_regions to merge regions to econmy
@@ -502,6 +383,7 @@ def create_vehicle_sales_share_input():
     new_sales_shares_all_new['Compound_growth_rate'] = new_sales_shares_all_new.groupby(['Economy', 'Scenario', 'Transport Type', 'Medium','Vehicle Type','road', 'Drive'])['Growth'].cumprod()
     #apply the growth rate to the Transport_type_share
     new_sales_shares_all_new['Transport_type_share_new'] = new_sales_shares_all_new['Transport_type_share'] * new_sales_shares_all_new['Compound_growth_rate']
+    
     #normalise the Transport_type_share_new to 1
     new_sales_shares_all_new['Transport_type_share_new'] = new_sales_shares_all_new.groupby(['Economy', 'Scenario', 'Date','road','Transport Type'])['Transport_type_share_new'].transform(lambda x: x/x.sum())
 
@@ -509,14 +391,22 @@ def create_vehicle_sales_share_input():
     if plotting:
         plot_user_input_data.plot_new_sales_shares_normalised_by_transport_type(new_sales_shares_all, new_sales_shares_sum,new_sales_shares_all_new)
 
+    #check that the sumof transport type share is 1 for 19_THA, road=False, transport type = freight
+    a = new_sales_shares_all_new.loc[(new_sales_shares_all_new['Economy']=='19_THA')&(new_sales_shares_all_new['road']==False)&(new_sales_shares_all_new['Transport Type']=='freight')&(new_sales_shares_all_new['Date']==2023)&(new_sales_shares_all_new['Scenario']=='Reference')].copy()
+    if a.Transport_type_share_new.sum() != 1:
+        breakpoint()
+        raise ValueError('The sum of the transport type share for 19_THA, road=False, transport type = freight, date = 2023 is not 1. Please check the user input data and fix this. Porbalby occuring for all econmoies and transport types.')
 
     #rename Transport_type_share_new to Vehicle^sales_share
     new_sales_shares_all_new = new_sales_shares_all_new.rename(columns={'Transport_type_share_new':'Vehicle_sales_share'})
     #drop cols
     new_sales_shares_all_new = new_sales_shares_all_new.drop(columns=[ 'Drive_share', 'Vehicle_type_share_sum',
         'Transport_type_share', 'Region', 'Growth', 'Compound_growth_rate','road','Vehicle_type_share_sum_nas'])
-    #drop dupes
-    new_sales_shares_all_new = new_sales_shares_all_new.drop_duplicates()
+    #identify if there anre any dupes. there shoudltn be and they should be fixed rather than removed.
+    dupes = new_sales_shares_all_new[new_sales_shares_all_new.duplicated()]
+    if len(dupes) > 0:
+        breakpoint()
+        raise ValueError(f'There are duplicates in the new_sales_shares_all_new df. Please fix this. {dupes}')
 
     
     ###########################################################################
@@ -553,7 +443,127 @@ def create_vehicle_sales_share_input():
     #also save the data to the user_input_spreadsheets folder as csv
     new_sales_shares_all_new.to_csv('input_data/user_input_spreadsheets/Vehicle_sales_share.csv', index = False)
 
-#%%
 
+
+def estimate_transport_data_system_sales_share(new_transport_data_system_df, YEARS_TO_KEEP_AFTER_BASE_YEAR):
+  
+    
+    sales = new_transport_data_system_df.copy()
+    #filter for Stocks in Measutre
+    sales = sales.loc[sales['Measure']=='Stocks']
+    cols = config.INDEX_COLS.copy()
+    cols = cols + ['road']#used for allowing swithicvn between non road mediums
+    cols.remove('Medium')
+    cols.remove('Vehicle Type')
+    cols.remove('Drive')
+    total_stocks = sales.copy()
+    total_stocks = sales.groupby(cols)['Value'].sum().reset_index()
+    total_stocks = total_stocks.rename(columns={'Value':'Total Stocks'})
+    sales = sales.merge(total_stocks, on=cols, how='left')
+    sales['Sales Share'] = sales['Value']/sales['Total Stocks']
+    #set measure to 'Vehicle_sales_share'
+    sales['Measure'] = 'Vehicle_sales_share'
+    #repalce nan with 0
+    sales = sales.fillna(0)
+
+    #now we want to find the year with the most values that arent 0. this is essentially the year with the most data and is therefor emost suitable to abse our sales shares off (data with less values may be missing values and tehrefore exaggerating sales share fr certain vehicle types)
+    #we will do this by grouping by year and counting the number of non zero values. then we will sort by this count and take the year with the most non zero values
+    # 
+    year_with_most_values = sales.loc[sales['Value']>=0.0001].groupby('Date')['Date'].count()
+    #its now a seires so get the max value and its index
+    max_year = year_with_most_values.idxmax()
+    
+    #filter for the year with the most values
+    sales = sales.loc[sales['Date']==max_year]
+    plotting = False
+    if plotting:
+        plot_user_input_data.plot_estimated_data_system_sales_share(sales, YEARS_TO_KEEP_AFTER_BASE_YEAR)
+        
+    #drop Total Stocks column and Value column
+    sales = sales.drop(columns=['Total Stocks', 'Value'])
+
+    #now replicate the sales shares for each scenario and for each year between the config.DEFAULT_BASE_YEAR and the config.END_YEAR of the scenario.
+
+    #filter for a unique scenario in the sales df
+    sales = sales[sales.Scenario==sales.Scenario.unique()[0]]
+    sales_dummy = sales.copy()
+    new_sales = pd.DataFrame()
+    for scenario in config.SCENARIOS_LIST:
+        sales_dummy['Scenario'] = scenario
+        new_sales = pd.concat([new_sales, sales_dummy])
+    
+    #now we want to replicate the df (BUT NOT THE SALES SHARE) for each year between the config.DEFAULT_BASE_YEAR and the config.END_YEAR of the scenario
+    sales_dummy = new_sales.copy()
+    new_sales_years = pd.DataFrame()
+    for year in range(config.DEFAULT_BASE_YEAR, config.END_YEAR+1):
+        sales_dummy['Date'] = year
+        new_sales_years = pd.concat([new_sales_years, sales_dummy])
+    
+    #set sales share for all values after config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR to np.nan (add three so that we still have a few values for the interpoaltion to go off)
+    new_sales_years.loc[new_sales_years['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR, 'Sales Share'] = np.nan
+
+    #set unit to %
+    new_sales_years['Unit'] = '%'
+    # 
+    #when we get to having great data it would be better to extend the years by using something like this:
+    
+    
+    return new_sales_years
+
+def calcaulte_missing_drive_shares_from_manually_inputted_data(new_sales_shares_pre_interp, model_concordances_user_input_and_growth_rates, passenger_drive_shares, freight_drive_shares,YEARS_TO_KEEP_AFTER_BASE_YEAR):
+    #we are now only taking in data from the most important drives, to reduce the amount of time we need to spend manually writing out the drive share targets. So the follwoign funciton should take in those targets and the Base year data, and calcualte the remaining drive shares for the missing drives using the base year data's shares as a reference. 
+    #the base year datas shares, for the missing drives, will be normalised to 1 so we can just times them by 1-x where x is the sum of the manully inputted shares, in each year we ahve them for. In missing years (the years we will interpoalte later), we will leave all as nan, so that we can interpolate between the values we have set and the base year values.
+    #the input files for this will be:
+    #new_sales_shares_pre_interp (which contains the base year data and the manually inputted data - whjich we will split at the beginning)
+    #model_concordances_user_input_and_growth_rates (which contaions the set of drives, vehicle types and transport types we need to set the drive shares for)
+    #passenger_drive_shares and freight_drive_shares (which only contain the manually inputted data > we will sue this to extract the data we want from new_sales_shares_pre_interp)
+    #so first we need to split new_sales_shares_pre_interp into the base year data and the manually inputted data
+    sales_share_BASE_YEAR = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']==config.DEFAULT_BASE_YEAR]
+    sales_share_manual_input = new_sales_shares_pre_interp.loc[new_sales_shares_pre_interp['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Drive_share'])
+    #extract unique drives, vehicle types and transport types from model_concordances_user_input_and_growth_rates
+    # combinations = model_concordances_user_input_and_growth_rates[['Medium','Transport Type','road', 'Vehicle Type', 'Drive']].drop_duplicates()
+    #find unique combiantions in passenger_drive_shares and freight_drive_shares
+    p = passenger_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
+    p['Transport Type'] = 'passenger'
+    f = freight_drive_shares[['Medium','Vehicle Type','road', 'Drive']].drop_duplicates()
+    f['Transport Type'] = 'freight'
+    combinations_manual_input = pd.concat([p , f])
+    #dropo the combinations in sales_share_manual_input from sales_share_BASE_YEAR
+    sales_share_BASE_YEAR = sales_share_BASE_YEAR[~sales_share_BASE_YEAR[['Transport Type', 'Medium','Vehicle Type','road', 'Drive']].apply(tuple,1).isin(combinations_manual_input[['Transport Type', 'road','Medium','Vehicle Type', 'Drive']].apply(tuple,1))]
+
+    #set nas in drive share to 0
+    sales_share_BASE_YEAR[ 'Drive_share'] = sales_share_BASE_YEAR[ 'Drive_share'].fillna(0)
+    #find the normalised shares for the available data in the base year data
+    sales_share_BASE_YEAR['Drive_share'] = sales_share_BASE_YEAR.groupby(['Economy', 'Scenario', 'Transport Type', 'road','Medium','Vehicle Type'])['Drive_share'].transform(lambda x: x/x.sum())
+    #set nas in drive share to 0
+    sales_share_BASE_YEAR[ 'Drive_share'] = sales_share_BASE_YEAR[ 'Drive_share'].fillna(0)
+    #now get sum of manually inputted shares for each year
+    sales_share_manual_input_sum = sales_share_manual_input.groupby(['Economy', 'Scenario', 'Transport Type','Medium','road', 'Vehicle Type', 'Date'])['Drive_share'].sum().reset_index()
+    #1 minus it
+    sales_share_manual_input_sum['Drive_share_remainder'] = 1 - sales_share_manual_input_sum['Drive_share']
+    #drop drive share
+    sales_share_manual_input_sum = sales_share_manual_input_sum.drop(columns=['Drive_share'])
+    #chcke for any values les than 0
+    if sales_share_manual_input_sum['Drive_share_remainder'].min() < 0:
+        #show them and raise
+        print(sales_share_manual_input_sum.loc[sales_share_manual_input_sum['Drive_share_remainder']<0])
+        raise ValueError('Drive share remainder is less than 0')
+    #join this to the base year data using right join
+    missing_sales_shares = sales_share_BASE_YEAR[['Economy', 'Scenario', 'Transport Type','Medium', 'Vehicle Type','Drive', 'road','Drive_share']].merge(sales_share_manual_input_sum, on=['Economy','road', 'Scenario', 'Medium','Transport Type', 'Vehicle Type'], how='right')
+    #times the base year data by the 1-x
+    missing_sales_shares['Drive_share'] = missing_sales_shares['Drive_share'] * missing_sales_shares['Drive_share_remainder']
+
+    #now we need to insert these rows into the  new_sales_shares_pre_interp, rmeoving their original rows (which will be nas.) so do a join and then repalce drive share with the new drive share where it is not na
+    final_df = new_sales_shares_pre_interp.merge(missing_sales_shares, on=['Economy', 'Scenario','Medium', 'Transport Type','road', 'Vehicle Type','Date', 'Drive'], how='left', suffixes=('', '_y'))
+    #want to replace the drive share with the new drive share where it is na (replacing nas with nas too.)
+    final_df['Drive_share'] = final_df['Drive_share'].fillna(final_df['Drive_share_y'])
+    #drop the y cols
+    final_df = final_df.drop(columns=['Drive_share_y', 'Drive_share_remainder'])
+
+    return final_df
+
+
+#%%
+# create_vehicle_sales_share_input()
 
 #%%

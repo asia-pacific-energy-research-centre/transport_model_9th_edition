@@ -37,8 +37,9 @@ def copy_required_output_files_to_one_folder(output_folder_path='output_data/for
             output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_detailed.html')
             useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_presentation.html')
             output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_assumptions_dashboard_presentation.html')
-            useful_file_paths.append(f'output_data/for_other_modellers/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
-            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
+            
+            useful_file_paths.append(f'output_data/for_other_modellers/output_for_outlook_data_system/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
+            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_transport_energy_use.csv')
     
     # chargers: output_data\for_other_modellers\estimated_number_of_chargers.csv
     #this one si already put there automatically so ignore it

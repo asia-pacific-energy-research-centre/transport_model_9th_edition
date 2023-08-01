@@ -448,4 +448,4 @@ def concatenate_outlook_data_system_outputs():
         missing_economies = [e for e in config.ECONOMY_LIST if e not in final_df['economy'].unique()]
         raise ValueError(f'The following economies are missing from the outlook data system outputs: {missing_economies}')
     #save the final df:
-    final_df.to_csv(f'output_data/for_other_modellers/{config.FILE_DATE_ID}_transport_energy_use.csv', index=False)
+    final_df.to_csv(f'output_data/for_other_modellers/output_for_outlook_data_system/{config.FILE_DATE_ID}_transport_energy_use.csv', index=False)

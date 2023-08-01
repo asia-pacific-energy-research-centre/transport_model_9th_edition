@@ -66,7 +66,7 @@ def load_non_road_model_data(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_
     return non_road_model_input, turnover_rate_steepness
     
 
-def run_non_road_model(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = False):
+def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = False):
     output_file_name = 'intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
     
     non_road_model_input, turnover_rate_steepness = load_non_road_model_data(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD)
@@ -97,7 +97,7 @@ def run_non_road_model(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = 
             stocks_to_replace = previous_year['Stocks'] * current_year['Turnover_rate']
 
             total_sales_for_that_year = total_new_stocks_for_activity + stocks_to_replace.sum()
-
+            
             new_stocks = total_sales_for_that_year * current_year['Vehicle_sales_share']
 
             current_year['Stocks'] = previous_year['Stocks'] - stocks_to_replace + new_stocks
@@ -139,5 +139,5 @@ def run_non_road_model(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = 
     output_df.to_csv(output_file_name, index=False)
     
 #%%
-# run_non_road_modelcurrent_year('19_THA')
+run_non_road_model('19_THA')
 #%%
