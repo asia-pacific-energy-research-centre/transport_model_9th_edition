@@ -292,6 +292,7 @@ def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures,T
 
     # date_id = utility_functions.get_latest_date_for_data_file('../transport_data_system/intermediate_data/EGEDA/', 'model_input_9th_cleaned')
     # esto_non_road = pd.read_csv(f'../transport_data_system/intermediate_data/EGEDA/model_input_9th_cleanedDATE{date_id}.csv')
+    
     energy_use_esto = adjust_data_to_match_esto.format_9th_input_energy_from_esto()
     
     #keep medium in rail, air and ship

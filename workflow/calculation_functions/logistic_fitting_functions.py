@@ -36,11 +36,11 @@ from scipy.optimize import curve_fit
 #######################################################################
 #######################################################################
 def convert_stocks_to_gompertz_adjusted_stocks(model_data,vehicle_gompertz_factors):
+    
     #Convert some stocks to gompertz adjusted stocks by multiplying them by the vehicle_gompertz_factors. This is because you can expect some economies to have more or less of that vehicle type than others. These are very general estiamtes, and could be refined later.
     cols_to_sum_by = ['Economy', 'Scenario', 'Date', 'Transport Type']
-    
+    new_stocks = model_data.copy()
     for ttype in vehicle_gompertz_factors.keys():
-        new_stocks = model_data.copy()
         new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] = new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] * vehicle_gompertz_factors[ttype]
     #sum up new stocks and other values specific to each vehicle type
     new_stocks = new_stocks[cols_to_sum_by+['Stocks','Activity', 'Travel_km']].groupby(cols_to_sum_by).sum().reset_index()
@@ -84,6 +84,8 @@ def logistic_fitting_function_handler(model_data,vehicle_gompertz_factors,show_p
         
     new_model_data = convert_stocks_to_gompertz_adjusted_stocks(model_data_to_edit,vehicle_gompertz_factors)
     #EXTRACT PARAMETERS FOR LOGISTIC FUNCTION:
+    # breakpoint()#want to find the toal amount of stocks per year per economy per transport type, so we can compare them to the data plotted in graphs:
+    # stocks = new_model_data.groupby(['Date', 'Economy', 'Scenario', 'Transport Type'])['Stocks'].sum().reset_index()
     
     parameters_estimates = find_parameters_for_logistic_function(new_model_data, show_plots, matplotlib_bool, plotly_bool)
     #some parameters will be np.nan because we dont need to fit the curve for all economies. We will drop these and not recalculate the growth rate for these economies
@@ -105,7 +107,9 @@ def logistic_fitting_function_handler(model_data,vehicle_gompertz_factors,show_p
     new_model_data = new_model_data.merge(summed_values, on=['Date','Economy', 'Scenario','Transport Type'], how='left')
     # 
     model_data_logistic_predictions = create_new_dataframe_with_logistic_predictions(new_model_data)
-
+    # # breakpoint()
+    
+    # stocks = model_data_logistic_predictions.groupby(['Date', 'Economy', 'Scenario', 'Transport Type'])['Stocks'].sum().reset_index()
     #find growth rate of activity as the percentage change in activity from the previous year plus 1. make sur eto group by economy and scenario BUT NOT BY VEHICLE TYPE (PLEASE NOTE THAT THIS MAY CHANGE IN THE FUTURE)
     activity_growth_estimates = model_data_logistic_predictions[['Date', 'Economy', 'Scenario', 'Activity', 'Transport Type']].drop_duplicates().groupby(['Date', 'Economy', 'Scenario', 'Transport Type'])['Activity'].sum().reset_index()
 

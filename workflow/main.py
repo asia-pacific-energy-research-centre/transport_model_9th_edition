@@ -58,11 +58,11 @@ import compare_esto_energy_to_data
 #%%
 def main():
     #Things to do once a day:
-    do_these_once_a_day = False
+    do_these_once_a_day = True
     if do_these_once_a_day:
         concordance_scripts.create_all_concordances()
     
-    PREPARE_DATA = False
+    PREPARE_DATA = True
     if PREPARE_DATA:
         import_macro_data.import_macro_data()
         import_transport_system_data.import_transport_system_data()
@@ -85,7 +85,7 @@ def main():
         print('\nRunning model for {}\n'.format(economy))
         ECONOMY_ID = economy
         BASE_YEAR = ECONOMY_BASE_YEARS_DICT[economy]
-        MODEL_RUN_1  = False
+        MODEL_RUN_1  = True
         if MODEL_RUN_1:              
             #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN AND INCLUDIONG BASE YEAR AND config.OUTLOOK_BASE_YEAR))
             PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = True
@@ -107,7 +107,7 @@ def main():
             apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(ECONOMY_ID)
             clean_model_output.clean_model_output(ECONOMY_ID)
             
-            PLOT_FIRST_MODEL_RUN = True
+            PLOT_FIRST_MODEL_RUN = False
             ARCHIVE_PREVIOUS_DASHBOARDS = True
             if PLOT_FIRST_MODEL_RUN:       
                 #its easier to run all these rather than skipping some out for now
@@ -118,7 +118,7 @@ def main():
                 create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR,ECONOMY_ID,ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT
-        MODEL_RUN_2  = False
+        MODEL_RUN_2  = True
         if MODEL_RUN_2:
             #MODEL RUN 1: (RUN MODEL FOR DATA BETWEEN  AND INCLUDIONG BASE YEAR AND config.OUTLOOK_BASE_YEAR)
             PROJECT_TO_JUST_OUTLOOK_BASE_YEAR = False
@@ -144,7 +144,7 @@ def main():
             # exec(open("./workflow/6_create_osemosys_output.py").read())
             # import create_osemosys_output
             # create_osemosys_output.create_osemosys_output()
-            
+            # ADVANCE_BASE_YEAR=True
             ANALYSE_OUTPUT = True
             ARCHIVE_PREVIOUS_DASHBOARDS = True
             if ANALYSE_OUTPUT: 
@@ -154,7 +154,7 @@ def main():
                 produce_LMDI_graphs.produce_lots_of_LMDI_charts(ECONOMY_ID, USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = False, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
                 create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT   
-            
+        
 
     create_output_for_outlook_data_system.concatenate_outlook_data_system_outputs()
     
@@ -171,7 +171,12 @@ def main():
     run_plot_all_graphs = True
     if run_plot_all_graphs:
         #plot:
-        plot_all_graphs.plot_all_graphs(PLOT=True)
+        breakpoint()
+        try:
+            plot_all_graphs.plot_all_graphs(PLOT=True)
+        except:
+            breakpoint()
+            plot_all_graphs.plot_all_graphs(PLOT=True)
         # produce_LMDI_graphs.produce_lots_of_LMDI_charts(USE_LIST_OF_CHARTS_TO_PRODUCE = True, PLOTTING = True, USE_LIST_FOR_DATASETS_TO_PRODUCE=True)
         # exec(open("./workflow/plotting/produce_LMDI_graphs.py").read())
 #%%

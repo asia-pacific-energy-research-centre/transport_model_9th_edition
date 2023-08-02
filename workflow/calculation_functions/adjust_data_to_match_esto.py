@@ -452,6 +452,7 @@ def filter_for_testing_data_only(road_model_input_wide, non_road_model_input_wid
 
 #%%
 def format_9th_input_energy_from_esto(ECONOMY_ID=None):
+    # breakpoint()
     #take in data from the EBT system of 9th and format it so that it can be used to create the energy data to whcih the model will be rescaled:
     #load the 9th data
     date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
@@ -471,11 +472,15 @@ def format_9th_input_energy_from_esto(ECONOMY_ID=None):
     #    'sub3sectors', 'sub4sectors', 'fuels', 'subfuels', '1980'...
     #first filter so teh sector is transport:
     energy_use_esto = energy_use_esto.loc[energy_use_esto['sectors'] == '15_transport_sector'].copy()
+    #and remove the sectors we dont consider in the model (pipeline )
     #and fiulter for ref scenario:
     energy_use_esto = energy_use_esto.loc[energy_use_esto['scenarios'] == 'reference'].copy()
     #and drop aggregate fuels:
     aggregate_cols = ['19_total', '20_total_renewables', '21_modern_renewables']
     energy_use_esto = energy_use_esto.loc[~energy_use_esto['fuels'].isin(aggregate_cols)].copy()
+    #drop aggregate fuels which occur where subfuel is x:
+    aggregate_x_fuels = ['16_others', '03_peat', '08_gas', '07_petroleum_products', '01_coal', '06_crude_oil_and_ngl']
+    energy_use_esto = energy_use_esto.loc[~((energy_use_esto['fuels'].isin(aggregate_x_fuels)) & (energy_use_esto['subfuels'] == 'x'))].copy()
     #then do the mappings:
     #map the subfuel to the fuel
     #now map the subfuels to the subfuels in the esto data
@@ -485,12 +490,13 @@ def format_9th_input_energy_from_esto(ECONOMY_ID=None):
     if len(energy_use_esto.loc[energy_use_esto['Fuel'].isna()]) > 0:
         
         # drop anyrows where the fuels column is 06_crude_oil_and_ngl, as we are going to remove that column on the input data side anyway (i.e. tell hyuga to drop it)
-        nas = energy_use_esto.loc[energy_use_esto['Fuel'].isna()].loc[~energy_use_esto['fuels'].isin(['06_crude_oil_and_ngl'])]
+        nas = energy_use_esto.loc[energy_use_esto['Fuel'].isna()].loc[~energy_use_esto['subfuels'].isin(['06_01_crude_oil', '06_02_natural_gas_liquids', '07_11_ethane', '07_x_other_petroleum_products'])].copy()
         if len(nas) > 0:
+            breakpoint()
             raise ValueError('there are nans in Fuel because there was an x in subfuel and the fuel was not in the x_subfuel_mapping, {}'.format(energy_use_esto.loc[energy_use_esto['Fuel'].isna(), 'fuels'].unique()))
         else:
             #write big warnign just to rmeind you to remind hyuga to drop 06_crude_oil_and_ngl!
-            print('##########################\n\n there are nans in Fuel because there was an x in subfuel and the fuel was not in the x_subfuel_mapping, but they are all 06_crude_oil_and_ngl, so we will drop that column on the input data side. AKA TELL HYUGA TO DROP 06_crude_oil_and_ngl\n\n##########################')
+            print('##########################\n\n there are nans in Fuel but they are all for the subfuels 07_11_ethane, 07_x_other_petroleum_products, 06_01_crude_oil,06_02_natural_gas_liquids and these dont actually have any transport data asssociated with them (besides nonspecified or pipelin) so we will drop them on the input data side. AKA TELL HYUGA TO DROP them!\n\n##########################')
 
     #map the medium to the sub1sector then drop the fuel and sectors cols since weve dfone all the mapping we can:
     energy_use_esto['Medium'] = energy_use_esto['sub1sectors'].map(medium_mapping_reverse)
@@ -516,28 +522,26 @@ def format_9th_input_energy_from_esto(ECONOMY_ID=None):
     #drop '22_SEA', '23_NEA', '23b_ONEA', '24_OAM','24b_OOAM', '25_OCE', 'APEC' Economys
     energy_use_esto = energy_use_esto.loc[~energy_use_esto['Economy'].isin(['22_SEA', '23_NEA', '23b_ONEA', '24_OAM','24b_OOAM', '25_OCE', 'APEC'])].copy()
 
-    #lastly, using the concordances, we will identify any fuel/medium combinations that arent in either and notify the user. for ones that are dealt with in the dicitonary below, do that, for the others, throw an error:
+    #lastly, using the concordances, we will identify any fuel/medium combinations that arent in either and notify the user. for ones that are dealt with in the dicitonary below, do that (they are probably just errors in the data that ive already noticed), for the others, throw an error:
     missing_fuels_and_mediums_to_new_fuels_and_mediums = {
         'road':{
-            '07_x_other_petroleum_products': ('07_x_other_petroleum_products', 'nonspecified'),
-            '16_09_other_sources':
-            ('16_09_other_sources', 'nonspecified'),
+            # '07_x_other_petroleum_products': ('07_x_other_petroleum_products', 'nonspecified'),
+            # '16_09_other_sources': ('16_09_other_sources', 'nonspecified'),
             '07_02_aviation_gasoline': ('07_02_aviation_gasoline', 'nonspecified'),
             '07_06_kerosene': ('07_06_kerosene', 'nonspecified'),
             '07_08_fuel_oil': ('07_08_fuel_oil', 'nonspecified'), 
         },
-        'rail':{
-            '07_x_other_petroleum_products': ('07_x_other_petroleum_products', 'nonspecified'),
-            '16_09_other_sources':
-            ('16_09_other_sources', 'nonspecified'),
-        },
-        'air':{
-            '07_x_other_petroleum_products': ('07_x_other_petroleum_products', 'nonspecified')
-        },
-        'ship':{
-            '16_09_other_sources':
-            ('16_09_other_sources', 'nonspecified')
-    }}
+        # 'rail':{
+            # '07_x_other_petroleum_products': ('07_x_other_petroleum_products', 'nonspecified'),
+            # '16_09_other_sources': ('16_09_other_sources', 'nonspecified'),
+        # },
+        # 'air':{
+        #     '07_x_other_petroleum_products': ('07_x_other_petroleum_products', 'nonspecified')
+        # },
+        # 'ship':{
+        #     '16_09_other_sources':
+        #     ('16_09_other_sources', 'nonspecified')}
+    }
         
     #dso mapping now ewith the new fuels and mediums:
     for medium, fuels in missing_fuels_and_mediums_to_new_fuels_and_mediums.items():

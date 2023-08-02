@@ -8,10 +8,10 @@ NEW_SALES_SHARES = True
 NEW_FUEL_MIXING_DATA = True
 
 transport_data_system_FILE_DATE_ID ='DATE20230731_19_THA' # 'DATE20230216'))
-# FILE_DATE_ID ='_20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run. if the FILE DATE ID might be lilke this DATE20230731_19_THA, inlude the eoconmoy codee!
-
+# FILE_DATE_ID ='20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run. if the FILE DATE ID might be lilke this DATE20230731_19_THA, inlude the eoconmoy codee!
+# FILE_DATE_ID='20230801'
 #%%
-# FILE_DATE_ID ='_20230715'
+
 #import common libraries 
 import pandas as pd 
 import numpy as np
@@ -273,7 +273,7 @@ fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_
 '07_09_lpg':'07_petroleum_products',
 '07_02_aviation_gasoline':'07_petroleum_products', '07_x_jet_fuel':'07_petroleum_products', 
 '01_coal':'01_coal',
-'07_08_fuel_oil':'07_petroleum_products', '07_x_other_petroleum_products':'07_petroleum_products',
+'07_08_fuel_oil':'07_petroleum_products', #'07_x_other_petroleum_products':'07_petroleum_products',
 '16_01_biogas':'16_others',
 '16_06_biodiesel':'16_others', 
 '16_05_biogasoline':'16_others', 
@@ -317,8 +317,8 @@ temp_esto_subfuels_to_new_subfuels_mapping = {#one day we should get the EBT cod
     '07_07_gas_diesel_oil': '07_07_gas_diesel_oil',
     '07_08_fuel_oil': '07_08_fuel_oil',
     '07_09_lpg': '07_09_lpg',
-    '07_11_ethane': '07_x_other_petroleum_products',
-    '07_x_other_petroleum_products': '07_x_other_petroleum_products',
+    # '07_11_ethane': '07_x_other_petroleum_products',
+    # '07_x_other_petroleum_products': '07_x_other_petroleum_products',
     '08_01_natural_gas': '08_01_natural_gas',
     '08_02_lng': '08_01_natural_gas',
     '08_03_gas_works_gas': '08_01_natural_gas',
@@ -335,14 +335,14 @@ temp_esto_subfuels_to_new_subfuels_mapping = {#one day we should get the EBT cod
     # '06_02_natural_gas_liquids': '06_crude_oil_and_ngl'
 }
 
-# #where subfuel is x then map Fuel based on teh value in the fuels column. If the fuel is not in the mapping then throw an error
+# #where subfuel is x then map Fuel based on teh value in the fuels column. If the fuel is not in the mapping then throw an error.
 x_subfuel_mappings = {
-    '16_others': '16_09_other_sources',
+    # '16_others': '16_09_other_sources',#removed because these are agregates in the esto data
     '17_electricity': '17_electricity',
-    '03_peat':'01_coal',
-    '08_gas': '08_01_natural_gas',
-    '07_petroleum_products': '07_x_other_petroleum_products',
-    '01_coal': '01_coal',
+    # '03_peat':'01_coal',#removed because these are agregates in the esto data
+    # '08_gas': '08_01_natural_gas',#removed because these are agregates in the esto data
+    # '07_petroleum_products': '07_x_other_petroleum_products',#removed because these are agregates in the esto data
+    # '01_coal': '01_coal',#removed because these are agregates in the esto data
     '02_coal_products': '01_coal'#,
     # '06_crude_oil_and_ngl': '06_crude_oil_and_ngl'
     }

@@ -49,9 +49,9 @@ def run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     #RUN MODEL TO GET RESULTS FOR EACH YEAR
     print('Running model up to year ' + str(road_model_input.Date.max()))
     for year in range(road_model_input.Date.min()+1, road_model_input.Date.max()+1):
-        main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block,turnover_rate_parameters_dict)
+        main_dataframe,previous_year_main_dataframe, low_ram_computer_files_list, change_dataframe_aggregation,previous_10_year_block = road_model_functions.run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe, user_inputs_df_dict, growth_forecasts, change_dataframe_aggregation, low_ram_computer_files_list, low_ram_computer, ANALYSE_CHANGE_DATAFRAME, previous_10_year_block,turnover_rate_parameters_dict) 
 
-    main_dataframe = road_model_functions.join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
+    main_dataframe = road_model_functions.join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation, first_model_run_bool=True)
 
     #######################################################################
     #CLEAN DATA FOR NEXT RUN
@@ -81,7 +81,7 @@ def run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False):
     #######################################################################
 
     #save as csv for next step
-    main_dataframe = road_model_functions.join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation)
+    main_dataframe = road_model_functions.join_and_save_road_model_outputs(ECONOMY_ID, main_dataframe, low_ram_computer, low_ram_computer_files_list,ANALYSE_CHANGE_DATAFRAME,change_dataframe_aggregation, first_model_run_bool=False)
 
 def incorporate_logisitc_fitting_functions_new_growth_rates(growth_forecasts, activity_growth_estimates):
     

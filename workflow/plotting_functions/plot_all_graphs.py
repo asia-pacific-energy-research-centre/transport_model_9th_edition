@@ -2,6 +2,7 @@
 
 
 #%%
+
 ###IMPORT GLOBAL VARIABLES FROM config.py
 import os
 import re
@@ -121,6 +122,12 @@ def plot_all_graphs(PLOT=True):
         model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road', 'Drive'] = model_output_with_fuels['Medium']
         model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road', 'Vehicle Type'] = model_output_with_fuels['Medium']
 
+        #also set their stocks to 1 so they arent plotted:
+        model_output_all.loc[model_output_all['Medium']!='road', 'Stocks'] = 1
+        model_output_detailed.loc[model_output_detailed['Medium']!='road', 'Stocks'] = 1
+        #do same for Stocks_per_thousand_capita, since this is just Stocks/Population
+        model_output_detailed.loc[model_output_detailed['Medium']!='road', 'Stocks_per_thousand_capita'] = 1
+        
         # #filter for economies on all dfs
         # model_output_all = model_output_all[model_output_all['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
         # model_output_detailed = model_output_detailed[model_output_detailed['Economy'].isin(config.ECONOMIES_TO_PLOT_FOR)]
@@ -146,7 +153,7 @@ def plot_all_graphs(PLOT=True):
         new_dfs_list = []
         old_dfs_list = [model_output_all, model_output_detailed, model_output_8th, model_output_with_fuels]
         for df in old_dfs_list:
-            # breakpoint()#cant find why activity for non road is not being split into these yet.
+            # #breakpoint()#cant find why activity for non road is not being split into these yet.
             # #separate non road first since they have their data in Activity column and non occupancy_or_load column
             # df_non_road = df[df['Medium']!='road'].copy()
             # df = df[df['Medium']=='road'].copy()    
@@ -254,7 +261,7 @@ def plot_all_graphs(PLOT=True):
                 fig.write_image(f"./{save_folder}/static/" + title + '.png', scale=1, width=width, height=height)
 
 
-        def plot_line_by_economy(df, color_categories, y_column,title,line_dash_categories=None,  x_column='Date', save_folder='all_economy_graphs', facet_col_wrap=7, facet_col ='Economy', hover_name = None, hover_data = None, log_y = False, log_x = False, y_axis_title = None, x_axis_title = None, width = 2000, height = 800,AUTO_OPEN_PLOTLY_GRAPHS=False, independent_y_axis = True,plot_png=True, plot_html=True, dont_overwrite_existing_graphs=False, PLOT=True):
+        def plot_line_by_economy(df, color_categories, y_column,title,line_dash_categories=None,  x_column='Date', save_folder='all_economy_graphs', facet_col_wrap=7, facet_col =None, hover_name = None, hover_data = None, log_y = False, log_x = False, y_axis_title = None, x_axis_title = None, width = 2000, height = 800,AUTO_OPEN_PLOTLY_GRAPHS=False, independent_y_axis = True,plot_png=True, plot_html=True, dont_overwrite_existing_graphs=False, PLOT=True):
             """This function is intended to make plotting liine graphs of the model data a bit less repetitive. It will take in specifications like the plotly line graphing function (px.line) but will do some formatting before plotting. Can be used to plot data for multiple economies, jsut one or even a mix."""
             if not PLOT:
                 return None
@@ -267,7 +274,7 @@ def plot_all_graphs(PLOT=True):
                 categories = categories + [line_dash_categories]
             if facet_col != None:
                 categories = categories + [facet_col]
-            df = calc_mean_if_not_summable(df, y_column, categories)
+            df = calc_mean_if_not_summable_else_sum(df, y_column, categories)
             #############
             
             graph_exists = check_graph_exists(save_folder, title, dont_overwrite_existing_graphs)
@@ -355,7 +362,7 @@ def plot_all_graphs(PLOT=True):
             if plot_png:
                 fig.write_image(f"./{save_folder}/static/" + title + '.png', scale=1, width=width, height=height)
                 
-        def plot_area_by_economy(df, color_categories, y_column, title, line_group_categories=None,  x_column='Date', save_folder='all_economy_graphs', facet_col_wrap=7, facet_col ='Economy', hover_name = None, hover_data = None, log_y = False, log_x = False, y_axis_title = None, x_axis_title = None, width = 2000, height = 800,AUTO_OPEN_PLOTLY_GRAPHS=False, independent_y_axis = True,plot_png=True, plot_html=True, dont_overwrite_existing_graphs=False, PLOT=True):
+        def plot_area_by_economy(df, color_categories, y_column, title, line_group_categories=None,  x_column='Date', save_folder='all_economy_graphs', facet_col_wrap=7, facet_col =None, hover_name = None, hover_data = None, log_y = False, log_x = False, y_axis_title = None, x_axis_title = None, width = 2000, height = 800,AUTO_OPEN_PLOTLY_GRAPHS=False, independent_y_axis = True,plot_png=True, plot_html=True, dont_overwrite_existing_graphs=False, PLOT=True):
             if not PLOT:
                 return None
             
@@ -368,7 +375,7 @@ def plot_all_graphs(PLOT=True):
                 categories = categories + [line_group_categories]
             if facet_col != None:
                 categories = categories + [facet_col]
-            df = calc_mean_if_not_summable(df, y_column,categories)
+            df = calc_mean_if_not_summable_else_sum(df, y_column,categories)
             #############
             graph_exists = check_graph_exists(save_folder, title, dont_overwrite_existing_graphs)
             if graph_exists and dont_overwrite_existing_graphs:
@@ -419,21 +426,24 @@ def plot_all_graphs(PLOT=True):
             plot_area(df, y_column, x_column, color, line_group, facet_col_wrap, facet_col, hover_name, hover_data, log_y, log_x, title, independent_y_axis, y_axis_title, x_axis_title, plot_html, plot_png,save_folder, AUTO_OPEN_PLOTLY_GRAPHS, width, height)
 
         ###########
-        def calc_mean_if_not_summable(df, value_cols,categorical_cols,non_summable_value_cols=non_summable_value_cols):
+        def calc_mean_if_not_summable_else_sum(df, value_cols,categorical_cols,non_summable_value_cols=non_summable_value_cols):
             #identifcy means
             mean_cols = []
-            value_cols_copy = value_cols
-            for col in value_cols_copy:
+            if type(value_cols) != list:
+                value_cols = [value_cols]
+            summable_cols = value_cols.copy()
+            for col in value_cols:
                 if col in non_summable_value_cols:
                     mean_cols = mean_cols + [col]
-                    value_cols.remove(col)
+                    summable_cols.remove(col)
                     
-            if mean_cols != []:
-                #replace values equal to '' with nan while we calculate the mean and sum 
-                df[mean_cols] = df[mean_cols].replace('', np.nan)
-                df = df.groupby(categorical_cols+['Date']).agg({col: 'mean' for col in mean_cols}).reset_index()
+            #replace values equal to '' with nan while we calculate the mean and sum 
+            df[value_cols] = df[value_cols].replace('', np.nan)
+            agg_dict = {col: 'sum' for col in summable_cols}
+            agg_dict.update({col: 'mean' for col in mean_cols})
+            df = df.groupby(categorical_cols+['Date']).agg(agg_dict).reset_index()
             #now replace nan with ''    
-            df = df.replace(np.nan, '', regex=True)
+            df[value_cols] = df[value_cols].replace(np.nan,'')
             
             return df
         
@@ -474,7 +484,7 @@ def plot_all_graphs(PLOT=True):
                         title = f'{value_col} by {combo} - {scenario}'
                         save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}'
 
-                        plot_line_by_economy(model_output_detailed, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
+                        plot_line_by_economy(model_output_detailed, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, facet_col='Economy',AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                         print(f'plotting {value_col} by {combo}')
                         
         end_timer(start, dataframe_name, do_this)
@@ -536,14 +546,14 @@ def plot_all_graphs(PLOT=True):
                             save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
                                                     
                             #filter for that ecovnomy only and then plot
-                            model_output_detailed_econ = model_output_detailed[model_output_detailed['Economy'] == economy_x]
-                        
+                            model_output_detailed_econ = model_output_detailed[model_output_detailed['Economy'] == economy_x].copy()
                             plot_line_by_economy(model_output_detailed_econ, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                             print(f'plotting {value_col} by {combo}')
         end_timer(start, dataframe_name+' by economy', do_this)
 
         ##################################################################
-        
+        #TEMP
+        # PLOT=True
         #plot regional groupings of economys
         #import the region_economy_mappin.xlsx from config/concordances_and_config_data
         region_economy_mapping = pd.read_csv('./config/concordances_and_config_data/region_economy_mapping.csv')
@@ -555,8 +565,8 @@ def plot_all_graphs(PLOT=True):
         model_output_detailed_regions = model_output_detailed_regions.dropna(subset=['Region'])
 
         # model_output_detailed_regions = model_output_detailed_regions.groupby(categorical_cols+['Date',  'Region']).agg({col: 'sum' for col in value_cols if col not in non_summable_value_cols else 'mean'}).reset_index()
-        
-        model_output_detailed_regions = calc_mean_if_not_summable(model_output_detailed_regions, value_cols, categorical_cols+['Region'])
+        #breakpoint()#is it passenger km?
+        model_output_detailed_regions = calc_mean_if_not_summable_else_sum(model_output_detailed_regions, value_cols, categorical_cols+['Region'])
 
         #save copy of data as pickle for use in recreating plots. put it in save_folder
         if save_pickle:
@@ -579,7 +589,7 @@ def plot_all_graphs(PLOT=True):
                             save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
 
                             #filter for that ecovnomy only and then plot
-                            model_output_detailed_econ = model_output_detailed_regions[model_output_detailed_regions['Region'] == economy_x]
+                            model_output_detailed_econ = model_output_detailed_regions[model_output_detailed_regions['Region'] == economy_x].copy()
                             plot_line_by_economy(model_output_detailed_econ, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                             print(f'plotting {value_col} by {combo}')
         end_timer(start, dataframe_name+' by region', do_this)
@@ -587,7 +597,7 @@ def plot_all_graphs(PLOT=True):
         ##################################################################
         ###########################plot 'Energy' by fuel type############
         ##################################################################
-        breakpoint()
+        #breakpoint()
 
         #. need to define value cols that are worth plotting
         value_cols_new = ['Energy']
@@ -619,7 +629,7 @@ def plot_all_graphs(PLOT=True):
                             save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}/line/'
                                                     
                             #filter for that ecovnomy only and then plot
-                            model_output_with_fuels_plot_econ = model_output_with_fuels_plot[model_output_with_fuels_plot['Economy'] == economy_x]
+                            model_output_with_fuels_plot_econ = model_output_with_fuels_plot[model_output_with_fuels_plot['Economy'] == economy_x].copy()
                             plot_line_by_economy(model_output_with_fuels_plot_econ, color_categories= list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                             print(f'plotting {value_col} by {combo}')
                             
@@ -630,7 +640,7 @@ def plot_all_graphs(PLOT=True):
         end_timer(start, dataframe_name+' by economy', do_this)
 
         ##################################################################
-
+        
         #merge with regions
         #plot regional groupings of economys
         #import the region_economy_mappin.xlsx from config/concordances_and_config_data
@@ -640,13 +650,12 @@ def plot_all_graphs(PLOT=True):
         #drop nas
         model_output_with_fuels_regions = model_output_with_fuels_regions.dropna(subset=['Region'])
 
-        #we weill need to calcualte the mean for this value so tis not summed
-        model_output_with_fuels_regions = calc_mean_if_not_summable(model_output_with_fuels_regions, ['Energy'], categorical_cols_new+['Region'])
+        #sum up when we drop economy
+        model_output_with_fuels_regions = model_output_with_fuels_regions.groupby(categorical_cols_new+['Date','Fuel', 'Region']).sum().reset_index()
         
-        model_output_detailed_regions = model_output_detailed_regions.groupby(categorical_cols_new+['Date',  'Region']).sum().reset_index()
         #save copy of data as pickle for use in recreating plots. put it in save_folder
         if save_pickle:
-            model_output_detailed_regions.to_pickle(f'{default_save_folder}/{dataframe_name}_regional.pkl')
+            model_output_with_fuels_regions.to_pickle(f'{default_save_folder}/{dataframe_name}_regional.pkl')
             print(f'{dataframe_name}_regional saved as pickle')
         do_this = True
         start = start_timer(dataframe_name+' by region',do_this)
@@ -667,7 +676,7 @@ def plot_all_graphs(PLOT=True):
                             #filter for that ecovnomy only and then plot
                             model_output_with_fuels_regions_region = model_output_with_fuels_regions[model_output_with_fuels_regions['Region'] == region]
                             plot_line_by_economy(model_output_with_fuels_regions_region, color_categories = list(combo), y_column=value_col, title=title,  line_dash_categories = 'Fuel', save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
-                            print(f'plotting {value_col} by {combo}')
+                            print(f'plotting {value_col} by {list(combo) + ["Fuel"]}')
                             
                             
                             title = f'{value_col} by {list(combo) + ["Fuel"]} - {scenario}'
@@ -685,19 +694,19 @@ def plot_all_graphs(PLOT=True):
             for value_col in value_cols_new:
                 for i in range(1, n_categorical_cols+1):
                     for combo in itertools.combinations(categorical_cols_new, i):
-                        # Add 'Fuel' to the combo
-                        combo = list(combo) + ['Fuel']
-                        title = f'{value_col} by {combo} - {scenario}'
+                        # combo = list(combo) + ['Fuel']
+                        title = f'{value_col} by {list(combo) + ["Fuel"]} - {scenario}'
                     
                         save_folder = f'energy_use_by_fuel/all_economies_plot/{value_col}/line'
 
-                        plot_line_by_economy(model_output_with_fuels_plot, color_categories= list(combo),y_column=value_col, title=title,  line_dash_categories='Fuel', save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
-                        print(f'plotting {value_col} by {combo}')
+                        plot_line_by_economy(model_output_with_fuels_plot, color_categories= list(combo),y_column=value_col, title=title,  line_dash_categories='Fuel', save_folder=save_folder, facet_col='Economy',AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
+                        print(f'plotting {value_col} by {list(combo) + ["Fuel"]}')
                         
                         save_folder = f'energy_use_by_fuel/all_economies_plot/{value_col}/area'
-                        plot_area_by_economy(model_output_with_fuels_plot, color_categories= list(combo),y_column=value_col, title=title,  line_group_categories='Fuel', save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
+                        plot_area_by_economy(model_output_with_fuels_plot, color_categories= list(combo),y_column=value_col, title=title,  line_group_categories='Fuel', save_folder=save_folder, facet_col='Economy',AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
         end_timer(start, dataframe_name+' with all economies on one graph', do_this)
         ##################################################################
+        PLOT=True
         do_this = True
         #why is stocks grapoh not showing date on the x axis for area chart here.
         dataframe_name = 'model_output_comparison'
@@ -721,18 +730,18 @@ def plot_all_graphs(PLOT=True):
             #plot each combination of: one of the value cols and then any number of the categorical cols
             n_categorical_cols = len(categorical_cols)
 
-            #plot graphs with all economies on one graph
-            for value_col in value_col_comparison:
-                for i in range(1, n_categorical_cols+1):
-                    for combo in itertools.combinations(categorical_cols, i):
-                        title = f'{value_col} by {combo} - {scenario}'
-                        save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}/line'
+            # #plot graphs with all economies on one graph
+            # for value_col in value_col_comparison:
+            #     for i in range(1, n_categorical_cols+1):
+            #         for combo in itertools.combinations(categorical_cols, i):
+            #             title = f'{value_col} by {combo} - {scenario}'
+            #             save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}/line'
 
-                        plot_line_by_economy(model_output_comparison, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
-                        print(f'plotting {value_col} by {combo}')
+            #             plot_line_by_economy(model_output_comparison, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
+            #             print(f'plotting {value_col} by {combo}')
                         
-                        save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}/area'
-                        plot_area_by_economy(model_output_comparison, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
+            #             save_folder = f'{default_save_folder}/{dataframe_name}/{value_col}/area'
+            #             plot_area_by_economy(model_output_comparison, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
             #then plot plot by economy
             
             for economy_x in model_output_comparison['Economy'].unique():
@@ -747,14 +756,15 @@ def plot_all_graphs(PLOT=True):
                             save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}/line/'
                                                     
                             #filter for that ecovnomy only and then plot
-                            model_output_comparison_economy = model_output_comparison[model_output_comparison['Economy'] == economy_x]
+                            model_output_comparison_economy = model_output_comparison[model_output_comparison['Economy'] == economy_x].copy()
                         
                             plot_line_by_economy(model_output_comparison_economy, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
                             
                             save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}/area'
                             
-                            if value_col!='Stocks':#doesnt work with stocks for osmoe reason. tried ot fix it., 
-                                plot_area_by_economy(model_output_comparison_economy, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
+                            # if value_col=='Stocks':#doesnt work with stocks for osmoe reason. tried ot fix it., 
+                            #     breakpoint()
+                            plot_area_by_economy(model_output_comparison_economy, color_categories=list(combo), y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS, plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, facet_col='Dataset', PLOT=PLOT)
                         
                             
                             
@@ -789,7 +799,7 @@ def plot_all_graphs(PLOT=True):
                     save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
                                                 
                     #filter for that ecovnomy only and then plot
-                    macro_econ = macro[macro['Economy'] == economy_x]
+                    macro_econ = macro[macro['Economy'] == economy_x].copy()
                     plot_line_by_economy(macro_econ, color_categories= ['Economy'], y_column=value_col, title=title,  save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col=None,dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                     print(f'plotting {value_col}')
         end_timer(start, dataframe_name, do_this)
@@ -818,7 +828,7 @@ def plot_all_graphs(PLOT=True):
                     save_folder = f'{default_save_folder}/{dataframe_name}/{economy_x}/{value_col}'
                                                 
                     #filter for that ecovnomy only and then plot
-                    activity_growth_econ = activity_growth[activity_growth['Economy'] == economy_x]
+                    activity_growth_econ = activity_growth[activity_growth['Economy'] == economy_x].copy()
                     
                     plot_line_by_economy(activity_growth_econ, color_categories= ['Economy', 'Medium'], y_column=value_col, title=title,  save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col='Transport Type',dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                     print(f'plotting {value_col}')
@@ -867,14 +877,14 @@ def plot_all_graphs(PLOT=True):
                         
                         save_folder = f'{default_save_folder}/{dataframe_name}/all_economies_plot/{value_col}'
 
-                        plot_line_by_economy(model_output_detailed_int, color_categories= list(combo),y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
+                        plot_line_by_economy(model_output_detailed_int, color_categories= list(combo),y_column=value_col, title=title, save_folder=save_folder, AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, facet_col='Economy',dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                         print(f'plotting {value_col} by {combo}')
         end_timer(start, dataframe_name+' with all economies on one graph', do_this)
 
 
 #%%
 
-# plot_all_graphs(PLOT=False)
+# plot_all_graphs(PLOT=True)#python workflow/plotting_functions/plot_all_graphs.py > plot_all_output.txt 2>&1
 
 #%%
 
