@@ -33,10 +33,10 @@ def copy_required_output_files_to_one_folder(output_folder_path='output_data/for
     #dashboard fiels:
     for economy in config.ECONOMY_LIST:
         for scenario in config.SCENARIOS_LIST:
-            useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_dashboard_detailed.html')
-            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_dashboard_detailed.html')
-            useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_dashboard_presentation.html')
-            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_dashboard_presentation.html')
+            useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_dashboard_results.html')
+            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_dashboard_results.html')
+            useful_file_paths.append('plotting_output/dashboards/' + economy + f'/{economy}_{scenario}_dashboard_assumptions.html')
+            output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_{scenario}_dashboard_assumptions.html')
             
             useful_file_paths.append(f'output_data/for_other_modellers/output_for_outlook_data_system/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
             output_file_paths.append(output_folder_path + '/' + economy + f'/{economy}_transport_energy_use.csv')
