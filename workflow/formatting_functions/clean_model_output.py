@@ -118,24 +118,43 @@ def clean_model_output(ECONOMY_ID):
 
 def concatenate_output_data():
     #concatenate all the other output data together
-    #concatenate all the other output data together
     model_output_detailed = pd.DataFrame()
     model_output_non_detailed = pd.DataFrame()
     model_output_all_with_fuels = pd.DataFrame()
+    #and for NON_ROAD_DETAILED_ files:
+    model_output_detailed_non_road = pd.DataFrame()
+    model_output_non_detailed_non_road = pd.DataFrame()
+    model_output_all_with_fuels_non_road = pd.DataFrame()
     for e in config.ECONOMY_LIST:
         model_output_detailed_economy = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(e, config.model_output_file_name))
         model_output_non_detailed_economy = pd.read_csv('output_data/model_output/{}_{}'.format(e, config.model_output_file_name))
         model_output_all_with_fuels_economy = pd.read_csv('output_data/model_output_with_fuels/{}_{}'.format(e, config.model_output_file_name))
         
+        #now for NON_ROAD_DETAILED_ files:
+        model_output_detailed_non_road_economy = pd.read_csv('output_data/model_output_detailed/{}_NON_ROAD_DETAILED_{}'.format(e, config.model_output_file_name))
+        model_output_non_detailed_non_road_economy = pd.read_csv('output_data/model_output/{}_NON_ROAD_DETAILED_{}'.format(e, config.model_output_file_name))
+        model_output_all_with_fuels_non_road_economy = pd.read_csv('output_data/model_output_with_fuels/{}_NON_ROAD_DETAILED_{}'.format(e, config.model_output_file_name))
+        
         model_output_detailed = pd.concat([model_output_detailed, model_output_detailed_economy])
         model_output_non_detailed = pd.concat([model_output_non_detailed, model_output_non_detailed_economy])
         model_output_all_with_fuels = pd.concat([model_output_all_with_fuels, model_output_all_with_fuels_economy])
+        
+        #concatenate the NON_ROAD_DETAILED_ dataframes
+        model_output_detailed_non_road = pd.concat([model_output_detailed_non_road, model_output_detailed_non_road_economy])
+        model_output_non_detailed_non_road = pd.concat([model_output_non_detailed_non_road, model_output_non_detailed_non_road_economy])
+        model_output_all_with_fuels_non_road = pd.concat([model_output_all_with_fuels_non_road, model_output_all_with_fuels_non_road_economy])
+
     
     #save the final df: 
     model_output_detailed.to_csv('output_data/model_output_detailed/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
     model_output_non_detailed.to_csv('output_data/model_output/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
     model_output_all_with_fuels.to_csv('output_data/model_output_with_fuels/all_economies_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
+    
+    #save the final df: 
+    model_output_detailed_non_road.to_csv('output_data/model_output_detailed/all_economies_NON_ROAD_DETAILED_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
+    model_output_non_detailed_non_road.to_csv('output_data/model_output/all_economies_NON_ROAD_DETAILED_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
+    model_output_all_with_fuels_non_road.to_csv('output_data/model_output_with_fuels/all_economies_NON_ROAD_DETAILED_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name), index=False)
 #%%
-# clean_model_output()
+# concatenate_output_data()
 #%%
 
