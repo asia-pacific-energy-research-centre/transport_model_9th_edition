@@ -29,24 +29,17 @@ import utility_functions
 #%%
     
 def international_bunker_share_calculation_handler():
-    
+    breakpoint()
     #load international bunker data from esto:
     energy_use_esto_bunkers_tall = extract_bunker_data_from_esto()
     #now extract sales/fuel share data:
     international_fuel_shares = extract_bunkers_fuel_share_inputs()
     international_supply_side_fuel_mixing=extract_supply_side_fuel_mixing()
     #calcaulte base year fuel share and fuel mixing. we will concat tehse to the international_fuel_shares and international_supply_side_fuel_mixing dfs:
+    
     international_supply_side_fuel_mixing, energy_use_esto_bunkers_tall = calculate_base_year_fuel_mixing(international_supply_side_fuel_mixing, energy_use_esto_bunkers_tall)
-    international_fuel_shares = calculate_base_year_fuel_shares(international_fuel_shares, energy_use_esto_bunkers_tall)#please note that this and the above are for all economys summed, not for each economy. this was really jsut to speed up development. if the mixing or shares are too different for each economy then we will need to do this for each economy, which could be a bit of a pain.
-    #ACTUALLY.. I THINK WE SHOULD MAKE IT SO THIS WORKS FOR EACH ECONOMY. IT DOESNT AHVE ANY DOWNSIDES BESIDES TIME SPENT DEVELOPING IT. AND IT WILL BE MORE ACCURATE. SO LETS DO THAT. AFTER THIS FUNCTION WILL NEED TO CREATE A COPY OF THE FUEL MIXING AND FUEL SHARES DATA FOR EACH ECONOMY AND PUT THEM ALL IN ONE DF (BUT CAN CONTINUE TO STILL USE THE PROJECTIONS - LIKE WE DO FOR MAIN MODEL)... ALSO NEED TO APPLY ECONOMYS TO calculate_base_year_fuel_mixing()
-    def calculate_base_year_fuel_shares(international_fuel_shares, energy_use_esto_bunkers_tall):
-        #we need to calculate the base year fuel shares. we will do this by taking the fuel use for each medium and drive type, and dividing it by the total fuel use for that medium and drive type. 
-        energy_use_esto_bunkers_tall['Total fuel use'] = energy_use_esto_bunkers_tall.groupby(['Economy', 'Medium', 'Drive', 'Date'])['Value'].transform('sum')
-        
-        #drop them from 
-        #TODO UPTO HERE
-        
-        
+    international_fuel_shares = calculate_base_year_fuel_shares(international_fuel_shares, energy_use_esto_bunkers_tall)#potentially need to keep more than just the base year to give the interpolation more data points to project  but we will see how it goes.
+    international_fuel_shares = calculate_missing_drive_shares_from_manually_inputted_data(international_fuel_shares)
         
     #calcualte avergae growth rate from domestic non road energy use:
     non_road_energy_use = extract_non_road_energy_use()#, drive_to_fuel_mapping
@@ -54,27 +47,56 @@ def international_bunker_share_calculation_handler():
     #check for duplcaites: 
     check_for_duplicates_in_all_datasets(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate, international_supply_side_fuel_mixing)
     #merge all data
-    international_bunker_energy_use_inputs = merge_and_format_all_input_data(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate, international_supply_side_fuel_mixing)
+    breakpoint()
+    international_bunker_energy_use_inputs = merge_and_format_all_input_data(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate)#y doies international_fuel_shares have nas in drive
     international_supply_side_fuel_mixing = check_and_fill_missing_fuel_mixing_dates(international_bunker_energy_use_inputs,  international_supply_side_fuel_mixing)
     #interpolate the fuel shares to get a value for every year:
     international_bunker_energy_use_inputs, international_supply_side_fuel_mixing = interpolate_bunker_shares_and_mixing(international_bunker_energy_use_inputs, international_supply_side_fuel_mixing)
-    
+    breakpoint()
     #and check it all matches wat we expect (we wont bother with international_supply_side_fuel_mixing since we checked it earlier in check_and_fill_missing_fuel_mixing_dates)
     check_all_input_data_against_concordances(international_bunker_energy_use_inputs)
     
     #calcaulte new energy use for each medium, and drive type:
     new_energy_df = project_total_bunkers_energy_use(international_bunker_energy_use_inputs)
-    # # then split it into its drives using the fuel shares
-    # def split_energy_into_drives_using_fuel_shares(row):
-    #     #split the energy into the drives using the fuel shares
-    #     row['Value'] = row['Value'] * row['Share']
-    #     return row
-            
-                
+    breakpoint()
             
     # then join to the supply side fuel mixing data and calculate the new fuel mix for any that have supply side fuel mixing:
+    new_energy_df_mixed = apply_fuel_mixing_to_energy(new_energy_df, international_supply_side_fuel_mixing)
+    breakpoint()
+    #all done i thnk (:
+            
     
+# then split it into its drives using the fuel shares
+def split_energy_into_drives_using_fuel_shares(international_bunker_energy_use_inputs):
+    #split the energy into the drives using the fuel shares
+    international_bunker_energy_use_inputs['Value'] = international_bunker_energy_use_inputs['Value'] * international_bunker_energy_use_inputs['Share']
+    return international_bunker_energy_use_inputs
+
+def apply_fuel_mixing_to_energy(international_bunker_energy_use_inputs, international_supply_side_fuel_mixing):
+    #join the two, times energy by mix to get the energy for the new fuel, minus that from energy to get the energy for the old fuel then seperate the dfs and concat them:
+    mixing_international_bunker_energy_use_inputs = international_bunker_energy_use_inputs.copy()
     
+    mixing_international_bunker_energy_use_inputs = pd.merge(mixing_international_bunker_energy_use_inputs, international_supply_side_fuel_mixing, how='left', on=['Scenario','Medium', 'Economy', 'Drive', 'Date', 'Fuel'])
+    
+    mixing_international_bunker_energy_use_inputs['Energy_new'] = mixing_international_bunker_energy_use_inputs['Value'] * mixing_international_bunker_energy_use_inputs['Mix']
+    #now we need to subtract the new energy from the old energy to get the energy for the old fuel:
+    mixing_international_bunker_energy_use_inputs['Value'] = mixing_international_bunker_energy_use_inputs['Value'] - mixing_international_bunker_energy_use_inputs['Energy_new']
+    
+    new_data = mixing_international_bunker_energy_use_inputs[['Scenario','Medium', 'Economy', 'Drive', 'Date', 'New_fuel', 'Energy_new']].copy()
+    new_data.rename({'New_fuel': 'Fuel', 'Energy_new': 'Value'}, axis=1, inplace=True)
+    mixing_international_bunker_energy_use_inputs = mixing_international_bunker_energy_use_inputs[['Scenario','Medium', 'Economy', 'Drive', 'Date', 'Fuel', 'Value']].copy()
+    
+    #cocnat
+    mixing_international_bunker_energy_use_inputs = pd.concat([mixing_international_bunker_energy_use_inputs, new_data])
+    
+    #double check that total energy use is the same as before:
+    if abs(mixing_international_bunker_energy_use_inputs['Value'].sum() - international_bunker_energy_use_inputs['Value'].sum()) > 0.00000000001:
+        mixing_international_bunker_energy_use_inputs.to_csv('error_{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
+        breakpoint()
+        raise Exception(f'The total energy use for the international_bunker_energy_use_inputs df has changed after applying fuel mixing. Please check the data and remove duplicates, {mixing_international_bunker_energy_use_inputs}')
+    
+    return mixing_international_bunker_energy_use_inputs
+
 def extract_bunker_data_from_esto():
         
     #load the 9th data
@@ -136,6 +158,11 @@ def extract_bunker_data_from_esto():
     #make Scenario col value start with capital letter
     energy_use_esto_bunkers_tall['Scenario'] = energy_use_esto_bunkers_tall['Scenario'].str.capitalize()
 
+    #make Value positive since we are treatiung it like enegry use. we can make it negative later on:
+    energy_use_esto_bunkers_tall['Value'] = energy_use_esto_bunkers_tall['Value'].abs()
+    #and set any nas to 0:
+    energy_use_esto_bunkers_tall['Value'] = energy_use_esto_bunkers_tall['Value'].fillna(0)
+    
     return energy_use_esto_bunkers_tall
 
 def extract_supply_side_fuel_mixing():
@@ -161,6 +188,8 @@ def extract_bunkers_fuel_share_inputs():
     #drop Region cols
     international_fuel_shares_r = international_fuel_shares_r.drop(columns=['Region'])
     international_fuel_shares_r = international_fuel_shares_r.melt(id_vars=['Economy','Medium', 'Drive', 'Date'], var_name='Scenario', value_name='Share')
+    #drop any Share values that are 'Will make up the rest'
+    international_fuel_shares_r = international_fuel_shares_r.loc[international_fuel_shares_r['Share'] != 'Will make up the rest']
     
     return international_fuel_shares_r 
     
@@ -197,8 +226,9 @@ def interpolate_bunker_shares_and_mixing(international_bunker_energy_use_inputs,
     return international_bunker_energy_use_inputs, international_supply_side_fuel_mixing
 
 def extract_non_road_energy_use():
-    #get non road eneryg use projections. this is also useful for giving us the mapping between (fuel, medium) and drive type that we can use to merge on the esto data! 
-    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/all_economies_NON_ROAD_DETAILED_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name))
+    #get non road eneryg use projections. this will be used to get the growth rate for energy use in the whole of apec
+    model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/all_economies_NON_ROAD_DETAILED_20230802_model_output20230802.csv')
+    # model_output_all_with_fuels = pd.read_csv('output_data/model_output_with_fuels/all_economies_NON_ROAD_DETAILED_{}_{}'.format(config.FILE_DATE_ID, config.model_output_file_name))
     non_road = model_output_all_with_fuels.loc[model_output_all_with_fuels['Medium'].isin(['air', 'ship'])]
     #drop electric planes and ships
     non_road = non_road.loc[~((non_road['Drive'] == 'air_electric') | (non_road['Drive'] == 'ship_electric'))]
@@ -243,7 +273,7 @@ def check_for_duplicates_in_all_datasets(energy_use_esto_bunkers_tall, internati
         breakpoint()
         raise Exception(f'There are duplicates in the international_supply_side_fuel_mixing data. Please check the data and remove duplicates, {dupes}')
     
-def merge_and_format_all_input_data(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate, international_supply_side_fuel_mixing):#, drive_to_fuel_mapping):
+def merge_and_format_all_input_data(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate):#, drive_to_fuel_mapping):
     # #merge esto data with the drive to fuel mapping:
     # energy_use_esto_bunkers_tall = pd.merge(energy_use_esto_bunkers_tall, drive_to_fuel_mapping, how='left', on=['Fuel', 'Medium'])
     # #check for any nulls in Drive col:
@@ -256,7 +286,6 @@ def merge_and_format_all_input_data(energy_use_esto_bunkers_tall, international_
     #merge all together beofre checking that it all mathces wat we expect (we will mege in a different order later):
     international_bunker_energy_use_inputs = pd.merge(energy_use_esto_bunkers_tall, international_fuel_shares, how='outer', on=['Medium', 'Economy', 'Scenario','Drive', 'Date'])
     international_bunker_energy_use_inputs = pd.merge(international_bunker_energy_use_inputs, non_road_energy_use_growth_rate, how='outer', on=['Medium',  'Scenario', 'Date'])
-        
     #keep only data that is between OUTLOOK_BASE_YEAR and GRAPHING_END_YEAR
     international_bunker_energy_use_inputs = international_bunker_energy_use_inputs.loc[(international_bunker_energy_use_inputs['Date'] >= config.OUTLOOK_BASE_YEAR) & (international_bunker_energy_use_inputs['Date'] <= config.GRAPHING_END_YEAR)]
     
@@ -348,12 +377,12 @@ def project_total_bunkers_energy_use(international_bunker_energy_use_inputs):
 
 def calculate_base_year_fuel_mixing(international_supply_side_fuel_mixing, energy_use_esto_bunkers_tall):
     #firstly, seperate data into fuels that are mixed into other fuels and those that are not. do this by grabbing fuels that are in New_fuel col in international_supply_side_fuel_mixing:
-    # fuels_added_in_mixing = international_supply_side_fuel_mixing['New_fuel'].unique().tolist()
-    # original_fuels_in_mixing = international_supply_side_fuel_mixing['Fuel'].unique().tolist()
-    fuels_added_in_mixing = energy_use_esto_bunkers_tall.loc[energy_use_esto_bunkers_tall.Supply_side_fuel_mixing].copy()
-    original_fuels_in_mixing = energy_use_esto_bunkers_tall.loc[~energy_use_esto_bunkers_tall.Supply_side_fuel_mixing].copy()
+    energy_use_esto_bunkers_tall_base_year = energy_use_esto_bunkers_tall.loc[energy_use_esto_bunkers_tall['Date'] == config.OUTLOOK_BASE_YEAR].copy()
+    
+    fuels_added_in_mixing = energy_use_esto_bunkers_tall_base_year.loc[energy_use_esto_bunkers_tall_base_year.Supply_side_fuel_mixing].copy()
+    original_fuels_in_mixing = energy_use_esto_bunkers_tall_base_year.loc[energy_use_esto_bunkers_tall_base_year.Supply_side_fuel_mixing != True].copy()
     #join the two on the medium and drive cols:
-    fuel_mixing_base_year_original = pd.merge(original_fuels_in_mixing, fuels_added_in_mixing, how='outer', on=['Medium', 'Drive'], indicator=True)
+    fuel_mixing_base_year_original = pd.merge(original_fuels_in_mixing, fuels_added_in_mixing, how='outer', on=['Scenario','Date', 'Medium', 'Drive', 'Economy'], indicator=True)
     #drop left_only cols
     fuel_mixing_base_year = fuel_mixing_base_year_original.loc[fuel_mixing_base_year_original['_merge'] != 'left_only'].copy()
     #if theres any right only cols, raise an error
@@ -378,17 +407,79 @@ def calculate_base_year_fuel_mixing(international_supply_side_fuel_mixing, energ
     
     #now we have the base year fuel mixing!
     
-    #and now for the new fuels we actually want to set them to equal the origianl fuel in energy_use_esto_bunkers_tall. this is so that when we calcualte the fuel shares it will consider the indirect fact that these fuels arelater mixed in!
-    fuel_mixing_base_year_original['Value_x'] = fuel_mixing_base_year_original['Value_x'] + fuel_mixing_base_year_original['Value_y']
+    #and now for the new fuels we actually want to set them to equal the origianl fuel in energy_use_esto_bunkers_tall_base_year. this is so that when we calcualte the fuel shares it will consider the indirect fact that these fuels arelater mixed in!
+    fuel_mixing_base_year_original['Value_x'] = fuel_mixing_base_year_original['Value_x'] + fuel_mixing_base_year_original['Value_y'].replace(np.nan, 0)
     #drop any cols ending with _y and also 'New_fuel', '_merge'
-    fuel_mixing_base_year_original = fuel_mixing_base_year_original.drop(columns=[col for col in fuel_mixing_base_year_original.columns if col.endswith('_y')]+['New_fuel', '_merge'])
+    fuel_mixing_base_year_original = fuel_mixing_base_year_original.drop(columns=[col for col in fuel_mixing_base_year_original.columns if col.endswith('_y')]+[ '_merge'])
     #set all x cols to just be the x cols
     fuel_mixing_base_year_original.rename({col: col.replace('_x', '') for col in fuel_mixing_base_year_original.columns if col.endswith('_x')}, axis=1, inplace=True)
-    #to check that this worked, double check that the sum of Value is equal to the sum of Value in energy_use_esto_bunkers_tall
-    if abs(fuel_mixing_base_year_original['Value'].sum() - energy_use_esto_bunkers_tall['Value'].sum()) -1 > 0.0000001:
-        raise Exception('The sum of Value in fuel_mixing_base_year_original is not equal to the sum of Value in energy_use_esto_bunkers_tall. Please check the data')
+    #to check that this worked, double check that the sum of Value is equal to the sum of Value in energy_use_esto_bunkers_tall_base_year
+    if abs(fuel_mixing_base_year_original['Value'].sum() - energy_use_esto_bunkers_tall_base_year['Value'].sum()) -1 > 0.0000001:
+        breakpoint()
+        raise Exception('The sum of Value in fuel_mixing_base_year_original is not equal to the sum of Value in energy_use_esto_bunkers_tall_base_year. Please check the data. diff is {}'.format(abs(fuel_mixing_base_year_original['Value'].sum() - energy_use_esto_bunkers_tall_base_year['Value'].sum())))
     return international_supply_side_fuel_mixing, fuel_mixing_base_year_original
+
+
+def calculate_base_year_fuel_shares(international_fuel_shares, energy_use_esto_bunkers_tall):
+    #we need to calculate the base year fuel shares. we will do this by taking the fuel use for each medium and drive type, and dividing it by the total fuel use for that medium and drive type. 
+    fuel_shares = energy_use_esto_bunkers_tall.copy()
+    fuel_shares['Total fuel use'] = fuel_shares.groupby(['Economy', 'Medium', 'Drive', 'Date'])['Value'].transform('sum')
     
+    #now divide the Value by the Total fuel use to get the share:
+    fuel_shares['Share'] = fuel_shares['Value'] / fuel_shares['Total fuel use']
+    
+    #grab only the cols we need. that is the cols that are in international_fuel_shares
+    cols = international_fuel_shares.columns.tolist()
+    fuel_shares = fuel_shares[cols]
+    
+    #now look at attaching it to the international_fuel_shares df. 
+    international_fuel_shares = international_fuel_shares.loc[~international_fuel_shares['Date'].isin(fuel_shares['Date'].unique().tolist())]
+    international_fuel_shares = pd.concat([international_fuel_shares, fuel_shares])
+
+    return international_fuel_shares
+    
+
+def calculate_missing_drive_shares_from_manually_inputted_data(international_fuel_shares, YEARS_TO_KEEP_AFTER_BASE_YEAR=5):
+    #this process is also done in the create_vehicle_sales_sahre_scrip for non bunkers data.
+    #Since we only take data from the drives that are most important to specify shares for, we need to fill in any leftover shares such that the sum of shares for each year adds to 1. for example if we ahve set the manually inputted sshare for electricity such that it is expected to ake up 0.5 of the market in 2030, then we need to set the remaining 0.5 to be split between the other drives. this split will be determined by the base years splits. so if the base year had 0.5 cng and 0.5 diesel, then we will set the remaining 0.5 to be split 0.25 cng and 0.25 diesel.
+    
+    #but important to note that the data that we use for the base year will not include any (medium, drive) pairs that are in the manually inputted data. this si to prevent double counting them. 
+    #Note that it has a little weakness where the user needs to make sure that for every date that they record a drive share in teh manually inputted data, they must record the drive share forf all other shares they have already been reocrding for that medium, drive pair. otherwise, those missing drives will have their shares filled in using the drives from the base year data. then when wqe do interpolation and normalisation, it will result in the shares for that missing drive being lower than what the user was probably intending. eg. if user reocrded shares constasnt in 2027, and 2029 for electricity (0.5) and phev (0.25), and then in 2028 they only recorded shares for electricity(0.5) then the shares for phev in 2028 will probably be lower than 0.25 as the base year data will be used to fill in the missing shares, then in normalisation, the shares will be normalised to 1, so the shares for phev in 2028 will be lower than 0.25, even though they were still interpoalted before nomralisation.
+    
+    fuel_share_BASE_YEAR = international_fuel_shares.loc[international_fuel_shares['Date']==config.DEFAULT_BASE_YEAR]
+    fuel_share_manual_input = international_fuel_shares.loc[international_fuel_shares['Date']>config.DEFAULT_BASE_YEAR+YEARS_TO_KEEP_AFTER_BASE_YEAR].dropna(subset=['Share'])
+    #find unique combiantions of medium, drive:
+    combos = fuel_share_manual_input[['Medium', 'Drive']].drop_duplicates()
+    #drop the combinations in fuel_share_manual_input from fuel_share_BASE_YEAR
+    fuel_share_BASE_YEAR = fuel_share_BASE_YEAR[~fuel_share_BASE_YEAR[['Medium', 'Drive']].apply(tuple,1).isin(combos[['Medium', 'Drive']].apply(tuple,1))]
+    #set nas in drive share to 0
+    fuel_share_BASE_YEAR[ 'Share'] = fuel_share_BASE_YEAR[ 'Share'].fillna(0)
+    #find the normalised shares for the available data in the base year data
+    fuel_share_BASE_YEAR['Share'] = fuel_share_BASE_YEAR.groupby(['Economy', 'Scenario','Medium'])['Share'].transform(lambda x: x/x.sum())
+    #set nas in drive share to 0
+    fuel_share_BASE_YEAR[ 'Share'] = fuel_share_BASE_YEAR[ 'Share'].fillna(0)
+    #now get sum of manually inputted shares for each year
+    fuel_share_manual_input_sum = fuel_share_manual_input.groupby(['Economy', 'Scenario', 'Medium', 'Date'])['Share'].sum().reset_index()
+    #1 minus it
+    fuel_share_manual_input_sum['Share_remainder'] = 1 - fuel_share_manual_input_sum['Share']
+    #drop drive share
+    fuel_share_manual_input_sum = fuel_share_manual_input_sum.drop(columns=['Share'])
+    #chcke for any values les than 0
+    if fuel_share_manual_input_sum['Share_remainder'].min() < 0:
+        #show them and raise
+        print(fuel_share_manual_input_sum.loc[fuel_share_manual_input_sum['Share_remainder']<0])
+        raise ValueError('Drive share remainder is less than 0')
+    #join this to the base year data using right join
+    missing_fuel_shares = fuel_share_BASE_YEAR[['Economy', 'Scenario','Medium','Drive','Share']].merge(fuel_share_manual_input_sum, on=['Economy', 'Scenario', 'Medium'], how='right')
+    breakpoint()#check that this repicated rows wgere we had two new drives for the same medium infuel_share_BASE_YEAR that we were trying to add into fuel_share_manual_input_sum
+    #times the base year data by the 1-x
+    missing_fuel_shares['Share'] = missing_fuel_shares['Share'] * missing_fuel_shares['Share_remainder']
+
+    missing_fuel_shares = missing_fuel_shares.drop(columns=['Share_remainder'])
+    #now we need to insert these rows into the  international_fuel_shares. since its jsut a df of the manually inputted data right now we can jsut concat them together
+    international_fuel_shares = pd.concat([international_fuel_shares, missing_fuel_shares])
+    
+    return international_fuel_shares
         
 #%%
 international_bunker_share_calculation_handler()
