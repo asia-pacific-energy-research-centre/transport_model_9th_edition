@@ -696,12 +696,12 @@ def plot_all_graphs(PLOT=True, plot_comparisons=True):
                         # combo = list(combo) + ['Fuel']
                         title = f'{value_col} by {list(combo) + ["Fuel"]} - {scenario}'
                     
-                        save_folder = f'energy_use_by_fuel/all_economies_plot/{value_col}/line'
+                        save_folder = f'{default_save_folder}/energy_use_by_fuel/all_economies_plot/{value_col}/line'
 
                         plot_line_by_economy(model_output_with_fuels_plot, color_categories= list(combo),y_column=value_col, title=title,  line_dash_categories='Fuel', save_folder=save_folder, facet_col='Economy',AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
                         print(f'plotting {value_col} by {list(combo) + ["Fuel"]}')
                         
-                        save_folder = f'energy_use_by_fuel/all_economies_plot/{value_col}/area'
+                        save_folder = f'{default_save_folder}/energy_use_by_fuel/all_economies_plot/{value_col}/area'
                         plot_area_by_economy(model_output_with_fuels_plot, color_categories= list(combo),y_column=value_col, title=title,  line_group_categories='Fuel', save_folder=save_folder, facet_col='Economy',AUTO_OPEN_PLOTLY_GRAPHS=AUTO_OPEN_PLOTLY_GRAPHS,plot_png=plot_png, plot_html=plot_html, dont_overwrite_existing_graphs=dont_overwrite_existing_graphs, PLOT=PLOT)
         end_timer(start, dataframe_name+' with all economies on one graph', do_this)
         ##################################################################

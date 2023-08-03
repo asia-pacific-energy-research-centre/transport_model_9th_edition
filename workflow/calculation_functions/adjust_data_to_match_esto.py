@@ -486,6 +486,9 @@ def format_9th_input_energy_from_esto(ECONOMY_ID=None):
     #now map the subfuels to the subfuels in the esto data
     energy_use_esto['Fuel'] = energy_use_esto['subfuels'].map(config.temp_esto_subfuels_to_new_subfuels_mapping)
     #where subfuel is x then set Fuel to the value in fuels column:
+    #frist remove any 02_coal_products in fuels col. THis is a bit of a rushed fix but it seems that since it is only for china and in 2017-2019 (0.1PJ) it will have little effect. This means we dont need to include it in the mapping or the x_subfuel_mappings dict which will crete confusion
+    energy_use_esto = energy_use_esto.loc[~((energy_use_esto['fuels'] == '02_coal_products') & (energy_use_esto['subfuels'] == 'x'))].copy()
+    
     energy_use_esto.loc[energy_use_esto['subfuels'] == 'x', 'Fuel'] = energy_use_esto['fuels'].map(config.x_subfuel_mappings)
     if len(energy_use_esto.loc[energy_use_esto['Fuel'].isna()]) > 0:
         

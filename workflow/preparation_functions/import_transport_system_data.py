@@ -285,6 +285,7 @@ def adjust_non_road_TEMP(transport_data_system_df, model_concordances_measures,T
     #so separate the non road data and merge on the drive types from the concordance, to repalce the 'all' drive types with the new drive types and create new rows where we need. 
     #one issue will be that we will be replicating the vlaues for activity and enegry use, resulting in double counting. so for now, pull in the data from ESTO and make the amount of energy use in each drve type match its repsective fuel use. Then recalcualte the acitvity using the intensity. 
     #however, we will also adjsut the intensity values a tad, since you can expect inttensity of electiricty to be at least a half of that of the fossil fuel types. so we will adjust the intensity of electricity to be 0.5 of the fossil fuel types.
+    breakpoint()
     transport_data_system_df_road=transport_data_system_df[transport_data_system_df['Medium']=='road'].copy()
     #load model concordances with fuels
     model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels))
@@ -497,5 +498,5 @@ def set_new_non_road_drives_to_half_intensity(row,new_drive_types):
     else:
         return row.Intensity
 #%%
-# import_transport_system_data()
+import_transport_system_data()
 #%%

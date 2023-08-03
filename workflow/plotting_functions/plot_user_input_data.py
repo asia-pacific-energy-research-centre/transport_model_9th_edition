@@ -207,7 +207,8 @@ def plot_demand_side_fuel_mixing(demand_side_fuel_mixing):
         fig.write_html(f"plotting_output/input_exploration/fuel_mixing/{title}.html")
         
 def plot_average_intensity(non_road_model_input_wide):
-    
+    #grab economy id
+    economy_id = non_road_model_input_wide['Economy'].unique()[0]
     # non_road_model_input_wide = non_road_model_input_wide.groupby(['Date', 'Transport Type', 'Drive'])['Intensity'].mean().unstack().reset_index()
     #first drop nas
     # non_road_model_input_wide = non_road_model_input_wide.dropna()
@@ -225,7 +226,7 @@ def plot_average_intensity(non_road_model_input_wide):
     
     #plot as bars using plotly
     fig = px.bar(non_road_model_input_wide_plotting, x='Drive', y='Average_intensity', color='Drive', facet_col='Transport Type')
-    fig.write_html(f'plotting_output/input_exploration/average_non_road_intensity.html', auto_open=False)
+    fig.write_html(f'plotting_output/input_exploration/average_non_road_intensity_{economy_id}.html', auto_open=False)
     
     
     

@@ -41,6 +41,7 @@ import run_non_road_model
 import apply_fuel_mix_demand_side
 import apply_fuel_mix_supply_side
 import estimate_charging_requirements
+import international_bunkers
 #FORMATTING FUNCTIONS
 sys.path.append("./workflow/formatting_functions")
 import concatenate_model_output
@@ -155,7 +156,8 @@ def main():
                 create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT   
         
-
+    international_bunkers.international_bunker_share_calculation_handler()
+    
     create_output_for_outlook_data_system.concatenate_outlook_data_system_outputs()
     
     clean_model_output.concatenate_output_data()

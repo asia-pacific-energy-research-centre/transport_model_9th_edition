@@ -67,6 +67,7 @@ def load_non_road_model_data(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_
     
 
 def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = False):
+    breakpoint()
     output_file_name = 'intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
     
     non_road_model_input, turnover_rate_steepness = load_non_road_model_data(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD)
@@ -139,5 +140,5 @@ def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD =
     output_df.to_csv(output_file_name, index=False)
     
 #%%
-# run_non_road_model('19_THA')
+# run_non_road_model('05_PRC')
 #%%

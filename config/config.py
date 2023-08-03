@@ -256,7 +256,7 @@ subfuels_mapping = {'17_electricity':'x', '07_07_gas_diesel_oil':'07_07_gas_dies
 '16_x_hydrogen':'16_x_hydrogen',
 '07_09_lpg':'07_09_lpg',
 '07_02_aviation_gasoline':'07_02_aviation_gasoline', '07_x_jet_fuel':'07_x_jet_fuel', 
-'01_coal':'x',
+# '01_coal':'x',
 '07_08_fuel_oil':'07_08_fuel_oil', '07_x_other_petroleum_products':'07_x_other_petroleum_products',
 '16_06_biodiesel':'16_06_biodiesel', 
 '16_05_biogasoline':'16_05_biogasoline', 
@@ -272,7 +272,7 @@ fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_
 '16_x_hydrogen':'16_others', 
 '07_09_lpg':'07_petroleum_products',
 '07_02_aviation_gasoline':'07_petroleum_products', '07_x_jet_fuel':'07_petroleum_products', 
-'01_coal':'01_coal',
+'01_x_thermal_coal':'01_coal',
 '07_08_fuel_oil':'07_petroleum_products', #'07_x_other_petroleum_products':'07_petroleum_products',
 '16_01_biogas':'16_others',
 '16_06_biodiesel':'16_others', 
@@ -307,8 +307,8 @@ fuels_mapping = {'17_electricity': '17_electricity', '07_07_gas_diesel_oil':'07_
 #        '07_x_other_petroleum_products', '16_06_biodiesel', '16_x_efuel',
 #        '16_05_biogasoline'], dtype=object)
 temp_esto_subfuels_to_new_subfuels_mapping = {#one day we should get the EBT code to simplify the subfuels in here but for now just use this mapping:
-    '01_x_thermal_coal': '01_coal',
-    '01_05_lignite': '01_coal',
+    '01_x_thermal_coal': '01_x_thermal_coal',
+    '01_05_lignite': '01_05_lignite',
     'x': 'x',
     '07_01_motor_gasoline': '07_01_motor_gasoline',
     '07_02_aviation_gasoline': '07_02_aviation_gasoline',
@@ -330,7 +330,7 @@ temp_esto_subfuels_to_new_subfuels_mapping = {#one day we should get the EBT cod
     '16_09_other_sources': '16_09_other_sources',
     '16_x_ammonia': '16_x_ammonia',
     '16_x_hydrogen': '16_x_hydrogen',
-    '01_01_coking_coal': '01_coal'#,
+    '01_01_coking_coal': '01_01_coking_coal'#,
     # '06_01_crude_oil': '06_crude_oil_and_ngl',
     # '06_02_natural_gas_liquids': '06_crude_oil_and_ngl'
 }
@@ -343,7 +343,7 @@ x_subfuel_mappings = {
     # '08_gas': '08_01_natural_gas',#removed because these are agregates in the esto data
     # '07_petroleum_products': '07_x_other_petroleum_products',#removed because these are agregates in the esto data
     # '01_coal': '01_coal',#removed because these are agregates in the esto data
-    '02_coal_products': '01_coal'#,
+    # '02_coal_products': '02_coal_products'#,#coal prodcuts is removed from esto data on line 489 of adjust_data_to_match_esto. it shouldnt have any effect on the model
     # '06_crude_oil_and_ngl': '06_crude_oil_and_ngl'
     }
     
