@@ -67,7 +67,6 @@ def load_non_road_model_data(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_
     
 
 def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = False):
-    breakpoint()
     output_file_name = 'intermediate_data/non_road_model/{}_{}'.format(ECONOMY_ID, config.model_output_file_name)
     
     non_road_model_input, turnover_rate_steepness = load_non_road_model_data(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD)
@@ -88,6 +87,7 @@ def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD =
         for i in range(non_road_model_input.Date.min()+1, non_road_model_input.Date.max()+1):
             # previous_year = group[group.Date == i-1].copy().reset_index(drop=True)
             current_year = group[group.Date == i].copy().reset_index(drop=True)
+            
             #set average age to the previous year's average age
             current_year['Average_age'] = previous_year['Average_age']
             
@@ -99,17 +99,28 @@ def run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD =
 
             total_sales_for_that_year = total_new_stocks_for_activity + stocks_to_replace.sum()
             
-            new_stocks = total_sales_for_that_year * current_year['Vehicle_sales_share']
-
+            #if total_sales_for_that_year is <0, then we will just apply the % change in stocks equally to all stocks so that no stocks end up below 0:
+            if total_sales_for_that_year < 0:
+                #previous method was to find inverse and normalise but it got too complicated. This is a simpler method that will just apply the % change to all stocks equally
+                # current_year['Vehicle_sales_share'] = (1 / current_year['Vehicle_sales_share']).replace(np.inf,0)
+                # current_year['Vehicle_sales_share'] = current_year['Vehicle_sales_share'] / current_year['Vehicle_sales_share'].sum()
+                percentage_change_in_stocks = total_sales_for_that_year / previous_year['Stocks'].sum()
+                
+                new_stocks = previous_year['Stocks'] * percentage_change_in_stocks
+                
+            else:
+                new_stocks = total_sales_for_that_year * current_year['Vehicle_sales_share']
+            
             current_year['Stocks'] = previous_year['Stocks'] - stocks_to_replace + new_stocks
 
+            #double check there are no stocks below 0. if so need to change something. maybe just put min=0 limit on
+            if (current_year['Stocks'] < 0).any():
+                breakpoint()
+                raise ValueError("There are stocks below 0. This should not happen.")
+            
             current_year['Activity'] = current_year['Stocks'] * current_year['Activity_per_Stock']
 
-            # if abs(new_activity.sum() - current_year['Activity'].sum()) > 0.0000001:
-            #     raise ValueError("Sum of new activity doesn't match the calculated value.")
-            #soemthing doesnt add up in the above
             current_year = road_model_functions.calculate_new_average_age_of_stocks(current_year)
-            # current_year['Average_age'] = current_year['Average_age'] - (std_deviation_share * current_year['Average_age'] * current_year['Turnover_rate'])  
 
             age_denominator = current_year['Stocks']
             #reaplce 0's in age denominator with 1's to avoid division by zero

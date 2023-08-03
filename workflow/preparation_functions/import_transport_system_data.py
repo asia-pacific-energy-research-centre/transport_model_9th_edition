@@ -498,5 +498,5 @@ def set_new_non_road_drives_to_half_intensity(row,new_drive_types):
     else:
         return row.Intensity
 #%%
-import_transport_system_data()
+# import_transport_system_data()
 #%%

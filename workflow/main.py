@@ -59,11 +59,11 @@ import compare_esto_energy_to_data
 #%%
 def main():
     #Things to do once a day:
-    do_these_once_a_day = True
+    do_these_once_a_day = False
     if do_these_once_a_day:
         concordance_scripts.create_all_concordances()
     
-    PREPARE_DATA = True
+    PREPARE_DATA = False
     if PREPARE_DATA:
         import_macro_data.import_macro_data()
         import_transport_system_data.import_transport_system_data()
@@ -77,7 +77,10 @@ def main():
     
     #######################################################################
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
-        # if (economy == '15_RP') or (economy == '18_CT'):
+        # if (economy != '05_PRC'):
+        #     # breakpoint()
+        # # else:
+        #     continue
             
         #     pass
         # else:
@@ -156,7 +159,7 @@ def main():
                 create_assumptions_dashboards.dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
                 # compare_esto_energy_to_data.compare_esto_energy_to_data()#UNDER DEVELOPMENT   
         
-    international_bunkers.international_bunker_share_calculation_handler()
+    # international_bunkers.international_bunker_share_calculation_handler()
     
     create_output_for_outlook_data_system.concatenate_outlook_data_system_outputs()
     

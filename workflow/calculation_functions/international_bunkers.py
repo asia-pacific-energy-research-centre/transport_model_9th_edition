@@ -28,14 +28,13 @@ import utility_functions
 #%%
 #%%
     
-def international_bunker_share_calculation_handler():
+def international_bunker_share_calculation_handler(turnover_rate=0.1):
     #load international bunker data from esto:
     energy_use_esto_bunkers_tall, energy_use_esto_mapping = extract_bunker_data_from_esto()
     #now extract sales/fuel share data:
     international_fuel_shares = extract_bunkers_fuel_share_inputs()
     international_supply_side_fuel_mixing=extract_supply_side_fuel_mixing()
     #calcaulte base year fuel share and fuel mixing. we will concat tehse to the international_fuel_shares and international_supply_side_fuel_mixing dfs:
-    
     international_supply_side_fuel_mixing, energy_use_esto_bunkers_tall = calculate_base_year_fuel_mixing(international_supply_side_fuel_mixing, energy_use_esto_bunkers_tall)
     international_fuel_shares = calculate_base_year_fuel_shares(international_fuel_shares, energy_use_esto_bunkers_tall)#potentially need to keep more than just the base year to give the interpolation more data points to project  but we will see how it goes.
     international_fuel_shares = calculate_missing_drive_shares_from_manually_inputted_data(international_fuel_shares)
@@ -53,7 +52,7 @@ def international_bunker_share_calculation_handler():
     #and check it all matches wat we expect (we wont bother with international_supply_side_fuel_mixing since we checked it earlier in check_and_fill_missing_fuel_mixing_dates)
     check_all_input_data_against_concordances(international_bunker_energy_use_inputs)
     #calcaulte new energy use for each medium, and drive type:
-    new_energy_df = project_total_bunkers_energy_use(international_bunker_energy_use_inputs)
+    new_energy_df = project_total_bunkers_energy_use(international_bunker_energy_use_inputs, turnover_rate)
     # then join to the supply side fuel mixing data and calculate the new fuel mix for any that have supply side fuel mixing:
     new_energy_df_mixed = apply_fuel_mixing_to_energy(new_energy_df, international_supply_side_fuel_mixing)
     
@@ -61,6 +60,7 @@ def international_bunker_share_calculation_handler():
     new_esto_data = remap_to_esto_mapping(new_energy_df_mixed, energy_use_esto_mapping)
     #plot as line graph:
     plot_international_bunker_energy_use(new_energy_df_mixed)
+    plot_international_bunker_shares_and_mixing(international_fuel_shares, international_supply_side_fuel_mixing)
     save_bunkers_data(new_esto_data, new_energy_df_mixed)
     
 def save_bunkers_data(new_esto_data, new_energy_df_mixed):
@@ -78,7 +78,6 @@ def remap_to_esto_mapping(new_energy_df_mixed, energy_use_esto_mapping):
         breakpoint()
         raise Exception(f'There are duplicates in new_energy_df_mixed. Please check the data and remove duplicates, {dupes}')
     
-    
     new_esto_data = pd.merge(new_energy_df_mixed, energy_use_esto_mapping, how='left', on=['Scenario','Medium', 'Economy', 'Drive', 'Date', 'Fuel'])
     #drop cols we dont need:
     new_esto_data = new_esto_data.drop(columns=['Medium', 'Drive', 'Fuel'])
@@ -94,11 +93,69 @@ def remap_to_esto_mapping(new_energy_df_mixed, energy_use_esto_mapping):
 
 def plot_international_bunker_energy_use(new_energy_df_mixed):
     #plot a line graph using plotly with the following cols: Scenario, Medium, Economy, Drive, Date, Fuel, Value. We will plot this on a single plot with facet cols for economy, then line dash for Medium, color for Fuel. 
-    fig = px.line(new_energy_df_mixed, x='Date', y='Value', facet_col='Economy', color='Fuel', line_dash='Medium', facet_col_wrap=7)
-    #save to html in plotting_output/international_energy_use
-    fig.write_html(f'plotting_output/international_energy_use/international_bunker_energy_use_{config.FILE_DATE_ID}.html')
-    
-    return
+    #sort by 'Date', 'Economy', 'Drive', 'Medium'
+    for medium in new_energy_df_mixed.Medium.unique():
+        for scenario in new_energy_df_mixed.Scenario.unique():
+            new_energy_df_mixed_m = new_energy_df_mixed.loc[(new_energy_df_mixed['Medium'] == medium) & (new_energy_df_mixed['Scenario'] == scenario)].copy()
+            new_energy_df_mixed_m = new_energy_df_mixed_m.groupby(['Date', 'Economy', 'Fuel'])['Value'].sum().reset_index()
+            #set any rows where vlaue is 0 to nan so they dont show up on the graph
+            new_energy_df_mixed_m.loc[new_energy_df_mixed_m['Value'] == 0, 'Value'] = np.nan
+            
+            fig = px.area(new_energy_df_mixed_m, x='Date', y='Value', facet_col='Economy', color='Fuel', facet_col_wrap=3, title = f'International bunker energy use for {medium} in {scenario}')
+            #save to html in plotting_output/international_energy_use
+            fig.write_html(f'plotting_output/international_energy_use/{medium}_{scenario}_international_bunker_energy_use_{config.FILE_DATE_ID}.html')
+            
+    #plot a similar graph but with the medium in it by using pattern_shape="medium" and pattern_shape_sequence=["-", "."]
+    for scenario in new_energy_df_mixed.Scenario.unique():
+        new_energy_df_mixed_s = new_energy_df_mixed.loc[(new_energy_df_mixed['Scenario'] == scenario)].copy()
+        new_energy_df_mixed_s = new_energy_df_mixed_s.groupby(['Date', 'Economy', 'Fuel', 'Medium'])['Value'].sum().reset_index()
+        
+        #set any rows where vlaue is 0 to nan so they dont show up on the graph
+        new_energy_df_mixed_m.loc[new_energy_df_mixed_m['Value'] == 0, 'Value'] = np.nan
+        
+        fig = px.area(new_energy_df_mixed_s, x='Date', y='Value', facet_col='Economy', color='Fuel', facet_col_wrap=3, pattern_shape="Medium", pattern_shape_sequence=["-", "."], title = f'International bunker energy use for {scenario}')
+        #save to html in plotting_output/international_energy_use
+        fig.write_html(f'plotting_output/international_energy_use/{scenario}_international_bunker_energy_use_{config.FILE_DATE_ID}.html')
+
+
+def plot_international_bunker_shares_and_mixing(international_fuel_shares, international_supply_side_fuel_mixing):
+    #plot line graphs for fuel shares and fuel mixing using plotly with the following cols: Scenario, Medium, Economy, Date, (Fuel or Drive depending on fuel mix or fuel share), Value . We will plot them on a single plot with facet cols for economy, then line dash for Medium, color for Fuel/Drive. 
+    #sort by 'Date', 'Economy', 'Drive'/'Fuel', 'Medium'
+    # for medium in new_energy_df_mixed.Medium.unique():
+    #     for scenario in new_energy_df_mixed.Scenario.unique():
+    #         new_energy_df_mixed_m = new_energy_df_mixed.loc[(new_energy_df_mixed['Medium'] == medium) & (new_energy_df_mixed['Scenario'] == scenario)].copy()
+    #         new_energy_df_mixed_m = new_energy_df_mixed_m.groupby(['Date', 'Economy', 'Fuel'])['Value'].sum().reset_index()
+    #         #set any rows where vlaue is 0 to nan so they dont show up on the graph
+    #         new_energy_df_mixed_m.loc[new_energy_df_mixed_m['Value'] == 0, 'Value'] = np.nan
+            
+    #         fig = px.area(new_energy_df_mixed_m, x='Date', y='Value', facet_col='Economy', color='Fuel', facet_col_wrap=3, title = f'International bunker energy use for {medium} in {scenario}')
+    #         #save to html in plotting_output/international_energy_use
+    #         fig.write_html(f'plotting_output/international_energy_use/{medium}_{scenario}_international_bunker_energy_use_{config.FILE_DATE_ID}.html')
+            
+    #plot a similar graph but with the medium in it by using pattern_shape="medium" and pattern_shape_sequence=["-", "."]
+    for scenario in international_fuel_shares.Scenario.unique():
+        international_fuel_shares_s = international_fuel_shares.loc[(international_fuel_shares['Scenario'] == scenario)].copy()
+        # international_fuel_shares_s = international_fuel_shares_s.groupby(['Date', 'Economy', 'Drive', 'Medium'])['Share'].sum().reset_index()
+        
+        # #set any rows where vlaue is 0 to nan so they dont show up on the graph
+        # international_fuel_shares_s.loc[international_fuel_shares_s['Value'] == 0, 'Value'] = np.nan
+        
+        fig = px.line(international_fuel_shares_s, x='Date', y='Share', facet_col='Economy', color='Drive', facet_col_wrap=3, line_dash="Medium", title = f'International bunker drive shares for {scenario}')
+        #save to html in plotting_output/international_energy_use
+        fig.write_html(f'plotting_output/international_energy_use/{scenario}_international_bunker_drive_shares_{config.FILE_DATE_ID}.html')
+
+    for scenario in international_supply_side_fuel_mixing.Scenario.unique():
+        international_supply_side_fuel_mixing_s = international_supply_side_fuel_mixing.loc[(international_supply_side_fuel_mixing['Scenario'] == scenario)].copy()
+        # international_supply_side_fuel_mixing_s = international_supply_side_fuel_mixing_s.groupby(['Date', 'Economy', 'Drive', 'Medium'])['Share'].sum().reset_index()
+        
+        # #set any rows where vlaue is 0 to nan so they dont show up on the graph
+        # international_supply_side_fuel_mixing_s.loc[international_supply_side_fuel_mixing_s['Value'] == 0, 'Value'] = np.nan
+        
+        fig = px.line(international_supply_side_fuel_mixing_s, x='Date', y='Mix', facet_col='Economy', color='Fuel', facet_col_wrap=3, line_dash="Medium", title = f'International bunker fuel mixes for {scenario}')
+        #save to html in plotting_output/international_energy_use
+        fig.write_html(f'plotting_output/international_energy_use/{scenario}_international_bunker_fuel_mixes_{config.FILE_DATE_ID}.html')
+
+
 # then split it into its drives using the fuel shares
 def split_energy_into_drives_using_fuel_shares(international_bunker_energy_use_inputs):
     #split the energy into the drives using the fuel shares
@@ -127,7 +184,7 @@ def apply_fuel_mixing_to_energy(international_bunker_energy_use_inputs, internat
     mixing_international_bunker_energy_use_inputs = pd.concat([mixing_international_bunker_energy_use_inputs, new_data])
     
     #double check that total energy use is the same as before:
-    if abs(mixing_international_bunker_energy_use_inputs['Value'].sum() - international_bunker_energy_use_inputs['Value'].sum()) > 0.00000000001:
+    if abs(mixing_international_bunker_energy_use_inputs['Value'].sum() - international_bunker_energy_use_inputs['Value'].sum()) > 0.001:
         mixing_international_bunker_energy_use_inputs.to_csv('error_{}.csv'.format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
         breakpoint()
         raise Exception('The total energy use for the international_bunker_energy_use_inputs df has changed after applying fuel mixing. Please check the data and remove duplicates, {}'.format(abs(mixing_international_bunker_energy_use_inputs['Value'].sum() - international_bunker_energy_use_inputs['Value'].sum())))
@@ -202,7 +259,7 @@ def extract_bunker_data_from_esto():
     
     # Drop the following cols. We will join them on later:
     energy_use_esto_mapping = energy_use_esto_bunkers_tall.drop(columns=['Value', 'Supply_side_fuel_mixing']).copy()
-    energy_use_esto_bunkers_tall = energy_use_esto_bunkers_tall.drop(columns=['sub1sectors', 'sub2sectors','sub3sectors', 'sub4sectors', 'fuels', 'subfuels'])
+    energy_use_esto_bunkers_tall = energy_use_esto_bunkers_tall.drop(columns=['sectors', 'sub1sectors', 'sub2sectors','sub3sectors', 'sub4sectors', 'fuels', 'subfuels'])
     return energy_use_esto_bunkers_tall, energy_use_esto_mapping
 
 def extract_supply_side_fuel_mixing():
@@ -273,7 +330,7 @@ def extract_non_road_energy_use():
     #drop electric planes and ships
     non_road = non_road.loc[~((non_road['Drive'] == 'air_electric') | (non_road['Drive'] == 'ship_electric'))]
     #sum by scenario, date and medium (not by economy so that we can average out domestic variations.. this is international fuel use after all)
-    non_road_energy_use = non_road.groupby(['Scenario', 'Date', 'Medium'])['Energy'].sum().reset_index()
+    non_road_energy_use = non_road.groupby(['Scenario', 'Date'])['Energy'].sum().reset_index()
     
     # #and extract Drive and Fuel, Medium cols for mapping:
     # drive_to_fuel_mapping = non_road[['Drive', 'Medium', 'Fuel']].drop_duplicates()
@@ -282,12 +339,11 @@ def extract_non_road_energy_use():
     return non_road_energy_use#, drive_to_fuel_mapping
     
 def calculate_non_road_energy_use_growth_rate(non_road_energy_use):  
-    breakpoint()
     #calculate the average growth rate for each medium 
-    non_road_energy_use = non_road_energy_use.sort_values(by=['Medium','Scenario',  'Date'])
-    non_road_energy_use['Growth Rate'] = non_road_energy_use.groupby(['Scenario', 'Medium'])['Energy'].pct_change()
+    non_road_energy_use = non_road_energy_use.sort_values(by=['Scenario',  'Date'])
+    non_road_energy_use['Growth Rate'] = non_road_energy_use.groupby(['Scenario'])['Energy'].pct_change()
     #drop non needed cols
-    non_road_energy_use_growth_rate = non_road_energy_use[['Medium','Scenario',  'Date', 'Growth Rate']].dropna().drop_duplicates()
+    non_road_energy_use_growth_rate = non_road_energy_use[['Scenario',  'Date', 'Growth Rate']].dropna().drop_duplicates()
     return non_road_energy_use_growth_rate
 
 def check_for_duplicates_in_all_datasets(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate, international_supply_side_fuel_mixing):
@@ -305,7 +361,7 @@ def check_for_duplicates_in_all_datasets(energy_use_esto_bunkers_tall, internati
         dupes.to_csv('error.csv')
         breakpoint()
         raise Exception(f'There are duplicates in the international_fuel_shares data. Please check the data and remove duplicates, {dupes}')
-    dupes = non_road_energy_use_growth_rate[non_road_energy_use_growth_rate.duplicated(subset=['Scenario', 'Medium',  'Date'], keep=False)]
+    dupes = non_road_energy_use_growth_rate[non_road_energy_use_growth_rate.duplicated(subset=['Scenario', 'Date'], keep=False)]
     if len(dupes) > 0:
         dupes.to_csv('error.csv')
         breakpoint()
@@ -319,7 +375,7 @@ def check_for_duplicates_in_all_datasets(energy_use_esto_bunkers_tall, internati
 def merge_and_format_all_input_data(energy_use_esto_bunkers_tall, international_fuel_shares, non_road_energy_use_growth_rate):
     #merge all together beofre checking that it all mathces wat we expect (we will mege in a different order later):
     international_bunker_energy_use_inputs = pd.merge(energy_use_esto_bunkers_tall, international_fuel_shares, how='left', on=['Medium', 'Economy', 'Scenario','Drive', 'Date'])
-    international_bunker_energy_use_inputs = pd.merge(international_bunker_energy_use_inputs, non_road_energy_use_growth_rate, how='left', on=['Medium',  'Scenario', 'Date'])
+    international_bunker_energy_use_inputs = pd.merge(international_bunker_energy_use_inputs, non_road_energy_use_growth_rate, how='left', on=['Scenario', 'Date'])
     #keep only data that is between OUTLOOK_BASE_YEAR and GRAPHING_END_YEAR
     international_bunker_energy_use_inputs = international_bunker_energy_use_inputs.loc[(international_bunker_energy_use_inputs['Date'] >= config.OUTLOOK_BASE_YEAR) & (international_bunker_energy_use_inputs['Date'] <= config.GRAPHING_END_YEAR)]
     
@@ -390,28 +446,52 @@ def check_all_input_data_against_concordances(international_bunker_energy_use_in
     #now we have made sure we have no missing data or dupes we can begin calculating!
     
 
-def project_total_bunkers_energy_use(international_bunker_energy_use_inputs):
-    breakpoint()
-    #first sum energy use for each medium
-    total_energy = international_bunker_energy_use_inputs.groupby(['Scenario', 'Economy', 'Date', 'Drive', 'Fuel', 'Medium'])['Value'].sum().reset_index().copy()
-    
+def project_total_bunkers_energy_use(international_bunker_energy_use_inputs, turnover_rate):
+    #one day would be good to drop these loops and favour something like indexing. but for now its ok
     new_energy_df = pd.DataFrame()
-    #itl be easiest to just loop through the years to apply growth:
-    base_year_energy = total_energy.loc[total_energy['Date'] == config.OUTLOOK_BASE_YEAR].copy()
-    new_energy_df = pd.concat([new_energy_df, base_year_energy])
-    for year in range(config.OUTLOOK_BASE_YEAR+1, config.GRAPHING_END_YEAR+1):
-        #grab previous years energy (would have been calcualted in the previous loop or is from the base year energy df):
-        previous_year_energy = new_energy_df.loc[new_energy_df['Date'] == year-1].copy()
-        #set date to year
-        previous_year_energy['Date'] = year
-        #join on the growth rate for that year:
-        growth = international_bunker_energy_use_inputs.loc[international_bunker_energy_use_inputs['Date'] == year, ['Scenario', 'Economy', 'Date', 'Medium', 'Growth Rate']].drop_duplicates().copy()
-        current_year_energy = pd.merge(previous_year_energy, growth, how='left', on=['Scenario', 'Economy', 'Date', 'Medium']).copy()
-        current_year_energy['Value'] = current_year_energy['Value'] + (current_year_energy['Value'] * current_year_energy['Growth Rate'])
-        new_energy_df = pd.concat([new_energy_df, current_year_energy])
-        new_energy_df.drop(columns=['Growth Rate'], inplace=True)
-    breakpoint()
+    #repalce Value nas with 0
+    international_bunker_energy_use_inputs['Value'] = international_bunker_energy_use_inputs['Value'].fillna(0)
     
+    for medium in international_bunker_energy_use_inputs.Medium.unique():
+        for scenario in international_bunker_energy_use_inputs.Scenario.unique():
+            for economy in international_bunker_energy_use_inputs.Economy.unique():
+                    
+                international_bunker_energy_use_inputs_medium = international_bunker_energy_use_inputs.loc[(international_bunker_energy_use_inputs['Medium'] == medium) &(international_bunker_energy_use_inputs['Scenario'] == scenario)&(international_bunker_energy_use_inputs['Economy'] == economy)].copy()
+                
+                new_energy_df_medium = pd.DataFrame()
+                #itl be easiest to just loop through the years to apply growth:
+                energy =  international_bunker_energy_use_inputs_medium[['Scenario', 'Economy', 'Date', 'Drive', 'Fuel', 'Medium', 'Value']].copy()
+                base_year_energy = energy.loc[energy['Date'] == config.OUTLOOK_BASE_YEAR].copy()
+                #need growth and shares sep to enegry since you use the growth_and_shares for year and energy from year -1
+                growth_and_shares = international_bunker_energy_use_inputs_medium[['Scenario', 'Economy', 'Date', 'Medium', 'Drive', 'Growth Rate', 'Share']].drop_duplicates().copy()
+                new_energy_df_medium = pd.concat([new_energy_df_medium, base_year_energy])
+                for year in range(config.OUTLOOK_BASE_YEAR+1, config.GRAPHING_END_YEAR+1):
+                    
+                    #grab previous years energy (would have been calcualted in the previous loop or is from the base year energy df):
+                    previous_year_energy = new_energy_df_medium.loc[new_energy_df_medium['Date'] == year-1].copy()
+                    #set date to year
+                    previous_year_energy['Date'] = year
+                    #join on the growth rate and shares for that year:
+                    growth_and_shares_year = growth_and_shares.loc[growth_and_shares['Date'] == year].copy()
+                    current_year_energy = pd.merge(previous_year_energy, growth_and_shares_year, how='left', on=['Scenario', 'Economy', 'Date', 'Drive', 'Medium']).copy()
+                    
+                    new_energy_growth_sum = current_year_energy['Value'].sum() * current_year_energy['Growth Rate'].iloc[0]
+                    #take away 0.03 from energy use in all rows. this is to replicate the turnover of stocks so that old fuel types can go to zero. then the lost enegry use will be added to the new energy requried and distributed via the fuel shares: (note that we make sure not to take away energy before we find the sum of new energy use for that year - this is what we do in the otehr models)
+                    turnover_of_energy = current_year_energy['Value'].sum() * turnover_rate
+                    #take away the turnover of stocks from the sum of energy use for that year:
+                    current_year_energy['Value'] = current_year_energy['Value'] - (current_year_energy['Value'] * 0.03)
+                    #calculate new energy use total as turnover + new_energy_growth_sum
+                    current_year_energy['new_energy_use_total'] = new_energy_growth_sum + turnover_of_energy
+                    #distribute this new energy use total via the fuel shares:
+                    current_year_energy['Value'] = current_year_energy['Value'] + (current_year_energy['new_energy_use_total'] * current_year_energy['Share'])
+                    
+                    #drop cols we dont need:
+                    current_year_energy = current_year_energy.drop(columns=['Growth Rate', 'new_energy_use_total', 'Share'])
+                    
+                    new_energy_df_medium = pd.concat([new_energy_df_medium, current_year_energy])
+     
+                new_energy_df = pd.concat([new_energy_df, new_energy_df_medium])
+            
     return new_energy_df
 
 def calculate_base_year_fuel_mixing(international_supply_side_fuel_mixing, energy_use_esto_bunkers_tall):

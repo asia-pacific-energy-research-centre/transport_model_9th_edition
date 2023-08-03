@@ -155,6 +155,11 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
 
     #CALCULATE STOCK SALES TO BE SATISFIED BY EACH VEHICLETYPE/DRIVETYPE COMBINATION USING THE NEW VEHICLE SALES SHARES
     #Note that if Activity worth of extra stocks needed can be 0, and if so then this will be 0 too.
+    #TEMP IF Transport_type_sum_of_activity_worth_of_extra_stocks_needed IS <0 THEN PERHAPS WE NEED TO INVERSE AND NORMALISE VEHICLE SALES SHARE SO THE LEAST WANTED STOCKS ARE SOLD FIRST. THIS IS A TEMP FIX TO PREVENT STOCKS FROM GOING NEGATIVE?
+    if (change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_needed'] < 0).any():
+        breakpoint()
+        print('There are negative stocks needed')
+        raise ValueError('There are negative stocks needed')
     change_dataframe['Activity_worth_of_new_stock_sales'] = change_dataframe['Transport_type_sum_of_activity_worth_of_extra_stocks_needed'] * change_dataframe['Vehicle_sales_share']
 
     #CALCULATE NEW activity total of stocks being used as ACTIVITY
@@ -173,6 +178,11 @@ def run_road_model_for_year_y(year, previous_year_main_dataframe, main_dataframe
     #Note that this is the new level of stocks in the economy
     change_dataframe['Stocks'] = change_dataframe['Travel_km'] / change_dataframe['Mileage']
 
+    #TEMP IF Stocks IS <0 THEN PERHAPS WE NEED TO INVERSE AND NORMALISE VEHICLE SALES SHARE SO THE LEAST WANTED STOCKS ARE SOLD FIRST. THIS IS A TEMP FIX TO PREVENT STOCKS FROM GOING NEGATIVE?
+    if (change_dataframe['Stocks'] < 0).any():
+        breakpoint()
+        raise ValueError('There are negative stocks')
+    
     #CALCUALTE NEW STOCKS NEEDED AS STOCKS NEEDED TO SATISFY NEW SALES WORTH OF ACTIVITY
     change_dataframe['New_stocks_needed'] = change_dataframe['Travel_km_of_new_stocks'] / change_dataframe['Mileage']
     
