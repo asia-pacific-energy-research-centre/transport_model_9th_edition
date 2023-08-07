@@ -9,7 +9,7 @@ NEW_FUEL_MIXING_DATA = True
 
 transport_data_system_FILE_DATE_ID ='DATE20230731_19_THA' # 'DATE20230216'))
 # FILE_DATE_ID ='20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run. if the FILE DATE ID might be lilke this DATE20230731_19_THA, inlude the eoconmoy codee!
-# FILE_DATE_ID='20230801'
+# FILE_DATE_ID='20230803'
 #%%
 
 #import common libraries 
@@ -163,6 +163,7 @@ if not os.path.exists("intermediate_data/model_inputs/{}".format(FILE_DATE_ID)):
 medium_mapping = {'air': '15_01_domestic_air_transport', 'road': '15_02_road', 'rail': '15_03_rail', 'ship': '15_04_domestic_navigation', 'pipeline':'15_05_pipeline_transport', 'nonspecified': '15_06_nonspecified_transport'}
 
 transport_type_mapping = {'passenger': '01_passenger', 'freight': '02_freight'}
+inverse_transport_type_mapping = {'15_01_01_passenger': 'passenger', '15_01_02_freight': 'freight', '15_02_01_passenger': 'passenger', '15_02_02_freight': 'freight', '15_03_01_passenger': 'passenger', '15_03_02_freight': 'freight', '15_04_01_passenger': 'passenger', '15_04_02_freight': 'freight'}
 
 vehicle_type_mapping_passenger = {'suv': '15_02_01_03_sports_utility_vehicle', 'lt': '15_02_01_04_light_truck', 'car': '15_02_01_02_car', 'bus': '15_02_01_05_bus', '2w': '15_02_01_01_two_wheeler','all':'x'}
 

@@ -77,7 +77,8 @@ def main():
     
     #######################################################################
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
-        # if (economy != '05_PRC'):
+        if economy not in ['19_THA', '20_USA', '08_JPN']:
+            continue
         #     # breakpoint()
         # # else:
         #     continue
@@ -173,7 +174,7 @@ def main():
     #     archiving_scripts.archive_lots_of_files(archiving_folder)
 
     # #do this last because it takes so long, so make sure thaht everything else is working first
-    run_plot_all_graphs = True
+    run_plot_all_graphs = False
     if run_plot_all_graphs:
         #plot:
         breakpoint()

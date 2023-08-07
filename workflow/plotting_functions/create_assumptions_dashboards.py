@@ -29,6 +29,9 @@ import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
 
+sys.path.append("./workflow/utility_functions")
+import utility_functions
+
 import assumptions_dashboard_plotting_scripts
 DROP_NON_ROAD_TRANSPORT = False
 
@@ -263,16 +266,19 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     """
     #LAOD IN REQURIED DATA FOR PLOTTING EVERYTHING:
     model_output_detailed = pd.DataFrame()
-    model_output_with_fuels = pd.DataFrame()
+    energy_output_for_outlook_data_system = pd.DataFrame()
     chargers = pd.DataFrame()
     supply_side_fuel_mixing = pd.DataFrame()
     road_model_input = pd.DataFrame()
     model_output_detailed_detailed_non_road_drives = pd.DataFrame()
     growth_forecasts = pd.DataFrame() 
     first_road_model_run_data = pd.DataFrame()
+    
+    
+    
     for economy in ECONOMY_IDs:
         model_output_detailed_ = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(economy, config.model_output_file_name))
-        model_output_with_fuels_ = pd.read_csv('output_data/model_output_with_fuels/{}_{}'.format(economy, config.model_output_file_name))
+        energy_output_for_outlook_data_system_ = pd.read_csv(f'output_data/for_other_modellers/output_for_outlook_data_system/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
         chargers_ = pd.read_csv('output_data/for_other_modellers/{}_estimated_number_of_chargers.csv'.format(economy))
         supply_side_fuel_mixing_ = pd.read_csv('intermediate_data/model_inputs/{}/{}_supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID, economy))
         road_model_input_ = pd.read_csv('intermediate_data/model_inputs/{}/{}_road_model_input_wide.csv'.format(config.FILE_DATE_ID, economy))
@@ -281,7 +287,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         first_road_model_run_data_ = pd.read_csv('intermediate_data/road_model/first_run_{}_{}'.format(economy, config.model_output_file_name))
         
         model_output_detailed = pd.concat([model_output_detailed, model_output_detailed_])
-        model_output_with_fuels = pd.concat([model_output_with_fuels, model_output_with_fuels_])
+        energy_output_for_outlook_data_system = pd.concat([energy_output_for_outlook_data_system, energy_output_for_outlook_data_system_])
         chargers = pd.concat([chargers, chargers_])
         supply_side_fuel_mixing = pd.concat([supply_side_fuel_mixing, supply_side_fuel_mixing_])    
         road_model_input = pd.concat([road_model_input, road_model_input_])
@@ -289,7 +295,12 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         growth_forecasts = pd.concat([growth_forecasts, growth_forecasts_])
         first_road_model_run_data = pd.concat([first_road_model_run_data, first_road_model_run_data_])
         
-    
+    #melt the energy_output_for_outlook_data_system data so that the date is in a column:
+    id_cols = ['economy', 'scenarios', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors']
+    energy_output_for_outlook_data_system = pd.melt(energy_output_for_outlook_data_system, id_vars=id_cols, var_name='Date', value_name='Energy')
+    #set date to int
+    energy_output_for_outlook_data_system['Date'] = energy_output_for_outlook_data_system['Date'].astype(int)
+
     original_model_output_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv').rename(columns={'Year':'Date'})
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
     gompertz_parameters_df = pd.read_csv('intermediate_data/model_inputs/{}/stocks_per_capita_threshold.csv'.format(config.FILE_DATE_ID))
@@ -300,7 +311,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
             return df.loc[(df['Date']>=config.OUTLOOK_BASE_YEAR) & (df['Date']<=config.GRAPHING_END_YEAR)].copy()
         new_sales_shares_all_plot_drive_shares = filter_between_outlook_BASE_YEAR_and_end_year(new_sales_shares_all_plot_drive_shares)
         model_output_detailed = filter_between_outlook_BASE_YEAR_and_end_year(model_output_detailed)
-        model_output_with_fuels = filter_between_outlook_BASE_YEAR_and_end_year(model_output_with_fuels)
+        energy_output_for_outlook_data_system = filter_between_outlook_BASE_YEAR_and_end_year(energy_output_for_outlook_data_system)
         original_model_output_8th = filter_between_outlook_BASE_YEAR_and_end_year(original_model_output_8th)
         chargers = filter_between_outlook_BASE_YEAR_and_end_year(chargers)
         supply_side_fuel_mixing = filter_between_outlook_BASE_YEAR_and_end_year(supply_side_fuel_mixing)
@@ -315,7 +326,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         #filter all data so it is less than or equal to the outlook base year
         new_sales_shares_all_plot_drive_shares = filter_outlook_BASE_YEAR(new_sales_shares_all_plot_drive_shares)
         model_output_detailed = filter_outlook_BASE_YEAR(model_output_detailed)
-        model_output_with_fuels = filter_outlook_BASE_YEAR(model_output_with_fuels)
+        energy_output_for_outlook_data_system = filter_outlook_BASE_YEAR(energy_output_for_outlook_data_system)
         original_model_output_8th = filter_outlook_BASE_YEAR(original_model_output_8th)
         chargers = filter_outlook_BASE_YEAR(chargers)
         supply_side_fuel_mixing = filter_outlook_BASE_YEAR(supply_side_fuel_mixing)
@@ -327,17 +338,69 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     
     #Format stocks data specifically, since we use it a lot:    
     stocks = model_output_detailed.loc[(model_output_detailed['Medium']=='road')][config.INDEX_COLS_NO_MEASURE+['Stocks']].rename(columns={'Stocks':'Value'}).copy()
+    
+    energy_output_for_outlook_data_system = format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system, economy)
+    
+    energy_use_esto = extract_and_clean_esto_data(energy_output_for_outlook_data_system, ECONOMY_IDs)
     # #filter for ECONOMY_IDs 
     # new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.loc[new_sales_shares_all_plot_drive_shares['Economy'].isin(ECONOMY_IDs)]
     # model_output_detailed = model_output_detailed.loc[model_ostocksutput_detailed['Economy'].isin(ECONOMY_IDs)]
-    # model_output_with_fuels = model_output_with_fuels.loc[model_output_with_fuels['Economy'].isin(ECONOMY_IDs)]
+    # energy_output_for_outlook_data_system = energy_output_for_outlook_data_system.loc[energy_output_for_outlook_data_system['Economy'].isin(ECONOMY_IDs)]
     # original_model_output_8th = original_model_output_8th.loc[original_model_output_8th['Economy'].isin(ECONOMY_IDs)]
     # chargers = chargers.loc[chargers['Economy'].isin(ECONOMY_IDs)]
     # supply_side_fuel_mixing = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Economy'].isin(ECONOMY_IDs)]
     # stocks = stocks.loc[stocks['Economy'].isin(ECONOMY_IDs)] 
     
-    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data
+    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto
 
+def extract_and_clean_esto_data(energy_output_for_outlook_data_system, ECONOMY_IDs):
+    
+    #want to include post  and pre 2020 data from esto. that way we can show the difference between outlook and esto on a line graph
+    #laod in pre base year data from esto:
+    date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
+    energy_use_esto = pd.read_csv(f'input_data/9th_model_inputs/model_df_wide_{date_id}.csv')
+    #grab only the transport data 
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['sectors'] == '15_transport_sector'].copy()
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['economy'].isin(ECONOMY_IDs)].copy()
+    
+    #mlet the data:
+    energy_use_esto = pd.melt(energy_use_esto, id_vars=['economy', 'scenarios', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'], var_name='Date', value_name='Energy')
+    #make date into int
+    energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
+    #do a right join on energy_output_for_outlook_data_system to get rid of rows we dont want, when we ignore the date and value cols
+    cols = energy_use_esto.columns.tolist()
+    cols.remove('Date')
+    cols.remove('Energy')
+    energy_use_esto = energy_use_esto.merge(energy_output_for_outlook_data_system[cols].drop_duplicates(), how='right', on=cols)
+    
+    #drop any rows where energy is nan. these are where the esto data team has not provided data, probably because they havent done that year yet
+    energy_use_esto = energy_use_esto.loc[~energy_use_esto['Energy'].isna()].copy()
+    return energy_use_esto
+    
+def format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system):
+    
+    #where energy_output_for_outlook_data_system not contians x in subfuels, set fuels to subfuels
+    energy_output_for_outlook_data_system.loc[energy_output_for_outlook_data_system['subfuels']!='x', 'fuels'] = energy_output_for_outlook_data_system.loc[energy_output_for_outlook_data_system['subfuels']!='x', 'subfuels']
+    #drop subfuels
+    energy_output_for_outlook_data_system = energy_output_for_outlook_data_system.drop(columns=['subfuels'])
+    #also rename some thigns we will have to renamne every time:
+    energy_output_for_outlook_data_system.rename(columns={'fuels':'Fuel', 'scenarios':'Scenario', 'economy':'Economy'}, inplace=True)
+    
+    #apply the inverse of the config.medium_mapping dict to the sub1sectors col to get Medium. then drop the sub1sectors col. 
+    inverse_mediums = {v: k for k, v in config.medium_mapping.items()}
+    energy_output_for_outlook_data_system['Medium'] = energy_output_for_outlook_data_system['sub1sectors'].map(inverse_mediums)
+    energy_output_for_outlook_data_system['Transport Type'] = energy_output_for_outlook_data_system['sub2sectors'].map(config.inverse_transport_type_mapping)
+    
+    energy_output_for_outlook_data_system = energy_output_for_outlook_data_system.drop(columns=['sub1sectors', 'sub2sectors']).copy()
+    
+    #make scenarios values capitalised:
+    energy_output_for_outlook_data_system['Scenario'] = energy_output_for_outlook_data_system['Scenario'].str.capitalize()
+    
+    #reaplce economies liek this  .replace({'15_PHL': '15_RP', '17_SGP': 
+    #  '17_SIN'})
+    energy_output_for_outlook_data_system['Economy'] = energy_output_for_outlook_data_system['Economy'].replace({'15_PHL': '15_RP', '17_SGP': '17_SIN'})
+    return energy_output_for_outlook_data_system
+    
 def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, colors_dict, DROP_NON_ROAD_TRANSPORT, ADVANCE_BASE_YEAR):
     """
     Handles the creation of plots for the specified economies and plots.
@@ -355,7 +418,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         None
     """
     
-    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, model_output_with_fuels, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
+    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
     # Share of Transport Type
     share_transport_types = ['passenger', 'freight', 'all']
     for transport_type in share_transport_types:
@@ -378,13 +441,14 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
     energy_transport_types = [p.split('_')[-1] for p in plots if 'energy_use_by_fuel_type' in p]
     for transport_type in energy_transport_types:
         if f'energy_use_by_fuel_type_{transport_type}' in plots:
-            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(ECONOMY_IDs,model_output_with_fuels,fig_dict,color_preparation_list, colors_dict,transport_type)
+            breakpoint()
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(ECONOMY_IDs,energy_output_for_outlook_data_system,fig_dict,color_preparation_list, colors_dict,transport_type)
             
     #Non road energy Use by Fuel Type
     energy_transport_types = [p.split('_')[-1] for p in plots if 'non_road_energy_use_by_fuel_type' in p]
     for transport_type in energy_transport_types:
         if f'non_road_energy_use_by_fuel_type_{transport_type}' in plots:
-            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_non_road_energy_use(ECONOMY_IDs,model_output_with_fuels,fig_dict, color_preparation_list, colors_dict,transport_type)
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.plot_non_road_energy_use(ECONOMY_IDs,energy_output_for_outlook_data_system,fig_dict, color_preparation_list, colors_dict,transport_type)
 
     non_road_activity_types = [p.split('_')[-1] for p in plots if 'non_road_activity_by_drive' in p]
     for transport_type in non_road_activity_types:
@@ -400,7 +464,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
     emissions_transport_types = [p.split('_')[-1] for p in plots if 'emissions_by_fuel_type' in p]
     for transport_type in emissions_transport_types:
         if f'emissions_by_fuel_type_{transport_type}' in plots:
-            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.emissions_by_fuel_type(ECONOMY_IDs, emissions_factors, model_output_with_fuels, fig_dict, color_preparation_list, colors_dict,transport_type)    
+            fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.emissions_by_fuel_type(ECONOMY_IDs, emissions_factors, energy_output_for_outlook_data_system, fig_dict, color_preparation_list, colors_dict,transport_type)    
     
     # turnover_rate_by_drive_type(fig_dict,DROP_NON_ROAD_TRANSPORT,  color_preparation_list, colors_dict,transport_type)
     turnover_rate_types = [p.split('_')[-1] for p in plots if 'turnover_rate_by_drive' in p]
@@ -449,7 +513,10 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_stocks_per_capita(ECONOMY_IDs,gompertz_parameters_df,model_output_detailed, first_road_model_run_data, fig_dict, color_preparation_list, colors_dict)
     if 'non_road_share_of_transport_type' in plots:
         fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_share_of_transport_type_non_road(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares,fig_dict, color_preparation_list, colors_dict)
-        
+    
+    if 'compare_energy' in plots:
+        energy_8th = pd.DataFrame()
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system, energy_use_esto, energy_8th, fig_dict, color_preparation_list, colors_dict)
     return fig_dict, color_preparation_list
 
 def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
@@ -530,33 +597,6 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     # hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
     
     # plots = ['stocks_per_capita', 'avg_age_all']
-
-
-    # create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
-    
-    # #THAILAND DASHBOARD:
-    # plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'non_road_activity_by_drive_freight', 'non_road_activity_by_drive_passenger','vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all']#, 'charging'#activity_growth# 'charging',
-    # create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'detailed',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
-    
-
-    # #create a presentation dashboard:
-
-    # plots = ['energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive', 'share_of_transport_type_passenger']#activity_growth
-
-    # create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'presentation',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
-
-
-    # #create a development dashboard:
-
-    # plots = ['energy_use_by_fuel_type_all','energy_use_by_fuel_type_freight','energy_use_by_fuel_type_passenger','fuel_mixing', 'freight_tonne_km_by_drive','passenger_km_by_drive',  'activity_and_macro_lines', 'vehicle_type_stocks', 'share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','share_of_transport_type_all',  'lmdi_freight', 'lmdi_passenger','stocks_per_capita', 'box_turnover_rate_by_drive_all','emissions_by_fuel_type_all']#, 'charging']#activity_growth# 'charging',
-
-    # create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'development',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
-
-
-    # #checkout turnover rate and average age related data:
-    # plots = ['avg_age_road','avg_age_nonroad','box_turnover_rate_by_drive_all','line_turnover_rate_by_vtype_all' ]#, 'charging']#activity_growth# 'charging',
-    # create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'turnover_rate',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
-    
     
     hidden_legend_names =  []
     
@@ -566,16 +606,14 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     
     
     #Create a results dashboard:
-    plots = ['energy_use_by_fuel_type_all','emissions_by_fuel_type_all',  'vehicle_type_stocks','non_road_energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive','charging', 'lmdi_freight', 'lmdi_passenger']#, 'charging']#activity_growth# 'charging',
+    plots = ['energy_use_by_fuel_type_all','emissions_by_fuel_type_all',  'vehicle_type_stocks','non_road_energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive','compare_energy', 'lmdi_freight', 'lmdi_passenger']#, 'charging']#activity_growth# 'charging',
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'results',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
     #create a presentation dashboard:
-
     plots = ['energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive', 'share_of_transport_type_passenger']#activity_growth
-
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'presentation',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
 
 
 #%%
-# dashboard_creation_handler(True,'19_THA', ARCHIVE_PREVIOUS_DASHBOARDS=True)
+dashboard_creation_handler(True,'08_JPN', ARCHIVE_PREVIOUS_DASHBOARDS=True)
 #%%

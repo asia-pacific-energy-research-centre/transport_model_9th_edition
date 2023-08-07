@@ -35,14 +35,23 @@ from scipy.optimize import curve_fit
 #######################################################################
 #######################################################################
 #######################################################################
-def convert_stocks_to_gompertz_adjusted_stocks(model_data,vehicle_gompertz_factors):
+def prepare_data_for_logistic_fitting(model_data):
+    
+    #extract the vehicles_per_stock_parameters:
+    vehicles_per_stock_parameters = pd.read_excel('input_data/parameters.xlsx', sheet_name='gompertz_vehicles_per_stock')
+    #convert from regiosn to economies:
+    vehicles_per_stock_regions = pd.read_excel('input_data/parameters.xlsx', sheet_name='vehicles_per_stock_regions')
+    #join on region
+    vehicles_per_stock_parameters = vehicles_per_stock_parameters.merge(vehicles_per_stock_regions, on='Region', how='left')
+    #dro regions
+    vehicles_per_stock_parameters.drop(columns=['Region'], inplace=True)
     
     #Convert some stocks to gompertz adjusted stocks by multiplying them by the vehicle_gompertz_factors. This is because you can expect some economies to have more or less of that vehicle type than others. These are very general estiamtes, and could be refined later.
+    new_stocks = model_data.merge(vehicles_per_stock_parameters, on=['Vehicle Type', 'Economy'], how='left')
+    new_stocks['Stocks'] = new_stocks['Stocks'] * new_stocks['gompertz_vehicles_per_stock']
+    
     cols_to_sum_by = ['Economy', 'Scenario', 'Date', 'Transport Type']
-    new_stocks = model_data.copy()
-    for ttype in vehicle_gompertz_factors.keys():
-        new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] = new_stocks.loc[(new_stocks['Vehicle Type'] == ttype), 'Stocks'] * vehicle_gompertz_factors[ttype]
-    #sum up new stocks and other values specific to each vehicle type
+    #sum up new stocks and other values specific to each vehicle type, by economy, scenario, date and transport type (so remove vehicle type)
     new_stocks = new_stocks[cols_to_sum_by+['Stocks','Activity', 'Travel_km']].groupby(cols_to_sum_by).sum().reset_index()
     
     #now, as we are going to reestiamte the growth rate using adjusted stocks, and these stocks are goign to be timesed by their vehicle_gompertz_factors and summed, we need to come up with the equivalent mileage and Occupancy_or_load weighted average for each transport ytpe, using a weighting based on the amount of stocks for each vehicle type. this will prevent them from ebeing overexagerated due to the effect of rarer vehicle types which have higher values for these cols, which will increase effective activity (eg buses have high occupancy and mielsage comapred to 2w, but a fraction of the stoskcs).
@@ -70,7 +79,7 @@ def convert_stocks_to_gompertz_adjusted_stocks(model_data,vehicle_gompertz_facto
     new_model_data['Activity'] = new_model_data['Stocks'] * new_model_data['Occupancy_or_load'] * new_model_data['Travel_km']
     return new_model_data
 
-def logistic_fitting_function_handler(model_data,vehicle_gompertz_factors,show_plots=False,matplotlib_bool=False, plotly_bool=False,ONLY_PASSENGER_VEHICLES=True):
+def logistic_fitting_function_handler(model_data,show_plots=False,matplotlib_bool=False, plotly_bool=False,ONLY_PASSENGER_VEHICLES=True):
     """Take in output of stocks,occupancy, travel_km, activity and mileage from running road model on a gdp per cpita based growth rate. Then fit a logistic curve to the stocks data with the gamma value from each economy provided. 
     Then with this curve, extract the expected activity per year based on the expected stocks per year and the expected mileage per year. Then recalculate the growth rate over time based on this. We will then use this to rerun the road model with the new growth rate.
     This was origianlly done for each economy and vehicle type in passenger vehicles, now for each economy and transport type. 
@@ -82,7 +91,7 @@ def logistic_fitting_function_handler(model_data,vehicle_gompertz_factors,show_p
     else:
         model_data_to_edit = model_data.copy()
         
-    new_model_data = convert_stocks_to_gompertz_adjusted_stocks(model_data_to_edit,vehicle_gompertz_factors)
+    new_model_data = prepare_data_for_logistic_fitting(model_data_to_edit)
     #EXTRACT PARAMETERS FOR LOGISTIC FUNCTION:
     # breakpoint()#want to find the toal amount of stocks per year per economy per transport type, so we can compare them to the data plotted in graphs:
     # stocks = new_model_data.groupby(['Date', 'Economy', 'Scenario', 'Transport Type'])['Stocks'].sum().reset_index()

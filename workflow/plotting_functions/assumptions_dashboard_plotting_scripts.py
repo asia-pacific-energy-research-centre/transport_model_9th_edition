@@ -459,14 +459,14 @@ def share_of_sum_of_vehicle_types_by_transport_type(ECONOMY_IDs,new_sales_shares
 
 
 ###################################################
-def energy_use_by_fuel_type(ECONOMY_IDs,model_output_with_fuels,fig_dict,  color_preparation_list, colors_dict,transport_type):
+def energy_use_by_fuel_type(ECONOMY_IDs,energy_output_for_outlook_data_system_tall,fig_dict,  color_preparation_list, colors_dict,transport_type):
     #load in data and recreate plot, as created in all_economy_graphs
     #loop through scenarios and grab the data for each scenario:
-    model_output_with_fuels_sum= model_output_with_fuels[['Economy', 'Scenario','Date', 'Fuel', 'Transport Type','Energy']].groupby(['Economy', 'Scenario','Date','Transport Type', 'Fuel']).sum().reset_index().copy()
-    model_output_with_fuels_sum['Measure'] = 'Energy'
-    model_output_with_fuels_sum['Unit'] = model_output_with_fuels_sum['Measure'].map(config.measure_to_unit_concordance_dict)
+    energy_use_by_fuel_type= energy_output_for_outlook_data_system_tall[['Economy', 'Scenario','Date', 'Fuel', 'Transport Type','Energy']].groupby(['Economy', 'Scenario','Date','Transport Type', 'Fuel']).sum().reset_index().copy()
+    energy_use_by_fuel_type['Measure'] = 'Energy'
+    energy_use_by_fuel_type['Unit'] = energy_use_by_fuel_type['Measure'].map(config.measure_to_unit_concordance_dict)
     for scenario in config.economy_scenario_concordance['Scenario'].unique():
-        energy_use_by_fuel_type_scen = model_output_with_fuels_sum.loc[(model_output_with_fuels_sum['Scenario']==scenario)].copy()
+        energy_use_by_fuel_type_scen = energy_use_by_fuel_type.loc[(energy_use_by_fuel_type['Scenario']==scenario)].copy()
         
         for economy in ECONOMY_IDs:
             #filter to economy
@@ -879,13 +879,12 @@ def activity_and_macro_lines(ECONOMY_IDs,original_model_output_8th_df,model_outp
     return fig_dict, color_preparation_list
 
 def plot_supply_side_fuel_mixing(ECONOMY_IDs,supply_side_fuel_mixing_df,fig_dict, color_preparation_list, colors_dict):
-    # if ECONOMY_IDs == '08_JPN':#TODO
-    #     breakpoint()#nee to fix squiggly lines for biojet
     #plot supply side fuel mixing
     supply_side_fuel_mixing = supply_side_fuel_mixing_df.copy()
+    #average out the supply side fuel mixing by economy, scenario and new fuel, so that we have the average share of each fuel type that is mixed into another fuel type (note that this isnt weighted by the amount of fuel mixed in, just the share of the fuel that is mixed in... its a safe asumption given that every new fuel should be mixed in with similar shares
+    supply_side_fuel_mixing= supply_side_fuel_mixing[['Date', 'Economy','Scenario', 'New_fuel' ,'Supply_side_fuel_share']].groupby(['Date', 'Economy','Scenario', 'New_fuel']).mean().reset_index()
     #round the Supply_side_fuel_share column to 2dp
     supply_side_fuel_mixing['Supply_side_fuel_share'] = supply_side_fuel_mixing['Supply_side_fuel_share'].round(2)
-    supply_side_fuel_mixing= supply_side_fuel_mixing[['Date', 'Economy','Scenario', 'Fuel','New_fuel' ,'Supply_side_fuel_share']].drop_duplicates()
     #supply side mixing is just the percent of a fuel type that is mixed into another fuel type, eg. 5% biodiesel mixed into diesel. We can use the concat of Fuel and New fuel cols to show the data:
     supply_side_fuel_mixing['Fuel mix'] = supply_side_fuel_mixing['New_fuel']# supply_side_fuel_mixing_plot['Fuel'] + ' mixed with ' + 
     #actually i changed that because it was too long. should be obivous that it's mixed with the fuel in the Fuel col (eg. biodesel mixed with diesel)
@@ -1035,11 +1034,19 @@ def plot_stocks_per_capita(ECONOMY_IDs,gompertz_parameters_df, model_output_deta
     #now concat the two dfs:
     stocks_per_capita = pd.concat([stocks_per_capita, first_model_run_stocks_per_capita], axis=0)
     
-    # breakpoint()#why is freight stocks per capita so high?
-    #map the number of vehicles that each vehicle type represents with regards to vehicles per cpita, using:
-    vehicle_gompertz_factors = yaml.load(open('config/parameters.yml'), Loader=yaml.FullLoader)['vehicle_gompertz_factors']
+    #extract the vehicles_per_stock_parameters:
+    vehicles_per_stock_parameters = pd.read_excel('input_data/parameters.xlsx', sheet_name='gompertz_vehicles_per_stock')
+    #convert from regiosn to economies:
+    vehicles_per_stock_regions = pd.read_excel('input_data/parameters.xlsx', sheet_name='vehicles_per_stock_regions')
+    #join on region
+    vehicles_per_stock_parameters = vehicles_per_stock_parameters.merge(vehicles_per_stock_regions, on='Region', how='left')
+    #dro regions
+    vehicles_per_stock_parameters.drop(columns=['Region'], inplace=True)
     
-    stocks_per_capita['Stocks'] = stocks_per_capita['Stocks'] * stocks_per_capita['Vehicle Type'].map(vehicle_gompertz_factors)
+    #Convert some stocks to gompertz adjusted stocks by multiplying them by the vehicle_gompertz_factors. This is because you can expect some economies to have more or less of that vehicle type than others. These are very general estiamtes, and could be refined later.
+    new_stocks = stocks_per_capita.merge(vehicles_per_stock_parameters, on=['Vehicle Type', 'Economy'], how='left')
+    new_stocks['Stocks'] = new_stocks['Stocks'] * new_stocks['gompertz_vehicles_per_stock']
+    
     #recalcualte stocks per capita after summing up stocks by economy and transport type, scneario anmd date
     #extract population so we can join it after the sum:
     population = stocks_per_capita[['Economy', 'Scenario','Date', 'Population','Model']].drop_duplicates()
@@ -1084,10 +1091,10 @@ def plot_stocks_per_capita(ECONOMY_IDs,gompertz_parameters_df, model_output_deta
     return fig_dict, color_preparation_list
 
 
-def plot_non_road_energy_use(ECONOMY_IDs,model_output_with_fuels_df,fig_dict,  color_preparation_list, colors_dict,transport_type):
+def plot_non_road_energy_use(ECONOMY_IDs,energy_output_for_outlook_data_system_tall, fig_dict,  color_preparation_list, colors_dict,transport_type):
+    
     #we will plot the energy use by fuel type for non road as an area chart.
-    model_output_with_fuels = model_output_with_fuels_df.copy()
-    model_output_with_fuels = model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road'].copy()
+    model_output_with_fuels = energy_output_for_outlook_data_system_tall.copy()
     
     #create a new df with only the data we need: 
     energy_use_by_fuel_type = model_output_with_fuels.copy()
@@ -1545,3 +1552,46 @@ def emissions_by_fuel_type(ECONOMY_IDs, emissions_factors,model_output_with_fuel
     color_preparation_list.append(emissions_by_fuel_type_economy['Fuel'].unique().tolist())
     return fig_dict, color_preparation_list
 
+
+def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system_df, energy_use_esto, energy_8th, fig_dict, color_preparation_list, colors_dict):
+            
+    model_output_with_fuels = energy_output_for_outlook_data_system_df.copy()
+    energy_use_esto_df = energy_use_esto.copy()
+    energy_8th_df = energy_8th.copy()
+    
+    #create col in both which refers to where they came from:
+    energy_use_esto_df['Dataset'] = 'ESTO'
+    model_output_with_fuels['Dataset'] = '9th_model'
+    # energy_8th_df['Dataset'] = '8th_model'#TODO
+    
+    #create a new df with only the data we need: 
+    energy_use_by_fuel_type = pd.concat([model_output_with_fuels, energy_use_esto_df])
+    
+    energy_use_by_fuel_type = energy_use_by_fuel_type[['Economy','Scenario', 'Date', 'Fuel', 'Energy','Dataset']].groupby(['Economy','Scenario', 'Date','Dataset', 'Fuel']).sum().reset_index()
+    
+    #add units (by setting measure to Energy haha)
+    energy_use_by_fuel_type['Measure'] = 'Energy'
+    #add units
+    energy_use_by_fuel_type['Unit'] = energy_use_by_fuel_type['Measure'].map(config.measure_to_unit_concordance_dict)
+    
+    #load in data and recreate plot, as created in all_economy_graphs
+    #loop through scenarios and grab the data for each scenario:
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
+        energy_use_by_fuel_type_s = energy_use_by_fuel_type.loc[(energy_use_by_fuel_type['Scenario']==scenario)].copy()
+        for economy in ECONOMY_IDs:
+            #filter to economy
+            energy_use_by_fuel_type_economy = energy_use_by_fuel_type_s.loc[energy_use_by_fuel_type_s['Economy']==economy].copy()
+            
+            #now plot
+            fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel',line_dash='Dataset'. title='Compared Energy by Fuel', color_discrete_map=colors_dict)
+            
+            #add units to y col
+            title_text = 'Compared energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
+            
+            #add fig to dictionary for scenario and economy:
+            fig_dict[economy][scenario]['compare_energy'] = [fig, title_text]
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
+    
+    return fig_dict, color_preparation_list

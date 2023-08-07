@@ -1,14 +1,7 @@
 
-#Use this file to keep and track different parameters used in the model. 
-vehicle_gompertz_factors:
-  car: 1
-  lt: 1
-  suv: 1
-  bus: 5
-  2w: 0.5
-  lcv: 10
-  mt: 20
-  ht: 30
+#Use this file to keep and track different parameters used in the modelthat i havent botheered to put in spreadsheets.
+
+
 #can edit these to adjust the amount of vehicles in the fleet. it is important to watch stocks per capita, by transport type to udnerstand the impact of these changes.
 turnover_rate_parameters_dict:
   turnover_rate_steepness: 0.7
@@ -60,7 +53,26 @@ ECONOMY_BASE_YEARS_DICT:
   '17_SIN': 2017
   '18_CT': 2017
   '21_VN': 2017
-#   vehicle_gompertz_factors = {'car':1,'lt':1,'suv':1,'bus':5,'2w':0.5, 'lcv':20, 'mt': 30, 'ht': 30}
-# turnover_rate_parameters_dict = {'turnover_rate_steepness':0.5,'std_deviation_share':0.1,'midpoint_new':12.5,'midpoint_old':25}
-# #tried std_deviation_share = 0.25, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #old vehicles never left the fleet once we reached 80% ev stock share
-# # tried std_deviation_share = 0.5, turnover_rate_steepness = 0.7, midpoint_new = 12.5, midpoint_old = 17.5 #WAS TOO STEEP
+  
+ECONOMIES_WITH_MODELLING_COMPLETE:
+  '01_AUS': False
+  '02_BD': False
+  '03_CDA': False
+  '04_CHL': False
+  '05_PRC': False
+  '06_HKC': False
+  '07_INA': False
+  '08_JPN': False
+  '09_ROK': False
+  '10_MAS': False
+  '11_MEX': False
+  '12_NZ': False
+  '13_PNG': False
+  '14_PE': False
+  '15_RP': False
+  '16_RUS': False
+  '17_SIN': False
+  '18_CT': False
+  '19_THA': True
+  '20_USA': False
+  '21_VN': False
