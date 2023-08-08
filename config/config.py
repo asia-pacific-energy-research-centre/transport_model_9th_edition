@@ -1,6 +1,6 @@
 """This file is intended to be able ot be used in the beginnning of any jupyter ntoebook to set the config variables for the model. This helps to reduce clutter, as that is a big issue for notebooks. So if you ever need to chnage conifgurations, just change this. """
 #to make the code in this library clear we will name every variable that is stated in here with all caps
-
+#%%
 #FREQUENTLY CHANGED CONFIG VARIABLES:
 
 NEW_SALES_SHARES = True
@@ -9,7 +9,7 @@ NEW_FUEL_MIXING_DATA = True
 
 transport_data_system_FILE_DATE_ID ='DATE20230731_19_THA' # 'DATE20230216'))
 # FILE_DATE_ID ='20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run. if the FILE DATE ID might be lilke this DATE20230731_19_THA, inlude the eoconmoy codee!
-# FILE_DATE_ID='20230803'
+FILE_DATE_ID='20230807'
 #%%
 
 #import common libraries 

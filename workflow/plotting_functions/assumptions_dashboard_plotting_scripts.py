@@ -67,7 +67,7 @@ def remap_vehicle_types(df, value_col='Value', new_index_cols = ['Scenario', 'Ec
         df.drop(columns=['Weighted Value', aggregation_type[1] + ' copy'], inplace=True)
         
     elif aggregation_type[0]=='sum':
-        df = df.groupby(new_index_cols).sum().reset_index()
+        df = df.groupby(new_index_cols, group_keys=False).sum(numeric_only=True).reset_index()
         
     return df
     
@@ -150,7 +150,7 @@ def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_sha
     # #sum up all the sales shares for each drive type
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     #now calucalte share of total stocks as a proportion like the sales share
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     #create line_dash column and call it stocks
     stocks['line_dash'] = 'stocks'
     
@@ -251,7 +251,7 @@ def plot_share_of_transport_type_non_road(ECONOMY_IDs,new_sales_shares_all_plot_
             # elif share_of_transport_type_type == 'all':
             title = f'Share of new activity for non road (%)'
             # sum up, because 2w are used in freight and passenger:
-            plot_data = plot_data.groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
+            plot_data = plot_data.groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum(numeric_only=True).reset_index()
             fig = px.line(plot_data, x='Date', y='Value', color='Drive', title=title, line_dash='Transport Type', color_discrete_map=colors_dict)
 
             #add fig to dictionary for scenario and economy:
@@ -276,7 +276,7 @@ def plot_share_of_vehicle_type_by_transport_type(ECONOMY_IDs,new_sales_shares_al
     
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum())
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     stocks['line_dash'] = 'stocks'
     
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
@@ -401,7 +401,7 @@ def share_of_sum_of_vehicle_types_by_transport_type(ECONOMY_IDs,new_sales_shares
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
     stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'])['Value'].apply(lambda x: x/x.sum())
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'])['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     stocks['line_dash'] = 'stocks' 
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
@@ -506,7 +506,7 @@ def energy_use_by_fuel_type(ECONOMY_IDs,energy_output_for_outlook_data_system_ta
                 
             elif transport_type == 'all':
                 #sum across transport types
-                energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum().reset_index()
+                energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum(numeric_only =True).reset_index()
                 #now plot
                 fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
                 
@@ -1095,6 +1095,8 @@ def plot_non_road_energy_use(ECONOMY_IDs,energy_output_for_outlook_data_system_t
     
     #we will plot the energy use by fuel type for non road as an area chart.
     model_output_with_fuels = energy_output_for_outlook_data_system_tall.copy()
+    #extract Medium != road
+    model_output_with_fuels = model_output_with_fuels.loc[model_output_with_fuels['Medium']!='road'].copy()
     
     #create a new df with only the data we need: 
     energy_use_by_fuel_type = model_output_with_fuels.copy()
@@ -1147,7 +1149,7 @@ def plot_non_road_energy_use(ECONOMY_IDs,energy_output_for_outlook_data_system_t
                 
             elif transport_type == 'all':
                 #sum across transport types
-                energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum().reset_index()
+                energy_use_by_fuel_type_economy = energy_use_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum(numeric_only = True).reset_index()
                 #now plot
                 fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel', title='Energy by Fuel', color_discrete_map=colors_dict)
                 
@@ -1553,21 +1555,32 @@ def emissions_by_fuel_type(ECONOMY_IDs, emissions_factors,model_output_with_fuel
     return fig_dict, color_preparation_list
 
 
-def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system_df, energy_use_esto, energy_8th, fig_dict, color_preparation_list, colors_dict):
+def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system_df, energy_use_esto, data_8th, fig_dict, color_preparation_list, colors_dict):
             
     model_output_with_fuels = energy_output_for_outlook_data_system_df.copy()
     energy_use_esto_df = energy_use_esto.copy()
-    energy_8th_df = energy_8th.copy()
+    energy_8th_df = data_8th.copy()#.drop(columns=['Stocks', 'Activity'])
     
     #create col in both which refers to where they came from:
     energy_use_esto_df['Dataset'] = 'ESTO'
     model_output_with_fuels['Dataset'] = '9th_model'
-    # energy_8th_df['Dataset'] = '8th_model'#TODO
+    energy_8th_df['Dataset'] = '8th_model'
     
     #create a new df with only the data we need: 
-    energy_use_by_fuel_type = pd.concat([model_output_with_fuels, energy_use_esto_df])
+    energy_use_by_fuel_type = pd.concat([model_output_with_fuels, energy_use_esto_df,energy_8th_df])
+    
+    #because of the way we mapped drive to fuel in the data prep phase, where medium is not road then set drive to medium. This will decrease some of the granularity of the data, but it will allow us to compare the data across the models more easily (plus there are too many lines anyway!)
+    energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Medium']!='road', 'Fuel'] = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Medium']!='road', 'Medium']
+
     
     energy_use_by_fuel_type = energy_use_by_fuel_type[['Economy','Scenario', 'Date', 'Fuel', 'Energy','Dataset']].groupby(['Economy','Scenario', 'Date','Dataset', 'Fuel']).sum().reset_index()
+    
+    #create a total fuel for each dataset. this will jsut be the sum of energy for each dataset, by year, scenario and economy:
+    energy_use_by_fuel_type_totals = energy_use_by_fuel_type[['Economy','Scenario', 'Date','Dataset', 'Energy']].groupby(['Economy','Scenario', 'Date','Dataset']).sum(numeric_only=True).reset_index().copy()
+    #set Fuel to total:
+    energy_use_by_fuel_type_totals['Fuel'] = 'Total'
+    #cocnat the total onto the main df:
+    energy_use_by_fuel_type = pd.concat([energy_use_by_fuel_type, energy_use_by_fuel_type_totals])
     
     #add units (by setting measure to Energy haha)
     energy_use_by_fuel_type['Measure'] = 'Energy'
@@ -1583,10 +1596,10 @@ def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_d
             energy_use_by_fuel_type_economy = energy_use_by_fuel_type_s.loc[energy_use_by_fuel_type_s['Economy']==economy].copy()
             
             #now plot
-            fig = px.area(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel',line_dash='Dataset'. title='Compared Energy by Fuel', color_discrete_map=colors_dict)
+            fig = px.line(energy_use_by_fuel_type_economy, x='Date', y='Energy', color='Fuel',line_dash='Dataset', title='Compared Energy by Fuel', color_discrete_map=colors_dict)
             
             #add units to y col
-            title_text = 'Compared energy by Fuel ({})'.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
+            title_text = 'Compared energy by Fuel (8th_simplified, 9th and ESTO)'#.format(energy_use_by_fuel_type_economy['Unit'].unique()[0])
             
             #add fig to dictionary for scenario and economy:
             fig_dict[economy][scenario]['compare_energy'] = [fig, title_text]
@@ -1595,3 +1608,4 @@ def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_d
     color_preparation_list.append(energy_use_by_fuel_type_economy['Fuel'].unique().tolist())
     
     return fig_dict, color_preparation_list
+

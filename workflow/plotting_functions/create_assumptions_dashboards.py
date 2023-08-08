@@ -273,10 +273,11 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     model_output_detailed_detailed_non_road_drives = pd.DataFrame()
     growth_forecasts = pd.DataFrame() 
     first_road_model_run_data = pd.DataFrame()
-    
+    model_output_with_fuels = pd.DataFrame()
     
     
     for economy in ECONOMY_IDs:
+        model_output_with_fuels_ = pd.read_csv('output_data/model_output_with_fuels/{}_{}'.format(economy, config.model_output_file_name))
         model_output_detailed_ = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(economy, config.model_output_file_name))
         energy_output_for_outlook_data_system_ = pd.read_csv(f'output_data/for_other_modellers/output_for_outlook_data_system/{economy}_{config.FILE_DATE_ID}_transport_energy_use.csv')
         chargers_ = pd.read_csv('output_data/for_other_modellers/{}_estimated_number_of_chargers.csv'.format(economy))
@@ -286,6 +287,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         growth_forecasts_ = pd.read_csv(f'intermediate_data/model_inputs/{config.FILE_DATE_ID}/{economy}_growth_forecasts_wide.csv')
         first_road_model_run_data_ = pd.read_csv('intermediate_data/road_model/first_run_{}_{}'.format(economy, config.model_output_file_name))
         
+        model_output_with_fuels = pd.concat([model_output_with_fuels, model_output_with_fuels_])
         model_output_detailed = pd.concat([model_output_detailed, model_output_detailed_])
         energy_output_for_outlook_data_system = pd.concat([energy_output_for_outlook_data_system, energy_output_for_outlook_data_system_])
         chargers = pd.concat([chargers, chargers_])
@@ -305,6 +307,9 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     new_sales_shares_all_plot_drive_shares = pd.read_csv(f'input_data/user_input_spreadsheets/Vehicle_sales_share.csv')
     gompertz_parameters_df = pd.read_csv('intermediate_data/model_inputs/{}/stocks_per_capita_threshold.csv'.format(config.FILE_DATE_ID))
     emissions_factors = pd.read_csv('config/9th_edition_emissions_factors.csv')
+    date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
+    energy_use_esto = pd.read_csv(f'input_data/9th_model_inputs/model_df_wide_{date_id}.csv')
+    data_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv')
     
     if ADVANCE_BASE_YEAR:
         def filter_between_outlook_BASE_YEAR_and_end_year(df):
@@ -319,6 +324,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         gompertz_parameters_df = filter_between_outlook_BASE_YEAR_and_end_year(gompertz_parameters_df)
         growth_forecasts = filter_between_outlook_BASE_YEAR_and_end_year(growth_forecasts)
         first_road_model_run_data = filter_between_outlook_BASE_YEAR_and_end_year(first_road_model_run_data)
+        model_output_with_fuels = filter_between_outlook_BASE_YEAR_and_end_year(model_output_with_fuels)
         
     else:
         def filter_outlook_BASE_YEAR(df):
@@ -334,14 +340,17 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
         gompertz_parameters_df = filter_outlook_BASE_YEAR(gompertz_parameters_df)
         growth_forecasts = filter_outlook_BASE_YEAR(growth_forecasts)
         first_road_model_run_data = filter_outlook_BASE_YEAR(first_road_model_run_data)
+        model_output_with_fuels = filter_outlook_BASE_YEAR(model_output_with_fuels)
     
     
     #Format stocks data specifically, since we use it a lot:    
     stocks = model_output_detailed.loc[(model_output_detailed['Medium']=='road')][config.INDEX_COLS_NO_MEASURE+['Stocks']].rename(columns={'Stocks':'Value'}).copy()
     
-    energy_output_for_outlook_data_system = format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system, economy)
-    
-    energy_use_esto = extract_and_clean_esto_data(energy_output_for_outlook_data_system, ECONOMY_IDs)
+    energy_output_for_outlook_data_system = format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system)
+    energy_use_esto = format_esto_data_for_plotting(energy_use_esto,ECONOMY_IDs)
+    data_8th = format_data_8th_for_plotting(data_8th, ECONOMY_IDs)
+        
+    # energy_use_esto = extract_and_clean_esto_data(energy_output_for_outlook_data_system, ECONOMY_IDs)
     # #filter for ECONOMY_IDs 
     # new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares.loc[new_sales_shares_all_plot_drive_shares['Economy'].isin(ECONOMY_IDs)]
     # model_output_detailed = model_output_detailed.loc[model_ostocksutput_detailed['Economy'].isin(ECONOMY_IDs)]
@@ -351,32 +360,8 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     # supply_side_fuel_mixing = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Economy'].isin(ECONOMY_IDs)]
     # stocks = stocks.loc[stocks['Economy'].isin(ECONOMY_IDs)] 
     
-    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto
+    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto, data_8th
 
-def extract_and_clean_esto_data(energy_output_for_outlook_data_system, ECONOMY_IDs):
-    
-    #want to include post  and pre 2020 data from esto. that way we can show the difference between outlook and esto on a line graph
-    #laod in pre base year data from esto:
-    date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
-    energy_use_esto = pd.read_csv(f'input_data/9th_model_inputs/model_df_wide_{date_id}.csv')
-    #grab only the transport data 
-    energy_use_esto = energy_use_esto.loc[energy_use_esto['sectors'] == '15_transport_sector'].copy()
-    energy_use_esto = energy_use_esto.loc[energy_use_esto['economy'].isin(ECONOMY_IDs)].copy()
-    
-    #mlet the data:
-    energy_use_esto = pd.melt(energy_use_esto, id_vars=['economy', 'scenarios', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'], var_name='Date', value_name='Energy')
-    #make date into int
-    energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
-    #do a right join on energy_output_for_outlook_data_system to get rid of rows we dont want, when we ignore the date and value cols
-    cols = energy_use_esto.columns.tolist()
-    cols.remove('Date')
-    cols.remove('Energy')
-    energy_use_esto = energy_use_esto.merge(energy_output_for_outlook_data_system[cols].drop_duplicates(), how='right', on=cols)
-    
-    #drop any rows where energy is nan. these are where the esto data team has not provided data, probably because they havent done that year yet
-    energy_use_esto = energy_use_esto.loc[~energy_use_esto['Energy'].isna()].copy()
-    return energy_use_esto
-    
 def format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system):
     
     #where energy_output_for_outlook_data_system not contians x in subfuels, set fuels to subfuels
@@ -391,7 +376,7 @@ def format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_
     energy_output_for_outlook_data_system['Medium'] = energy_output_for_outlook_data_system['sub1sectors'].map(inverse_mediums)
     energy_output_for_outlook_data_system['Transport Type'] = energy_output_for_outlook_data_system['sub2sectors'].map(config.inverse_transport_type_mapping)
     
-    energy_output_for_outlook_data_system = energy_output_for_outlook_data_system.drop(columns=['sub1sectors', 'sub2sectors']).copy()
+    energy_output_for_outlook_data_system = energy_output_for_outlook_data_system.drop(columns=['sub1sectors', 'sub2sectors']).copy()#canct remove these yet!. need them for merge with esto data
     
     #make scenarios values capitalised:
     energy_output_for_outlook_data_system['Scenario'] = energy_output_for_outlook_data_system['Scenario'].str.capitalize()
@@ -399,7 +384,121 @@ def format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_
     #reaplce economies liek this  .replace({'15_PHL': '15_RP', '17_SGP': 
     #  '17_SIN'})
     energy_output_for_outlook_data_system['Economy'] = energy_output_for_outlook_data_system['Economy'].replace({'15_PHL': '15_RP', '17_SGP': '17_SIN'})
+    
+    #remove any nas in Energy col
+    energy_output_for_outlook_data_system = energy_output_for_outlook_data_system.loc[~energy_output_for_outlook_data_system['Energy'].isna()].copy()
     return energy_output_for_outlook_data_system
+    
+def format_esto_data_for_plotting(energy_use_esto, ECONOMY_IDs):
+    
+    #want to include post  and pre 2020 data from esto. that way we can show the difference between outlook and esto on a line graph
+    #grab only the transport data 
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['sectors'] == '15_transport_sector'].copy()
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['economy'].isin(ECONOMY_IDs)].copy()
+    
+    #FORMAT THE DATA:
+    #this is the same process as used in format_energy_output_for_outlook_data_system_for_plotting()
+    #mlet the data:
+    energy_use_esto = pd.melt(energy_use_esto, id_vars=['economy', 'scenarios', 'fuels', 'subfuels', 'sectors', 'sub1sectors', 'sub2sectors', 'sub3sectors', 'sub4sectors'], var_name='Date', value_name='Energy')
+    #make date into int
+    energy_use_esto['Date'] = energy_use_esto['Date'].astype(int)
+    
+    #MAP THE DATA:
+    #where fuels is in '19_total', '20_total_renewables','21_modern_renewables', drop the rows
+    energy_use_esto = energy_use_esto.loc[~energy_use_esto['fuels'].isin(['19_total', '20_total_renewables','21_modern_renewables'])].copy()
+    #where fuels is 17_electricity, set subfuels to 17_electricity
+    energy_use_esto.loc[energy_use_esto['fuels']=='17_electricity', 'subfuels'] = '17_electricity'
+    #drop where subfuels is x
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['subfuels']!='x'].copy()
+    #also drop where sub1sectors is x (these are aggregates)
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['sub1sectors']!='x'].copy()
+    #drop fuels
+    energy_use_esto = energy_use_esto.drop(columns=['fuels'])
+    #also rename some thigns we will have to renamne every time:
+    energy_use_esto.rename(columns={'subfuels':'Fuel', 'scenarios':'Scenario', 'economy':'Economy'}, inplace=True)
+    
+    #apply the inverse of the config.medium_mapping dict to the sub1sectors col to get Medium. then drop the sub1sectors col. 
+    inverse_mediums = {v: k for k, v in config.medium_mapping.items()}
+    energy_use_esto['Medium'] = energy_use_esto['sub1sectors'].map(inverse_mediums)
+    energy_use_esto['Transport Type'] = energy_use_esto['sub2sectors'].map(config.inverse_transport_type_mapping)
+    
+    energy_use_esto = energy_use_esto.drop(columns=['sub1sectors', 'sub2sectors']).copy()#canct remove these yet!. need them for merge with esto data
+    
+    #make scenarios values capitalised:
+    energy_use_esto['Scenario'] = energy_use_esto['Scenario'].str.capitalize()
+    
+    #reaplce economies liek this  .replace({'15_PHL': '15_RP', '17_SGP': 
+    #  '17_SIN'})
+    energy_use_esto['Economy'] = energy_use_esto['Economy'].replace({'15_PHL': '15_RP', '17_SGP': '17_SIN'})
+    
+    #filter so Date is >= 2017
+    energy_use_esto = energy_use_esto.loc[energy_use_esto['Date']>=2017].copy()
+    
+    #remove any nas in Energy col
+    energy_use_esto = energy_use_esto.loc[~energy_use_esto['Energy'].isna()].copy()
+    return energy_use_esto
+    
+
+def format_data_8th_for_plotting(data_8th,  ECONOMY_IDs):
+    #take in transport data form the 8th edition and format it so we cna make it as similar as possibe to 8th:cosl: Medium	Transport Type	Vehicle Type	Drive	Year	Economy	Scenario	Activity	Energy	Stocks
+    #fitler for same economies
+    data_8th = data_8th.loc[data_8th['Economy'].isin(ECONOMY_IDs)].copy()
+    #reanme year to date
+    data_8th.rename(columns={'Year':'Date'}, inplace=True)
+    #where sceanrio is Carbon Netural, set to Target
+    data_8th.loc[data_8th['Scenario']=='Carbon Neutral', 'Scenario'] = 'Target'
+    #then map drive to fuel type. for anything that is in a demand or supply side fuel mixing drive then jsut ignore them for now. IF WE HAD THE TIME then we could also apply the same mixes as we wll fr the 9th edition:
+    #laod in D:\APERC\transport_model_9th_edition\config\concordances_and_config_data\drive_type_to_fuel.csv
+    drive_type_to_fuel = pd.read_csv('config/concordances_and_config_data/drive_type_to_fuel.csv')
+    #filter for where Supply_side_fuel_mixing and Demand_side_fuel_mixing dont equal New fuel
+    drive_type_to_fuel = drive_type_to_fuel.loc[(drive_type_to_fuel['Supply_side_fuel_mixing']!='New fuel') & (drive_type_to_fuel['Demand_side_fuel_mixing']!='New fuel')].copy()
+    #drop the supply and demand side fuel mixing cols
+    drive_type_to_fuel = drive_type_to_fuel.drop(columns=['Supply_side_fuel_mixing', 'Demand_side_fuel_mixing'])
+    #in drive_type_to_fuel create rows where drive is air, rail or ship then set fuel to air rail and ship. this allwos us to at least see all air use for 8th.
+    drive_type_to_fuel = drive_type_to_fuel.append(pd.DataFrame({'Drive':['air', 'rail', 'ship', 'nonspecified'], 'Fuel':['air', 'rail', 'ship','nonspecified']}))
+    #and remap a few drive types in data_8th so they match the mapping in drive_type_to_fuel
+    # 'd',  'g', 'phevg', 'phevd' : to ice_d, ice_g, phev_g, phev_d
+    data_8th['Drive'] = data_8th['Drive'].replace({'d':'ice_d', 'g':'ice_g', 'phevg':'phev_g', 'phevd':'phev_d'})
+    
+    # merge data_8th with drive_type_to_fuel on drive 
+    data_8th = data_8th.merge(drive_type_to_fuel, on='Drive', how='left', indicator = True)
+    
+    #identify any left onlys:
+    left_only = data_8th.loc[data_8th['_merge']=='left_only'].copy()
+    if left_only.shape[0]>0:
+        raise ValueError(f'left onlys found in drive_type_to_fuel: {left_only}')
+    #drop indicator col
+    data_8th = data_8th.drop(columns=['_merge'])
+    
+    #remove any nas in Energy col
+    data_8th = data_8th.loc[~data_8th['Energy'].isna()].copy()
+    return data_8th 
+# def extract_and_clean_esto_data(energy_use_esto, energy_output_for_outlook_data_system, ECONOMY_IDs): 
+    
+#     #do a right join on energy_output_for_outlook_data_system to get rid of rows we dont want, when we ignore the date and value cols
+#     cols = energy_use_esto.columns.tolist()
+#     cols.remove('Date')
+#     cols.remove('Energy')
+#     #and drop the cols sub 'sub2sectors', 'sub3sectors', 'sub4sectors' as esto doesnt have this detail (everything is just aggregated as x, so the more specific fields values are nans)
+#     cols.remove('sub2sectors')
+#     cols.remove('sub3sectors')
+#     cols.remove('sub4sectors')
+    
+#     #we'll have to also drop duplicates for those cols only, so we dont get duplicated left side rows. will also involve a rename:
+#     energy_output_for_outlook_data_system.rename(columns={'Medium':'sub1sectors'}, inplace=True)
+#     other_cols = ['Economy', 'Scenario', 'Fuel', 'sectors', 'Date', 'Energy', 'Medium', 'Transport Type']
+#     energy_use_esto_new = energy_use_esto.merge(energy_output_for_outlook_data_system[cols].drop_duplicates(), how='right', on=cols).copy()
+    
+#     #compare the difference in energy use to check how much we are removing:
+#     diff = energy_use_esto_new.Energy.sum() - energy_use_esto_new.Energy.sum()
+#     x = 1000000
+#     if diff > x:
+#         raise ValueError(f'Energy use difference is greater than {x} MJ. This is {diff} MJ')
+#     breakpoint()
+    
+#     #drop any rows where energy is nan. these are where the esto data team has not provided data, probably because they havent done that year yet
+#     energy_use_esto = energy_use_esto.loc[~energy_use_esto['Energy'].isna()].copy()
+#     return energy_use_esto
     
 def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, colors_dict, DROP_NON_ROAD_TRANSPORT, ADVANCE_BASE_YEAR):
     """
@@ -418,7 +517,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         None
     """
     
-    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
+    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto, data_8th = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
     # Share of Transport Type
     share_transport_types = ['passenger', 'freight', 'all']
     for transport_type in share_transport_types:
@@ -441,7 +540,6 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
     energy_transport_types = [p.split('_')[-1] for p in plots if 'energy_use_by_fuel_type' in p]
     for transport_type in energy_transport_types:
         if f'energy_use_by_fuel_type_{transport_type}' in plots:
-            breakpoint()
             fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.energy_use_by_fuel_type(ECONOMY_IDs,energy_output_for_outlook_data_system,fig_dict,color_preparation_list, colors_dict,transport_type)
             
     #Non road energy Use by Fuel Type
@@ -515,8 +613,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_share_of_transport_type_non_road(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares,fig_dict, color_preparation_list, colors_dict)
     
     if 'compare_energy' in plots:
-        energy_8th = pd.DataFrame()
-        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system, energy_use_esto, energy_8th, fig_dict, color_preparation_list, colors_dict)
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system, energy_use_esto, data_8th, fig_dict, color_preparation_list, colors_dict)
     return fig_dict, color_preparation_list
 
 def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
@@ -604,7 +701,6 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     plots = ['energy_use_by_fuel_type_all','activity_and_macro_lines','stocks_per_capita','share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','non_road_share_of_transport_type', 'fuel_mixing','avg_age_road','line_turnover_rate_by_vtype_all']#, 'charging']#activity_growth# 'charging',
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'assumptions',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
-    
     #Create a results dashboard:
     plots = ['energy_use_by_fuel_type_all','emissions_by_fuel_type_all',  'vehicle_type_stocks','non_road_energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive','compare_energy', 'lmdi_freight', 'lmdi_passenger']#, 'charging']#activity_growth# 'charging',
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'results',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
@@ -615,5 +711,5 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
 
 
 #%%
-dashboard_creation_handler(True,'08_JPN', ARCHIVE_PREVIOUS_DASHBOARDS=True)
+dashboard_creation_handler(True,'20_USA', ARCHIVE_PREVIOUS_DASHBOARDS=True)
 #%%
