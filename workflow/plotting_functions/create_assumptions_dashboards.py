@@ -310,6 +310,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
     energy_use_esto = pd.read_csv(f'input_data/9th_model_inputs/model_df_wide_{date_id}.csv')
     data_8th = pd.read_csv('input_data/from_8th/reformatted/activity_energy_road_stocks.csv')
+    energy_8th = pd.read_csv('input_data/from_8th/reformatted/8th_energy_by_fuel.csv')
     
     if ADVANCE_BASE_YEAR:
         def filter_between_outlook_BASE_YEAR_and_end_year(df):
@@ -348,7 +349,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     
     energy_output_for_outlook_data_system = format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system)
     energy_use_esto = format_esto_data_for_plotting(energy_use_esto,ECONOMY_IDs)
-    data_8th = format_data_8th_for_plotting(data_8th, ECONOMY_IDs)
+    energy_8th, data_8th = format_8th_data_for_plotting(energy_8th, data_8th, ECONOMY_IDs)
         
     # energy_use_esto = extract_and_clean_esto_data(energy_output_for_outlook_data_system, ECONOMY_IDs)
     # #filter for ECONOMY_IDs 
@@ -360,7 +361,7 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     # supply_side_fuel_mixing = supply_side_fuel_mixing.loc[supply_side_fuel_mixing['Economy'].isin(ECONOMY_IDs)]
     # stocks = stocks.loc[stocks['Economy'].isin(ECONOMY_IDs)] 
     
-    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto, data_8th
+    return new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks, road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto, data_8th, energy_8th
 
 def format_energy_output_for_outlook_data_system_for_plotting(energy_output_for_outlook_data_system):
     
@@ -439,40 +440,34 @@ def format_esto_data_for_plotting(energy_use_esto, ECONOMY_IDs):
     return energy_use_esto
     
 
-def format_data_8th_for_plotting(data_8th,  ECONOMY_IDs):
+def format_8th_data_for_plotting(energy_8th, data_8th,  ECONOMY_IDs):
     #take in transport data form the 8th edition and format it so we cna make it as similar as possibe to 8th:cosl: Medium	Transport Type	Vehicle Type	Drive	Year	Economy	Scenario	Activity	Energy	Stocks
     #fitler for same economies
     data_8th = data_8th.loc[data_8th['Economy'].isin(ECONOMY_IDs)].copy()
+    energy_8th = energy_8th.loc[energy_8th['Economy'].isin(ECONOMY_IDs)].copy()
     #reanme year to date
     data_8th.rename(columns={'Year':'Date'}, inplace=True)
+    energy_8th = energy_8th.rename(columns={'Year':'Date', 'Value':'Energy'})
     #where sceanrio is Carbon Netural, set to Target
     data_8th.loc[data_8th['Scenario']=='Carbon Neutral', 'Scenario'] = 'Target'
-    #then map drive to fuel type. for anything that is in a demand or supply side fuel mixing drive then jsut ignore them for now. IF WE HAD THE TIME then we could also apply the same mixes as we wll fr the 9th edition:
-    #laod in D:\APERC\transport_model_9th_edition\config\concordances_and_config_data\drive_type_to_fuel.csv
-    drive_type_to_fuel = pd.read_csv('config/concordances_and_config_data/drive_type_to_fuel.csv')
-    #filter for where Supply_side_fuel_mixing and Demand_side_fuel_mixing dont equal New fuel
-    drive_type_to_fuel = drive_type_to_fuel.loc[(drive_type_to_fuel['Supply_side_fuel_mixing']!='New fuel') & (drive_type_to_fuel['Demand_side_fuel_mixing']!='New fuel')].copy()
-    #drop the supply and demand side fuel mixing cols
-    drive_type_to_fuel = drive_type_to_fuel.drop(columns=['Supply_side_fuel_mixing', 'Demand_side_fuel_mixing'])
-    #in drive_type_to_fuel create rows where drive is air, rail or ship then set fuel to air rail and ship. this allwos us to at least see all air use for 8th.
-    drive_type_to_fuel = drive_type_to_fuel.append(pd.DataFrame({'Drive':['air', 'rail', 'ship', 'nonspecified'], 'Fuel':['air', 'rail', 'ship','nonspecified']}))
-    #and remap a few drive types in data_8th so they match the mapping in drive_type_to_fuel
+    energy_8th.loc[energy_8th['Scenario']=='Carbon Neutral', 'Scenario'] = 'Target'
+    #and remap a few drive types in so they match the 9th dtaa 
     # 'd',  'g', 'phevg', 'phevd' : to ice_d, ice_g, phev_g, phev_d
     data_8th['Drive'] = data_8th['Drive'].replace({'d':'ice_d', 'g':'ice_g', 'phevg':'phev_g', 'phevd':'phev_d'})
+    energy_8th['Drive'] = energy_8th['Drive'].replace({'d':'ice_d', 'g':'ice_g', 'phevg':'phev_g', 'phevd':'phev_d'})
     
-    # merge data_8th with drive_type_to_fuel on drive 
-    data_8th = data_8th.merge(drive_type_to_fuel, on='Drive', how='left', indicator = True)
-    
-    #identify any left onlys:
-    left_only = data_8th.loc[data_8th['_merge']=='left_only'].copy()
-    if left_only.shape[0]>0:
-        raise ValueError(f'left onlys found in drive_type_to_fuel: {left_only}')
-    #drop indicator col
-    data_8th = data_8th.drop(columns=['_merge'])
+    #map fuels to 9th version of the fuels:
+    fuels_mapping = pd.read_csv('config/concordances_and_config_data/8th_to_9th_fuels.csv')
+    energy_8th['New Fuel'] = energy_8th['Fuel'].map(dict(zip(fuels_mapping['8th_fuel'], fuels_mapping['9th_fuel'])))
+    #where New Fuel is not nan, set Fuel to New Fuel. then drop new fuel
+    energy_8th.loc[~energy_8th['New Fuel'].isna(), 'Fuel'] = energy_8th.loc[~energy_8th['New Fuel'].isna(), 'New Fuel']
+    energy_8th = energy_8th.drop(columns=['New Fuel'])
     
     #remove any nas in Energy col
     data_8th = data_8th.loc[~data_8th['Energy'].isna()].copy()
-    return data_8th 
+    energy_8th = energy_8th.loc[~energy_8th['Energy'].isna()].copy()
+    
+    return  energy_8th, data_8th
 # def extract_and_clean_esto_data(energy_use_esto, energy_output_for_outlook_data_system, ECONOMY_IDs): 
     
 #     #do a right join on energy_output_for_outlook_data_system to get rid of rows we dont want, when we ignore the date and value cols
@@ -517,7 +512,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         None
     """
     
-    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto, data_8th = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
+    new_sales_shares_all_plot_drive_shares, model_output_detailed, model_output_detailed_detailed_non_road_drives, energy_output_for_outlook_data_system, original_model_output_8th, chargers, supply_side_fuel_mixing, stocks,road_model_input, gompertz_parameters_df, growth_forecasts, emissions_factors, first_road_model_run_data, energy_use_esto, data_8th, energy_8th = load_and_format_input_data(ADVANCE_BASE_YEAR,ECONOMY_IDs)
     # Share of Transport Type
     share_transport_types = ['passenger', 'freight', 'all']
     for transport_type in share_transport_types:
@@ -613,7 +608,7 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_share_of_transport_type_non_road(ECONOMY_IDs,new_sales_shares_all_plot_drive_shares,fig_dict, color_preparation_list, colors_dict)
     
     if 'compare_energy' in plots:
-        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system, energy_use_esto, data_8th, fig_dict, color_preparation_list, colors_dict)
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system, energy_use_esto, energy_8th, fig_dict, color_preparation_list, colors_dict)
     return fig_dict, color_preparation_list
 
 def check_colors_in_color_preparation_list(color_preparation_list, colors_dict):
@@ -711,5 +706,5 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
 
 
 #%%
-dashboard_creation_handler(True,'20_USA', ARCHIVE_PREVIOUS_DASHBOARDS=True)
+# dashboard_creation_handler(True,'20_USA', ARCHIVE_PREVIOUS_DASHBOARDS=True)
 #%%

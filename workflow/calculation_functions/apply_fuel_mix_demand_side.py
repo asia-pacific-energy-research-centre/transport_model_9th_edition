@@ -30,20 +30,26 @@ import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 ####Use this to load libraries and set variables. Feel free to edit that file as you need.
  #%%
-def apply_fuel_mix_demand_side(ECONOMY_ID):
+def apply_fuel_mix_demand_side(model_output_all, ECONOMY_ID=None, demand_side_fuel_mixing=None, supply_side_fuel_mixing=None):
+    model_output= model_output_all.copy()
+    if demand_side_fuel_mixing is None:
+        #load user input for fuel mixing 
+        if ECONOMY_ID is None:
+            demand_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
+        else:
+            demand_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/{}_demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID, ECONOMY_ID))
+    if supply_side_fuel_mixing is None:
+        if ECONOMY_ID is None:
+            supply_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID))
+        else:
+            supply_side_fuel_mixing =  pd.read_csv('intermediate_data/model_inputs/{}/{}_supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID, ECONOMY_ID))
+    supply_side_fuel_mixing_fuels = supply_side_fuel_mixing['New_fuel'].unique().tolist()
     
-    #load model output
-    model_output = pd.read_csv('intermediate_data/model_output_concatenated/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
-
-    #load user input for fuel mixing 
-    demand_side_fuel_mixing = pd.read_csv('intermediate_data/model_inputs/{}/{}_demand_side_fuel_mixing.csv'.format(config.FILE_DATE_ID, ECONOMY_ID))
     #load model concordances with fuels
     model_concordances_fuels = pd.read_csv('config/concordances_and_config_data/computer_generated_concordances/{}'.format(config.model_concordances_file_name_fuels))
     
-    supply_side_fuel_mixing_fuels =  pd.read_csv('intermediate_data/model_inputs/{}/{}_supply_side_fuel_mixing.csv'.format(config.FILE_DATE_ID, ECONOMY_ID))['New_fuel'].unique().tolist()
     #drop supply_side_fuel_mixing_fuels from model_concordances_fuels
     model_concordances_fuels = model_concordances_fuels[~model_concordances_fuels['Fuel'].isin(supply_side_fuel_mixing_fuels)]
-    
     
     model_output = model_output.merge(model_concordances_fuels[['Fuel','Drive']].drop_duplicates(), on='Drive', how='left')
 
@@ -67,9 +73,11 @@ def apply_fuel_mix_demand_side(ECONOMY_ID):
     #remove the demand side fuel share column, as it is no longer needed
     df_with_fuels = df_with_fuels.drop(columns=['Demand_side_fuel_share'])
     
-    new_df_with_fuels = pd.concat([df_with_fuels, model_output], axis=0)
-    #save data
-    new_df_with_fuels.to_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
+    model_output_with_fuel_mixing = pd.concat([df_with_fuels, model_output], axis=0)
+    
+    return model_output_with_fuel_mixing
+    # #save data
+    # new_df_with_fuels.to_csv('intermediate_data/model_output_with_fuels/1_demand_side/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
 
     
 #%%

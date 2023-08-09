@@ -65,10 +65,10 @@ def clean_non_road_drive_types(model_output_all_with_fuels, model_output_detaile
     new_model_output_detailed['Stocks_per_thousand_capita'] = (new_model_output_detailed['Stocks']/new_model_output_detailed['Population'])* 1000000
     return new_model_output_all_with_fuels,new_model_output_detailed,new_model_output_non_detailed 
 
-def clean_model_output(ECONOMY_ID):
+def clean_model_output(ECONOMY_ID, model_output_with_fuel_mixing, model_output_all_df):
     #take in model ouput and clean ready to use in analysis
-    model_output_all_with_fuels = pd.read_csv('intermediate_data/model_output_with_fuels/2_supply_side/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
-    model_output_all = pd.read_csv('intermediate_data/model_output_concatenated/{}_{}'.format(ECONOMY_ID, config.model_output_file_name))
+    model_output_all_with_fuels = model_output_with_fuel_mixing.copy()
+    model_output_all = model_output_all_df.copy()
     
     #if frequncy col is in either datafrasme, drop it
     if 'Frequency' in model_output_all.columns:

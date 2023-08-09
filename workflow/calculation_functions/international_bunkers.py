@@ -740,5 +740,5 @@ def calculate_missing_drive_shares_from_manually_inputted_data(international_fue
     return international_fuel_shares
         
 #%%
-international_bunker_share_calculation_handler()#project_total_bunkers_energy_use
+# international_bunker_share_calculation_handler()#project_total_bunkers_energy_use
 #%%

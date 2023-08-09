@@ -79,6 +79,7 @@ def main():
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
         if economy not in ['19_THA', '20_USA', '08_JPN']:
             continue
+        
         #     # breakpoint()
         # # else:
         #     continue
@@ -99,18 +100,18 @@ def main():
             
             supply_side_fuel_mixing, demand_side_fuel_mixing, road_model_input_wide, non_road_model_input_wide, growth_forecasts_wide = filter_for_economy_and_modelling_years.filter_for_economy_and_modelling_years(BASE_YEAR, ECONOMY_ID, PROJECT_TO_JUST_OUTLOOK_BASE_YEAR=PROJECT_TO_JUST_OUTLOOK_BASE_YEAR,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR)
             calculate_inputs_for_model.calculate_inputs_for_model(road_model_input_wide,non_road_model_input_wide,growth_forecasts_wide, supply_side_fuel_mixing, demand_side_fuel_mixing, ECONOMY_ID, BASE_YEAR, ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, adjust_data_to_match_esto_TESTING=False)
-            if  BASE_YEAR == config.OUTLOOK_BASE_YEAR:
+            if BASE_YEAR == config.OUTLOOK_BASE_YEAR:
                 #since we wont run the model, just fill the input with requried output cols and put nans in them
                 concatenate_model_output.fill_missing_output_cols_with_nans(ECONOMY_ID, road_model_input_wide, non_road_model_input_wide)
             else:
                 run_road_model.run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False)
                 run_non_road_model.run_non_road_model(ECONOMY_ID, USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD = ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD_dict[ECONOMY_ID])
                 
-            concatenate_model_output.concatenate_model_output(ECONOMY_ID)
+            model_output_all = concatenate_model_output.concatenate_model_output(ECONOMY_ID)
 
-            apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(ECONOMY_ID)
-            apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(ECONOMY_ID)
-            clean_model_output.clean_model_output(ECONOMY_ID)
+            model_output_with_fuel_mixing = apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(model_output_all,ECONOMY_ID=ECONOMY_ID)
+            model_output_with_fuel_mixing = apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(model_output_with_fuel_mixing,ECONOMY_ID=ECONOMY_ID)
+            clean_model_output.clean_model_output(ECONOMY_ID, model_output_with_fuel_mixing, model_output_all)
             
             PLOT_FIRST_MODEL_RUN = False
             ARCHIVE_PREVIOUS_DASHBOARDS = True
@@ -136,11 +137,11 @@ def main():
             run_road_model.run_road_model(ECONOMY_ID, USE_GOMPERTZ_ON_ONLY_PASSENGER_VEHICLES = False)
             
             run_non_road_model.run_non_road_model(ECONOMY_ID,USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD=ECONOMIES_TO_USE_ROAD_ACTIVITY_GROWTH_RATES_FOR_NON_ROAD_dict[ECONOMY_ID])
-            concatenate_model_output.concatenate_model_output(ECONOMY_ID)
+            model_output_all = concatenate_model_output.concatenate_model_output(ECONOMY_ID)
 
-            apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(ECONOMY_ID)
-            apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(ECONOMY_ID)
-            clean_model_output.clean_model_output(ECONOMY_ID)
+            model_output_with_fuel_mixing = apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(model_output_all,ECONOMY_ID=ECONOMY_ID)
+            model_output_with_fuel_mixing = apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(model_output_with_fuel_mixing,ECONOMY_ID=ECONOMY_ID)
+            clean_model_output.clean_model_output(ECONOMY_ID, model_output_with_fuel_mixing, model_output_all)
                 
             #now concatenate all the model outputs together
             

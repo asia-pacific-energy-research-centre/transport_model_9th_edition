@@ -42,7 +42,9 @@ import matplotlib.pyplot as plt
 
 sys.path.append("./workflow/utility_functions")
 import utility_functions
-
+sys.path.append("./workflow/calculation_functions")
+import apply_fuel_mix_demand_side
+import apply_fuel_mix_supply_side
 
 
 def adjust_data_to_match_esto(BASE_YEAR, ECONOMY_ID, road_model_input_wide,non_road_model_input_wide,supply_side_fuel_mixing,  TESTING=False):
@@ -76,7 +78,7 @@ def adjust_data_to_match_esto(BASE_YEAR, ECONOMY_ID, road_model_input_wide,non_r
     energy_use_merged, energy_use_esto, energy_use_esto_pipeline = format_energy_use_for_rescaling(energy_use_esto, energy_use_output,spread_non_specified_and_separate_pipeline = True, remove_annoying_fuels = True)
 
     supply_side_fuel_mixing = adjust_supply_side_fuel_share(energy_use_esto,supply_side_fuel_mixing)
-    
+    breakpoint()#it appears that we are underestimating energy use here. need to look into it
     road_all_wide, non_road_all_wide = adjust_energy_use_in_input_data(supply_side_fuel_mixing, input_data_based_on_previous_model_run,energy_use_merged,road_model_input_wide,non_road_model_input_wide,energy_use_output)
     
     #########
@@ -214,7 +216,7 @@ def format_energy_use_for_rescaling(energy_use_esto, energy_use_output, spread_n
     inf_rows = energy_use_merged.loc[energy_use_merged['ratio'] == np.inf, ['Fuel', 'Medium', 'Scenario','Economy']].drop_duplicates()
     if len(inf_rows[~inf_rows.Fuel.isin(['16_05_biogasoline', '16_06_biodiesel', '16_07_bio_jet_kerosene','16_01_biogas'])]) > 0:
         print('The following fuel, medium, economy combos have inf ratio, meaning the model had 0 energy use but the esto data had >0 energy use. This is because the model didnt assume any use at that point in time. So create anotehr col and call it addition and put the Energy_esto value in ther to be split among its users later:')
-        print('There are fuels other than 16_05_biogasoline and 16_06_biodiesel that have inf ratio. This is unexpected {inf_rows}. they will be set in the addition column')
+        print(f'There are fuels other than 16_05_biogasoline and 16_06_biodiesel that have inf ratio. This is unexpected {inf_rows}. they will be set in the addition column')
         
     
     energy_use_merged['addition'] = 0
@@ -364,74 +366,124 @@ def adjust_energy_use_in_input_data(supply_side_fuel_mixing, input_data_based_on
 
 #why is ratio so high in places? maybe need to fix.
 def test_output_matches_expectations(supply_side_fuel_mixing, road_all_wide, non_road_all_wide, energy_use_merged,BASE_YEAR, ADVANCE_BASE_YEAR=True):
-    #calcauklte total energy use by year and economy for both road and non road.
-    #first rmeove the supply_side_fuel_mixing_fuels from esto data!
-    energy_use_merged = energy_use_merged.loc[~energy_use_merged['Fuel'].isin(supply_side_fuel_mixing.New_fuel)].copy()
-    ################
-    road_all_wide_total_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
-    non_road_all_wide_total_energy_use = non_road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
-    esto_total_energy_use_non_road = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy','Scenario', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
-    esto_total_energy_use_road = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy','Scenario', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
-    #print the differentce between total energy in the years 2017 to 2022
-    print('road energy use difference (PJ)')
-    diff = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
-    if ADVANCE_BASE_YEAR:
-        diff = diff.loc[(diff.Date==config.OUTLOOK_BASE_YEAR)]
-    else:
-        diff = diff.loc[(diff.Date>=BASE_YEAR) & (diff.Date<=config.OUTLOOK_BASE_YEAR)]
-    print(diff['Energy'].sum(numeric_only=True) - diff['Energy_esto'].sum(numeric_only=True))
-    
-    diff2 = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
-    if ADVANCE_BASE_YEAR:
-        diff2 = diff2.loc[(diff2.Date==config.OUTLOOK_BASE_YEAR)]
-    else:
-        diff2 = diff2.loc[(diff2.Date>=BASE_YEAR) & (diff2.Date<=config.OUTLOOK_BASE_YEAR)]
-    print('non road energy use difference (PJ)')
-    print(diff2['Energy'].sum(numeric_only=True) - diff2['Energy_esto'].sum(numeric_only=True))
-    ###################TESTING###############
-    #Another test using the proportion difference between teh two:
-    total_road_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()
-    total_esto_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy','Scenario',  'Date']).sum(numeric_only=True).reset_index()
-    
-    total_non_road_energy_use = non_road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()
-    total_esto_non_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy', 'Scenario', 'Date']).sum(numeric_only=True).reset_index()
 
-    diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
+    
+        
+    #calcauklte total energy use by year and economy for both road and non road.
+    
+    #we ahve an issue where the energy for diesel and petrol and their biofuels are about 10% less. it seems like it must ve because of supply side fuel mixing.. but probably becayse of the way its implemented.. rather than its value, since it seems the % diff is the same for all fuels. so lets check that first:
+    breakpoint()
+    #since we want to make sure that toal energy use for each fuel is the same then we will ahve to calcualte this first. this will involve fuel mixing calcs too:
+    #first concat road and non road together
+    energy_for_model_all  = pd.concat([road_all_wide, non_road_all_wide], axis=0)
+    model_output_with_fuel_mixing = apply_fuel_mix_demand_side.apply_fuel_mix_demand_side(energy_for_model_all, supply_side_fuel_mixing=supply_side_fuel_mixing)
+    model_output_with_fuel_mixing = apply_fuel_mix_supply_side.apply_fuel_mix_supply_side(model_output_with_fuel_mixing, supply_side_fuel_mixing=supply_side_fuel_mixing)
+        
+    # #first rmeove the supply_side_fuel_mixing_fuels from esto data!
+    # energy_use_merged = energy_use_merged.loc[~energy_use_merged['Fuel'].isin(supply_side_fuel_mixing.New_fuel)].copy()
+    model_output_with_fuel_mixing_test = model_output_with_fuel_mixing.groupby(['Economy','Scenario','Fuel','Medium', 'Date'])['Energy'].sum(numeric_only=True).reset_index().copy()
+    esto_total_energy_use = energy_use_merged.groupby(['Economy','Scenario','Fuel','Medium', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index().copy()
+    #print the differentce between total energy in the years 2017 to 2022
+    print('energy use difference (PJ)')
+    diff_pj = model_output_with_fuel_mixing_test.merge(esto_total_energy_use, on=['Economy', 'Scenario','Fuel','Medium', 'Date'], how='left', suffixes=('', '_esto'))
+    if ADVANCE_BASE_YEAR:
+        diff_pj = diff_pj.loc[(diff_pj.Date==config.OUTLOOK_BASE_YEAR)]
+    else:
+        diff_pj = diff_pj.loc[(diff_pj.Date>=BASE_YEAR) & (diff_pj.Date<=config.OUTLOOK_BASE_YEAR)]
+    print((diff_pj['Energy'].sum(numeric_only=True) - diff_pj['Energy_esto'].sum(numeric_only=True))/2)#div by two to show avg diff across scenarios
+    
+    
+    #Another test using the proportion difference between teh two:
+    model_output_with_fuel_mixing_test = model_output_with_fuel_mixing.groupby(['Economy','Scenario','Fuel','Medium', 'Date'])['Energy'].sum(numeric_only=True).reset_index().copy()
+    esto_total_energy_use = energy_use_merged.groupby(['Economy','Scenario','Fuel','Medium', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index().copy()
+
+    diff_percent = model_output_with_fuel_mixing_test.merge(esto_total_energy_use, on=['Economy', 'Scenario','Fuel','Medium', 'Date'], how='left', suffixes=('', '_esto'))
     #filter for dates after base year
     if ADVANCE_BASE_YEAR:
-        diff_road = diff_road.loc[diff_road.Date==config.OUTLOOK_BASE_YEAR]
+        diff_percent = diff_percent.loc[diff_percent.Date==config.OUTLOOK_BASE_YEAR]
     else:
-        diff_road = diff_road.loc[(diff_road.Date>=BASE_YEAR) & (diff_road.Date<=config.OUTLOOK_BASE_YEAR)]
+        diff_percent = diff_percent.loc[(diff_percent.Date>=BASE_YEAR) & (diff_percent.Date<=config.OUTLOOK_BASE_YEAR)]
     try:
-        diff_road_proportion = sum(diff_road['Energy'].dropna()) / sum(diff_road['Energy_esto'].dropna())
+        diff_percent = (sum(diff_percent['Energy'].dropna())/2) / (sum(diff_percent['Energy_esto'].dropna())/2)#div by two to show avg diff across scenarios
     except ZeroDivisionError:
-        if sum(diff_road['Energy'].dropna()) == 0 and sum(diff_road['Energy_esto'].dropna()) == 0:
-            diff_road_proportion = 1
+        if sum(diff_percent['Energy'].dropna()) == 0 and sum(diff_percent['Energy_esto'].dropna()) == 0:
+            diff_percent = 1
         else:
-            diff_road_proportion = 100#x/0 is essentially infinity, so just set it to 100
+            diff_percent = 100#x/0 is essentially infinity, so just set it to 100
         
-    diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
-    if ADVANCE_BASE_YEAR:
-        diff_non_road = diff_non_road.loc[diff_non_road.Date==config.OUTLOOK_BASE_YEAR]
-    else:
-        diff_non_road = diff_non_road.loc[(diff_non_road.Date>=BASE_YEAR) & (diff_non_road.Date<=config.OUTLOOK_BASE_YEAR)]
-    try:
-        diff_non_road_proportion = sum(diff_non_road['Energy'].dropna()) / sum(diff_non_road['Energy_esto'].dropna())
-    except ZeroDivisionError:
-        if sum(diff_non_road['Energy'].dropna()) == 0 and sum(diff_non_road['Energy_esto'].dropna()) == 0:
-            diff_non_road_proportion = 1
-        else:
-            diff_non_road_proportion = 100
-            
-    if diff_road_proportion > 1.01 or diff_road_proportion < 0.99:
+    if diff_percent > 1.01 or diff_percent < 0.99:
         breakpoint()
         #saev output to csv
-        diff_road.to_csv('intermediate_data/errors/ajust_data_to_match_esto_road_energy_use_diff.csv')
-        raise ValueError('road energy use does not match esto, proportion difference is  {}'.format(diff_road_proportion))
-    if diff_non_road_proportion > 1.01 or diff_non_road_proportion < 0.99:
-        breakpoint()
-        diff_non_road.to_csv('intermediate_data/errors/ajust_data_to_match_esto_non_road_energy_use_diff.csv')
-        raise ValueError('non road energy use does not match esto, proportion difference is  {}'.format(diff_non_road_proportion))
+        # diff_percent.to_csv('intermediate_data/errors/ajust_data_to_match_esto_energy_use_diff.csv')
+        raise ValueError('energy use does not match esto, proportion difference is  {}'.format(diff_percent))
+        
+    # breakpoint()# perhaps we need to insert the mixing fuels? it seems we might be overexagerating them compared to the others?
+    # ################
+    # road_all_wide_total_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
+    # non_road_all_wide_total_energy_use = non_road_all_wide.groupby(['Economy','Scenario', 'Date'])['Energy'].sum(numeric_only=True).reset_index()
+    # esto_total_energy_use_non_road = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy','Scenario', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
+    # esto_total_energy_use_road = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy','Scenario', 'Date'])['Energy_esto'].sum(numeric_only=True).reset_index()
+    # #print the differentce between total energy in the years 2017 to 2022
+    # print('road energy use difference (PJ)')
+    # road_diff_pj = road_all_wide_total_energy_use.merge(esto_total_energy_use_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
+    # if ADVANCE_BASE_YEAR:
+    #     road_diff_pj = road_diff_pj.loc[(road_diff_pj.Date==config.OUTLOOK_BASE_YEAR)]
+    # else:
+    #     road_diff_pj = road_diff_pj.loc[(road_diff_pj.Date>=BASE_YEAR) & (road_diff_pj.Date<=config.OUTLOOK_BASE_YEAR)]
+    # print(road_diff_pj['Energy'].sum(numeric_only=True) - road_diff_pj['Energy_esto'].sum(numeric_only=True))
+    
+    # non_road_diff_pj = non_road_all_wide_total_energy_use.merge(esto_total_energy_use_non_road, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
+    # if ADVANCE_BASE_YEAR:
+    #     non_road_diff_pj = non_road_diff_pj.loc[(non_road_diff_pj.Date==config.OUTLOOK_BASE_YEAR)]
+    # else:
+    #     non_road_diff_pj = non_road_diff_pj.loc[(non_road_diff_pj.Date>=BASE_YEAR) & (non_road_diff_pj.Date<=config.OUTLOOK_BASE_YEAR)]
+    # print('non road energy use difference (PJ)')
+    # print(non_road_diff_pj['Energy'].sum(numeric_only=True) - non_road_diff_pj['Energy_esto'].sum(numeric_only=True))
+    
+    # ###################TESTING###############
+    # #Another test using the proportion difference between teh two:
+    # total_road_energy_use = road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()
+    # total_esto_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] == 'road')].groupby(['Economy','Scenario',  'Date']).sum(numeric_only=True).reset_index()
+    
+    # total_non_road_energy_use = non_road_all_wide.groupby(['Economy','Scenario', 'Date']).sum(numeric_only=True).reset_index()
+    # total_esto_non_road_energy_use = energy_use_merged.loc[(energy_use_merged['Medium'] != 'road')].groupby(['Economy', 'Scenario', 'Date']).sum(numeric_only=True).reset_index()
+
+    # diff_road = total_road_energy_use.merge(total_esto_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
+    # #filter for dates after base year
+    # if ADVANCE_BASE_YEAR:
+    #     diff_road = diff_road.loc[diff_road.Date==config.OUTLOOK_BASE_YEAR]
+    # else:
+    #     diff_road = diff_road.loc[(diff_road.Date>=BASE_YEAR) & (diff_road.Date<=config.OUTLOOK_BASE_YEAR)]
+    # try:
+    #     diff_road_proportion = sum(diff_road['Energy'].dropna()) / sum(diff_road['Energy_esto'].dropna())
+    # except ZeroDivisionError:
+    #     if sum(diff_road['Energy'].dropna()) == 0 and sum(diff_road['Energy_esto'].dropna()) == 0:
+    #         diff_road_proportion = 1
+    #     else:
+    #         diff_road_proportion = 100#x/0 is essentially infinity, so just set it to 100
+        
+    # diff_non_road = total_non_road_energy_use.merge(total_esto_non_road_energy_use, on=['Economy', 'Scenario', 'Date'], how='left', suffixes=('', '_esto'))
+    # if ADVANCE_BASE_YEAR:
+    #     diff_non_road = diff_non_road.loc[diff_non_road.Date==config.OUTLOOK_BASE_YEAR]
+    # else:
+    #     diff_non_road = diff_non_road.loc[(diff_non_road.Date>=BASE_YEAR) & (diff_non_road.Date<=config.OUTLOOK_BASE_YEAR)]
+    # try:
+    #     diff_non_road_proportion = sum(diff_non_road['Energy'].dropna()) / sum(diff_non_road['Energy_esto'].dropna())
+    # except ZeroDivisionError:
+    #     if sum(diff_non_road['Energy'].dropna()) == 0 and sum(diff_non_road['Energy_esto'].dropna()) == 0:
+    #         diff_non_road_proportion = 1
+    #     else:
+    #         diff_non_road_proportion = 100
+            
+    # if diff_road_proportion > 1.01 or diff_road_proportion < 0.99:
+    #     breakpoint()
+    #     #saev output to csv
+    #     diff_road.to_csv('intermediate_data/errors/ajust_data_to_match_esto_road_energy_use_diff.csv')
+    #     raise ValueError('road energy use does not match esto, proportion difference is  {}'.format(diff_road_proportion))
+    # if diff_non_road_proportion > 1.01 or diff_non_road_proportion < 0.99:
+    #     breakpoint()
+    #     diff_non_road.to_csv('intermediate_data/errors/ajust_data_to_match_esto_non_road_energy_use_diff.csv')
+    #     raise ValueError('non road energy use does not match esto, proportion difference is  {}'.format(diff_non_road_proportion))
     ##########TESTING OVER###############
     
     
@@ -452,7 +504,6 @@ def filter_for_testing_data_only(road_model_input_wide, non_road_model_input_wid
 
 #%%
 def format_9th_input_energy_from_esto(ECONOMY_ID=None):
-    # breakpoint()
     #take in data from the EBT system of 9th and format it so that it can be used to create the energy data to whcih the model will be rescaled:
     #load the 9th data
     date_id = utility_functions.get_latest_date_for_data_file('input_data/9th_model_inputs', 'model_df_wide_')
@@ -587,6 +638,7 @@ def format_9th_input_energy_from_esto(ECONOMY_ID=None):
     energy_use_esto = energy_use_esto.groupby(['Economy', 'Medium','Date', 'Fuel']).sum(numeric_only=True).reset_index()
     #reame Energy_esto to Energy:
     energy_use_esto.rename(columns={'Energy_esto': 'Energy'}, inplace=True)
+    
     return energy_use_esto
 
 

@@ -55,6 +55,7 @@ def concatenate_model_output(ECONOMY_ID):
     #save
     model_output_all.to_csv('intermediate_data/model_output_concatenated/{}_{}'.format(ECONOMY_ID, config.model_output_file_name), index=False)
 
+    return model_output_all
 
 def fill_missing_output_cols_with_nans(ECONOMY_ID, road_model_input_wide, non_road_model_input_wide):
     for col in config.ROAD_MODEL_OUTPUT_COLS:

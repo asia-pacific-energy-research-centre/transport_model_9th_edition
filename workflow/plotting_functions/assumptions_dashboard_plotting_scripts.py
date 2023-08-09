@@ -150,7 +150,7 @@ def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_sha
     # #sum up all the sales shares for each drive type
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     #now calucalte share of total stocks as a proportion like the sales share
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum(numeric_only=True))
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'], group_kyes=False)['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     #create line_dash column and call it stocks
     stocks['line_dash'] = 'stocks'
     
@@ -272,11 +272,11 @@ def plot_share_of_vehicle_type_by_transport_type(ECONOMY_IDs,new_sales_shares_al
     
     stocks, new_sales_shares_all_plot_drive_shares = remap_stocks_and_sales_based_on_economy(stocks, new_sales_shares_all_plot_drive_shares)
     
-    new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'])['Value'].transform(lambda x: x/x.sum())
+    new_sales_shares_all_plot_drive_shares['Value'] = new_sales_shares_all_plot_drive_shares.groupby(['Date','Economy', 'Scenario', 'Transport Type', 'Vehicle Type'], group_keys=False)['Value'].transform(lambda x: x/x.sum())
     
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'])['Value'].apply(lambda x: x/x.sum(numeric_only=True))
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'], group_keys=False)['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     stocks['line_dash'] = 'stocks'
     
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
@@ -396,12 +396,12 @@ def share_of_sum_of_vehicle_types_by_transport_type(ECONOMY_IDs,new_sales_shares
     new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares_df.copy()
     stocks = stocks_df.copy()
     
-    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive', 'Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
+    new_sales_shares_all_plot_drive_shares = new_sales_shares_all_plot_drive_shares[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive', 'Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive'], group_keys=False).sum().reset_index()
         
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     
-    stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive']).sum().reset_index()
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'])['Value'].apply(lambda x: x/x.sum(numeric_only=True))
+    stocks = stocks[['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive','Value']].groupby(['Scenario', 'Economy', 'Date', 'Transport Type', 'Drive'], group_keys=False).sum().reset_index()
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type'], group_keys=False)['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     stocks['line_dash'] = 'stocks' 
     for scenario in new_sales_shares_all_plot_drive_shares['Scenario'].unique():
         new_sales_shares_all_plot_drive_shares_scenario = new_sales_shares_all_plot_drive_shares.loc[(new_sales_shares_all_plot_drive_shares['Scenario']==scenario)]
@@ -1461,7 +1461,7 @@ def turnover_rate_by_vehicle_type_line(ECONOMY_IDs,model_output_detailed,fig_dic
                 
             elif transport_type == 'all':
                 #get mean again because there are some vehicle types used for bnoth ttypes:
-                turnover_rate_by_vtype_economy = turnover_rate_by_vtype_economy.groupby(['Economy', 'Date','Medium', 'Vehicle Type','Unit']).mean().reset_index()
+                turnover_rate_by_vtype_economy = turnover_rate_by_vtype_economy.groupby(['Economy', 'Date','Medium', 'Vehicle Type','Unit']).mean().reset_index().copy()
                 #sum across transport types
                 fig = px.line(turnover_rate_by_vtype_economy,x='Date', y='Turnover_rate', line_dash = 'Medium', color='Vehicle Type', title='Passenger turnover_rate by vehicle type', color_discrete_map=colors_dict)
                 
@@ -1538,7 +1538,7 @@ def emissions_by_fuel_type(ECONOMY_IDs, emissions_factors,model_output_with_fuel
                 
             elif transport_type == 'all':
                 #sum across transport types
-                emissions_by_fuel_type_economy = emissions_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit']).sum().reset_index()
+                emissions_by_fuel_type_economy = emissions_by_fuel_type_economy.groupby(['Economy', 'Date', 'Fuel','Unit'], group_keys=False).sum().reset_index()
                 #now plot
                 fig = px.area(emissions_by_fuel_type_economy, x='Date', y='Emissions', color='Fuel', title='Emissions by Fuel', color_discrete_map=colors_dict)
                 
@@ -1555,11 +1555,11 @@ def emissions_by_fuel_type(ECONOMY_IDs, emissions_factors,model_output_with_fuel
     return fig_dict, color_preparation_list
 
 
-def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system_df, energy_use_esto, data_8th, fig_dict, color_preparation_list, colors_dict):
+def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_data_system_df, energy_use_esto, energy_8th, fig_dict, color_preparation_list, colors_dict):
             
     model_output_with_fuels = energy_output_for_outlook_data_system_df.copy()
     energy_use_esto_df = energy_use_esto.copy()
-    energy_8th_df = data_8th.copy()#.drop(columns=['Stocks', 'Activity'])
+    energy_8th_df = energy_8th.copy()#.drop(columns=['Stocks', 'Activity'])
     
     #create col in both which refers to where they came from:
     energy_use_esto_df['Dataset'] = 'ESTO'
@@ -1569,8 +1569,8 @@ def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_d
     #create a new df with only the data we need: 
     energy_use_by_fuel_type = pd.concat([model_output_with_fuels, energy_use_esto_df,energy_8th_df])
     
-    #because of the way we mapped drive to fuel in the data prep phase, where medium is not road then set drive to medium. This will decrease some of the granularity of the data, but it will allow us to compare the data across the models more easily (plus there are too many lines anyway!)
-    energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Medium']!='road', 'Fuel'] = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Medium']!='road', 'Medium']
+    # #because of the way we mapped drive to fuel in the data prep phase, where medium is not road then set drive to medium. This will decrease some of the granularity of the data, but it will allow us to compare the data across the models more easily (plus there are too many lines anyway!)
+    # energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Medium']!='road', 'Fuel'] = energy_use_by_fuel_type.loc[energy_use_by_fuel_type['Medium']!='road', 'Medium']
 
     
     energy_use_by_fuel_type = energy_use_by_fuel_type[['Economy','Scenario', 'Date', 'Fuel', 'Energy','Dataset']].groupby(['Economy','Scenario', 'Date','Dataset', 'Fuel']).sum().reset_index()
