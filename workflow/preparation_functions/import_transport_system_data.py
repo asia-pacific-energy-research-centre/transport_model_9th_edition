@@ -256,7 +256,7 @@ def import_transport_system_data(TRANSPORT_DATA_SYSTEM_DATE_TO_USE_FOR_NON_ROAD_
             i += 1
         else:
             transport_data_system_df['Scenario'] = scenario
-            new_transport_data_system_df = new_transport_data_system_df.append(transport_data_system_df)
+            new_transport_data_system_df = pd.concat([new_transport_data_system_df, transport_data_system_df])
         
     
     #TEMP DROP ANY DATA THAT IS FOR DATES AFTER THE BASE DATE. WE WILL FIGURE OUT HOW TO INCLUDE THEM IN THE FUTURE BUT FOR NOW IT WILL PROBS BE TOO COMPLICATED
