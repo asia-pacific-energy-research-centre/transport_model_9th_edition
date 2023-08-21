@@ -167,12 +167,13 @@ def create_and_clean_user_input():
         #now concat the two dfs
         user_input_new = pd.concat([user_input_missing_values_dont_change, user_input_missing_values_change], sort=False)
         #check for nas and throw error if so. might need to utilise the commented out code below (that i didnt finish gettting working) to do this
+        
+        breakpoint()
         if len(user_input_new[user_input_new.Value.isna()]) >0:
             #identify the rows where there are still nas in the Value col:
             user_input_new_nas = user_input_new[user_input_new.Value.isna()]
             #save them to csv
             user_input_new_nas.to_csv('intermediate_data/errors/user_input_new_nas.csv', index=False)
-            breakpoint()
             raise ValueError('There are still some rows where Value is NA. Please check this.')
         # #there will be soe cases where there are still nas because there are nas for every year in the group of config.INDEX_COLS_no_date. We will check for these cases and separate them for analysis. THen identify any extra cases where there are still nas in the Value col. these are problematic and we will raise an error
         # user_input_new_groups_with_all_nas = user_input_new.groupby(config.INDEX_COLS_no_date).apply(lambda group: group.isna().all()).reset_index()

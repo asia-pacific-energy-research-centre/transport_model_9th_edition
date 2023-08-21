@@ -150,7 +150,7 @@ def plot_share_of_transport_type(ECONOMY_IDs,new_sales_shares_all_plot_drive_sha
     # #sum up all the sales shares for each drive type
     new_sales_shares_all_plot_drive_shares['line_dash'] = 'sales'
     #now calucalte share of total stocks as a proportion like the sales share
-    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'], group_kyes=False)['Value'].apply(lambda x: x/x.sum(numeric_only=True))
+    stocks['Value'] = stocks.groupby(['Scenario', 'Economy', 'Date', 'Transport Type','Vehicle Type'], group_keys=False)['Value'].apply(lambda x: x/x.sum(numeric_only=True))
     #create line_dash column and call it stocks
     stocks['line_dash'] = 'stocks'
     
@@ -1609,3 +1609,101 @@ def plot_comparison_of_energy_by_dataset(ECONOMY_IDs,energy_output_for_outlook_d
     
     return fig_dict, color_preparation_list
 
+def plot_energy_efficiency_growth(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, color_preparation_list, colors_dict):
+
+    #to help with checking that the data is realistic, plot growth in energy efficiency here:
+    
+    energy_eff = model_output_detailed.copy()
+    if DROP_NON_ROAD_TRANSPORT:
+        energy_eff = energy_eff.loc[energy_eff['Medium']=='road']
+    else:
+        #set vehicle type to medium so we can plot strip plot by vehicle type: 
+        energy_eff.loc[energy_eff['Medium'] != 'road', 'Vehicle Type'] = energy_eff.loc[energy_eff['Medium'] != 'road', 'Medium']
+        
+    #calc mean and, importantly, remove date, scenario
+    energy_eff = energy_eff[['Date', 'Economy', 'Vehicle Type', 'Drive', 'Scenario','Efficiency']].groupby(['Date','Economy', 'Vehicle Type','Scenario', 'Drive']).mean().reset_index()
+
+    # #simplfiy drive type using remap_drive_types
+    # fkm = remap_drive_types(fkm, value_col='freight_tonne_km', new_index_cols = ['Economy', 'Date', 'Scenario','Drive'])
+    
+    #add units (by setting measure to Freight_tonne_km haha)
+    energy_eff['Measure'] = 'Efficiency growth'
+    
+    #loop through scenarios and grab the data for each scenario:
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
+        
+        energy_eff_by_scen = energy_eff.loc[(energy_eff['Scenario']==scenario)].copy()
+        
+        #calcaulte growth by calculating the % change in efficiency from the previous year:
+        
+        #sort by date:
+        energy_eff_by_scen = energy_eff_by_scen.sort_values(by='Date')
+        #calc % change:
+        energy_eff_by_scen['Efficiency_growth'] = energy_eff_by_scen.groupby(['Economy', 'Vehicle Type', 'Drive']).Efficiency.pct_change()
+        
+        
+
+        for economy in ECONOMY_IDs:
+            #filter to economy
+            energy_eff_by_scen_by_economy = energy_eff_by_scen.loc[energy_eff_by_scen['Economy']==economy].copy()
+
+            #sort by date
+            # freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive_economy.sort_values(by='Date')
+            #now plot
+            title='Energy efficiency growth by vehicle type'
+            fig = px.line(energy_eff_by_scen_by_economy, x='Date', y='Efficiency_growth', color='Drive',line_dash='Vehicle Type', title=title, color_discrete_map=colors_dict)
+            
+            if DROP_NON_ROAD_TRANSPORT:
+                #add fig to dictionary for scenario and economy:
+                fig_dict[economy][scenario]['energy_efficiency_growth_road'] = [fig, title]
+            else:
+                fig_dict[economy][scenario]['energy_efficiency_growth_all'] = [fig, title]
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(energy_eff_by_scen_by_economy['Drive'].unique().tolist())
+    
+    return fig_dict, color_preparation_list
+
+def plot_energy_efficiency(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, color_preparation_list, colors_dict):
+    #to help with checking that the data is realistic, plot energy efficiency here:
+    
+    energy_eff = model_output_detailed.copy()
+    if DROP_NON_ROAD_TRANSPORT:
+        energy_eff = energy_eff.loc[energy_eff['Medium']=='road']
+    else:
+        #set vehicle type to medium so we can plot strip plot by vehicle type: 
+        energy_eff.loc[energy_eff['Medium'] != 'road', 'Vehicle Type'] = energy_eff.loc[energy_eff['Medium'] != 'road', 'Medium']
+        
+    #calc mean and, importantly, remove date, scenario
+    energy_eff = energy_eff[['Economy', 'Vehicle Type', 'Drive', 'Scenario','Efficiency']].groupby(['Economy', 'Vehicle Type','Scenario', 'Drive']).mean().reset_index()
+
+    # #simplfiy drive type using remap_drive_types
+    # fkm = remap_drive_types(fkm, value_col='freight_tonne_km', new_index_cols = ['Economy', 'Date', 'Scenario','Drive'])
+    
+    #add units (by setting measure to Freight_tonne_km haha)
+    energy_eff['Measure'] = 'Efficiency'
+    #add units
+    energy_eff['Unit'] = energy_eff['Measure'].map(config.measure_to_unit_concordance_dict)
+    
+    #loop through scenarios and grab the data for each scenario:
+    for scenario in config.economy_scenario_concordance['Scenario'].unique():
+        
+        energy_eff_by_scen = energy_eff.loc[(energy_eff['Scenario']==scenario)].copy()
+
+        for economy in ECONOMY_IDs:
+            #filter to economy
+            energy_eff_by_scen_by_economy = energy_eff_by_scen.loc[energy_eff_by_scen['Economy']==economy].copy()
+
+            #sort by date
+            # freight_tonne_km_by_drive_economy = freight_tonne_km_by_drive_economy.sort_values(by='Date')
+            #now plot
+            title='Energy efficiency by vehicle type'
+            fig = px.strip(energy_eff_by_scen_by_economy, x='Vehicle Type', y='Efficiency', color='Drive', title=title, color_discrete_map=colors_dict)
+            #add fig to dictionary for scenario and economy:
+            if DROP_NON_ROAD_TRANSPORT:
+                fig_dict[economy][scenario]['energy_efficiency_road'] = [fig, title]
+            else:
+                fig_dict[economy][scenario]['energy_efficiency_all'] = [fig, title]
+            
+    #put labels for the color parameter in color_preparation_list so we can match them against suitable colors:
+    color_preparation_list.append(energy_eff_by_scen_by_economy['Drive'].unique().tolist())
+    return fig_dict, color_preparation_list

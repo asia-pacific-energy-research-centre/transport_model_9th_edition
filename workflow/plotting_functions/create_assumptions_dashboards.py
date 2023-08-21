@@ -275,7 +275,6 @@ def load_and_format_input_data(ADVANCE_BASE_YEAR, ECONOMY_IDs):
     first_road_model_run_data = pd.DataFrame()
     model_output_with_fuels = pd.DataFrame()
     
-    
     for economy in ECONOMY_IDs:
         model_output_with_fuels_ = pd.read_csv('output_data/model_output_with_fuels/{}_{}'.format(economy, config.model_output_file_name))
         model_output_detailed_ = pd.read_csv('output_data/model_output_detailed/{}_{}'.format(economy, config.model_output_file_name))
@@ -395,6 +394,8 @@ def format_esto_data_for_plotting(energy_use_esto, ECONOMY_IDs):
     #want to include post  and pre 2020 data from esto. that way we can show the difference between outlook and esto on a line graph
     #grab only the transport data 
     energy_use_esto = energy_use_esto.loc[energy_use_esto['sectors'] == '15_transport_sector'].copy()
+    #drop pipelines and non specified
+    energy_use_esto = energy_use_esto.loc[~energy_use_esto['sub1sectors'].isin(['15_06_nonspecified_transport', '15_05_pipeline_transport'])].copy()
     energy_use_esto = energy_use_esto.loc[energy_use_esto['economy'].isin(ECONOMY_IDs)].copy()
     
     #FORMAT THE DATA:
@@ -468,32 +469,6 @@ def format_8th_data_for_plotting(energy_8th, data_8th,  ECONOMY_IDs):
     energy_8th = energy_8th.loc[~energy_8th['Energy'].isna()].copy()
     
     return  energy_8th, data_8th
-# def extract_and_clean_esto_data(energy_use_esto, energy_output_for_outlook_data_system, ECONOMY_IDs): 
-    
-#     #do a right join on energy_output_for_outlook_data_system to get rid of rows we dont want, when we ignore the date and value cols
-#     cols = energy_use_esto.columns.tolist()
-#     cols.remove('Date')
-#     cols.remove('Energy')
-#     #and drop the cols sub 'sub2sectors', 'sub3sectors', 'sub4sectors' as esto doesnt have this detail (everything is just aggregated as x, so the more specific fields values are nans)
-#     cols.remove('sub2sectors')
-#     cols.remove('sub3sectors')
-#     cols.remove('sub4sectors')
-    
-#     #we'll have to also drop duplicates for those cols only, so we dont get duplicated left side rows. will also involve a rename:
-#     energy_output_for_outlook_data_system.rename(columns={'Medium':'sub1sectors'}, inplace=True)
-#     other_cols = ['Economy', 'Scenario', 'Fuel', 'sectors', 'Date', 'Energy', 'Medium', 'Transport Type']
-#     energy_use_esto_new = energy_use_esto.merge(energy_output_for_outlook_data_system[cols].drop_duplicates(), how='right', on=cols).copy()
-    
-#     #compare the difference in energy use to check how much we are removing:
-#     diff = energy_use_esto_new.Energy.sum() - energy_use_esto_new.Energy.sum()
-#     x = 1000000
-#     if diff > x:
-#         raise ValueError(f'Energy use difference is greater than {x} MJ. This is {diff} MJ')
-#     breakpoint()
-    
-#     #drop any rows where energy is nan. these are where the esto data team has not provided data, probably because they havent done that year yet
-#     energy_use_esto = energy_use_esto.loc[~energy_use_esto['Energy'].isna()].copy()
-#     return energy_use_esto
     
 def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, colors_dict, DROP_NON_ROAD_TRANSPORT, ADVANCE_BASE_YEAR):
     """
@@ -576,7 +551,20 @@ def plotting_handler(ECONOMY_IDs, plots, fig_dict, color_preparation_list, color
         #could be avg_age_nonroad, avg_age_road, avg_age_all
         medium = title.split('_')[-1]
         fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_average_age_by_simplified_drive_type(ECONOMY_IDs,model_output_detailed,fig_dict, color_preparation_list, colors_dict, medium, title)
-        
+    
+    if 'energy_efficiency_road' in plots:
+        DROP_NON_ROAD_TRANSPORT=True
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_energy_efficiency(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, color_preparation_list, colors_dict)
+    if 'energy_efficiency_all' in plots:
+        DROP_NON_ROAD_TRANSPORT=False
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_energy_efficiency(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, color_preparation_list, colors_dict)
+    if 'energy_efficiency_growth_road' in plots:
+        DROP_NON_ROAD_TRANSPORT=True
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_energy_efficiency_growth(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, color_preparation_list, colors_dict)
+    if 'energy_efficiency_growth_all' in plots:
+        DROP_NON_ROAD_TRANSPORT=False
+        fig_dict,color_preparation_list = assumptions_dashboard_plotting_scripts.plot_energy_efficiency_growth(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT, color_preparation_list, colors_dict)
+    
     if 'freight_tonne_km_by_drive' in plots:
         #create freight tonne km by drive plots
         fig_dict, color_preparation_list = assumptions_dashboard_plotting_scripts.freight_tonne_km_by_drive(ECONOMY_IDs,model_output_detailed,fig_dict,DROP_NON_ROAD_TRANSPORT,color_preparation_list, colors_dict)
@@ -685,6 +673,10 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     # line_turnover_rate_by_vtype_freight
     # line_turnover_rate_by_vtype_passenger
     # emissions_by_fuel_type_{transport_type}
+    # energy_efficiency_growth_all
+    # energy_efficiency_growth_road
+    # energy_efficiency_all
+    # energy_efficiency_road
     #####################################'
     # hidden_legend_names =  ['bev lcv, stocks', 'bev trucks, stocks', 'fcev trucks, stocks', 'bev 2w, stocks', 'bev bus, stocks', 'fcev bus, stocks', 'bev lpv, stocks', 'fcev lpv, stocks', 'fcev lcv, stocks']
     
@@ -693,7 +685,7 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     hidden_legend_names =  []
     
     #Create assumptions/major inputs dashboard to go along side a results dashboard:
-    plots = ['energy_use_by_fuel_type_all','activity_and_macro_lines','stocks_per_capita','share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','non_road_share_of_transport_type', 'fuel_mixing','avg_age_road','line_turnover_rate_by_vtype_all']#, 'charging']#activity_growth# 'charging',
+    plots = ['energy_use_by_fuel_type_all','activity_and_macro_lines','stocks_per_capita','share_of_vehicle_type_by_transport_type_all','sum_of_vehicle_types_by_transport_type_all','non_road_share_of_transport_type', 'fuel_mixing','avg_age_road','line_turnover_rate_by_vtype_all', 'energy_efficiency_all', 'energy_efficiency_growth_all']#, 'charging']#activity_growth# 'charging',
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'assumptions',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
     
     #Create a results dashboard:
@@ -704,7 +696,10 @@ def dashboard_creation_handler(ADVANCE_BASE_YEAR, ECONOMY_ID=None, ARCHIVE_PREVI
     plots = ['energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive', 'share_of_transport_type_passenger']#activity_growth
     create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'presentation',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
 
-
+    
+    # #create an extras dashboard: 
+    # plots = ['energy_use_by_fuel_type_all','passenger_km_by_drive', 'freight_tonne_km_by_drive', 'share_of_transport_type_passenger']#activity_growth
+    # create_dashboard(ECONOMY_IDs, plots, DROP_NON_ROAD_TRANSPORT, colors_dict, dashboard_name_id = 'presentation',hidden_legend_names = hidden_legend_names,ADVANCE_BASE_YEAR=ADVANCE_BASE_YEAR, ARCHIVE_PREVIOUS_DASHBOARDS=ARCHIVE_PREVIOUS_DASHBOARDS)
 #%%
 # dashboard_creation_handler(True,'20_USA', ARCHIVE_PREVIOUS_DASHBOARDS=True)
 #%%

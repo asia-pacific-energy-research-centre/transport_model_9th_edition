@@ -7,9 +7,9 @@ NEW_SALES_SHARES = True
 
 NEW_FUEL_MIXING_DATA = True
 
-transport_data_system_FILE_DATE_ID ='DATE20230731_19_THA' # 'DATE20230216'))
+transport_data_system_FILE_DATE_ID ='DATE20230821' 
 # FILE_DATE_ID ='20230722'#set me if you want to use a specific date_id for the model run. else it will be based on the date the model is run. if the FILE DATE ID might be lilke this DATE20230731_19_THA, inlude the eoconmoy codee!
-FILE_DATE_ID='20230807'
+# FILE_DATE_ID='20230809'
 #%%
 
 #import common libraries 

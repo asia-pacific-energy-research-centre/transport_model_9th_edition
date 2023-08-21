@@ -59,11 +59,11 @@ import compare_esto_energy_to_data
 #%%
 def main():
     #Things to do once a day:
-    do_these_once_a_day = False
+    do_these_once_a_day = True
     if do_these_once_a_day:
         concordance_scripts.create_all_concordances()
     
-    PREPARE_DATA = False
+    PREPARE_DATA = True
     if PREPARE_DATA:
         import_macro_data.import_macro_data()
         import_transport_system_data.import_transport_system_data()
@@ -77,8 +77,8 @@ def main():
     
     #######################################################################
     for economy in ECONOMY_BASE_YEARS_DICT.keys():
-        if economy not in ['19_THA', '20_USA', '08_JPN']:
-            continue
+        # if economy not in ['19_THA', '20_USA', '08_JPN']:
+        #     continue
         
         #     # breakpoint()
         # # else:
